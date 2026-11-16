@@ -116,7 +116,7 @@
     App.rawRGB = img.rgb || null;
     App.src = { w: img.width, h: img.height, data: img.data };
     App.sourceRGB = App.rawRGB;
-    App._srcFor = 0;
+    App._srcFor = null;
     App._colourBg = null;
     App._orientOnInstall = E.orientId(orient);
   }
@@ -234,7 +234,7 @@
       const img = await G.TIFF.decodeBuffer(ex.buffer, ex.name);
       const S = App.S;
       App.expIdx = k;
-      if (img.width === App.src.w && img.height === App.src.h) {
+      if (img.width === App.rawSrc.w && img.height === App.rawSrc.h) {
         sourcePixels(img, S.orient);
         if (!App.sourceRGB) S.displayMode = 'gray';
         App._colorStats = img.colorStats || null;
@@ -286,18 +286,24 @@
    * derived from App.src by S.rotation. Keeping it derived (instead of mutating it in place) is what
    * makes undo/redo correct: restoring an older state restores its orientation too. */
   App.ensureSrc = function () {
-    const code = E.orientCode(App.S && App.S.orient);
+    const code = E.orientCode(App.S && App.S.orient), spec = App.S && App.S.perspective;
+    const key = code + '|' + JSON.stringify(spec || null);
     if (!App.rawSrc) return App.src;
-    if (App._srcFor !== code) {
-      let w = App.rawSrc.w, h = App.rawSrc.h, data = App.rawSrc.data, rgb = App.rawRGB;
+    if (App._srcFor !== key) {
+      let base = App.rawSrc, rgb = App.rawRGB;
+      if (spec) {
+        base = G.Perspective.warp(base, spec, false);
+        if (rgb) rgb = G.Perspective.warp({ w: App.rawSrc.w, h: App.rawSrc.h, data: rgb }, spec, true).data;
+      }
+      let { w, h, data } = base;
       if (code) {
         const g = E.orientPixels({ w, h, data }, code, false);
         w = g.w; h = g.h; data = g.data;
-        if (rgb) rgb = E.orientPixels({ w: App.rawSrc.w, h: App.rawSrc.h, data: rgb }, code, true).data;
+        if (rgb) rgb = E.orientPixels({ w: base.w, h: base.h, data: rgb }, code, true).data;
       }
       App.src = { w, h, data };
       App.sourceRGB = rgb;
-      App._srcFor = code;
+      App._srcFor = key;
       App.rot = null; App.satCanvas = null; App._display = null; App._clipKey = null; App._colourBg = null;
     }
     return App.src;

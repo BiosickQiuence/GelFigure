@@ -1,3 +1,7 @@
+/* Four-point controls remain reachable above the canvas on phones. */
+.perspective-tools { padding: 8px 12px; background: #fff5f5; border-bottom: 1px solid #f2caca; flex-shrink: 0; }
+.perspective-tools p { margin: 2px 0 6px; font-size: 12px; line-height: 1.5; }
+#perspectiveError { color: #a11; }
 :root {
   --bg: #eef0f3; --panel: #fff; --line: #e3e6ea; --line-2: #eef0f3;
   --text: #16202c; --muted: #6b7480; --faint: #9aa2ad;

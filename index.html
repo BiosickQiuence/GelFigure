@@ -163,6 +163,8 @@
           <p class="hint" data-en="Runs both steps inside the red crop. Confirmed marker choices and manual anchors are kept.">在红框内一起识别；保留手动确认的 Marker 和定位点。</p>
         </div>
         <p class="hint" data-en="Drag the red box directly to change the figure crop.">出图范围直接拖动原图上的红框调整。</p>
+        <button class="btn sm" id="btnPerspective" data-en="Four-point perspective correction">四点透视校正</button>
+        <p class="hint" data-en="For oblique photos: drag four corners, then rectify. Applying clears names/annotations and re-detects lanes/markers; undo is available.">用于斜拍胶图：拖动四角后拉正。应用时清空名称与标注，重新识别泳道和 Marker；可撤销。</p>
 
         <div class="suggest hidden" id="emptyBar">
           <div id="emptyText"></div>
@@ -276,6 +278,11 @@
         <button class="btn sm ghost" id="fitCrop" title="放大到出图范围" data-en-title="Zoom to the figure area" data-en="Crop">范围</button>
         <button class="btn sm ghost" id="btnAddLaneM" title="在原图上点一下加一条泳道" data-en-title="Click the image to add a lane" data-en="+ Lane">＋ 泳道</button>
         <span class="zoomlabel" id="zoomLabel"></span>
+      </div>
+      <div id="perspectiveTools" class="perspective-tools hidden" role="region" aria-label="四点校正" data-en-title="Four-point correction">
+        <p data-en="Drag corners 1–4: top-left, top-right, bottom-right, bottom-left. Scroll/pinch to zoom; drag elsewhere to pan.">拖动四角 1–4：左上、右上、右下、左下。滚轮／双指缩放，拖动空白处平移。</p>
+        <div class="inline"><button class="btn sm primary" id="applyPerspective" data-en="Apply correction">应用校正</button><button class="btn sm" id="cancelPerspective" data-en="Cancel">取消</button></div>
+        <p id="perspectiveError" role="alert"></p>
       </div>
       <div id="expoStrip" class="expo hidden"></div>
       <div id="editorBox" tabindex="0">
@@ -596,6 +603,7 @@
 <script src="js/ui.js"></script>
 <script src="js/figedit.js"></script>
 <script src="js/mobile.js"></script>
+<script src="js/perspective.js"></script>
 <script src="js/marker-ui.js"></script>
 <script src="js/history-ui.js"></script>
 <script src="js/support-config.js"></script>

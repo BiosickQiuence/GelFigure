@@ -1,12 +1,12 @@
 <div align="center">
 
-# GelFigure
+# GelFigure — 四点透视校正版
 
 **把原始 DNA 胶或蛋白胶图一键做成可投稿的成图 —— 在浏览器里完成，离线可用。**
 
-[**下载单文件 HTML**](https://github.com/poplarity/GelFigure/releases/download/v0.6.15/GelFigure-v0.6.15.html) · [在线使用](https://poplarity.github.io/GelFigure/) · [English](README.md)
+[**下载本 fork（ZIP）**](https://github.com/BiosickQiuence/GelFigure/archive/refs/heads/main.zip) · [English](README.md) · [上游项目](https://github.com/poplarity/GelFigure)
 
-[![CI](https://github.com/poplarity/GelFigure/actions/workflows/ci.yml/badge.svg)](https://github.com/poplarity/GelFigure/actions/workflows/ci.yml)
+[![CI](https://github.com/BiosickQiuence/GelFigure/actions/workflows/ci.yml/badge.svg)](https://github.com/BiosickQiuence/GelFigure/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![免安装](https://img.shields.io/badge/安装-不需要-brightgreen)
 ![图片不上传](https://img.shields.io/badge/图片-不上传-brightgreen)
@@ -16,21 +16,41 @@
 
 ## 快速开始
 
-**只需下载一个文件，用浏览器打开就能做图。不用安装、不用解压，也不用注册 GitHub。**
+**本 fork 基于上游 GelFigure v0.6.15，新增手动四点透视校正。请使用本仓库的文件试用；上游网站和上游 Release 的 HTML 尚不包含本 fork 的改动。**
 
-1. **[点击下载 GelFigure-v0.6.15.html](https://github.com/poplarity/GelFigure/releases/download/v0.6.15/GelFigure-v0.6.15.html)**，不到 1 MB，保存到桌面或“下载”文件夹。
-2. **双击刚下载的文件。** 它会在浏览器中打开；如果打开的是记事本等软件，右键文件 → **打开方式** → 选择 Firefox、Chrome、Edge 或 Safari。
-3. **点“选择文件”，导入你的胶图。** 核对识别出的胶种、泳道和 Marker，点泳道名填写名称，再点 **导出 PNG**。
+1. **[下载本 fork 的 ZIP](https://github.com/BiosickQiuence/GelFigure/archive/refs/heads/main.zip)**，完整解压。
+2. 用 Firefox、Chrome、Edge 或 Safari 打开 **index.html**。旁边的 **css/**、**js/** 文件夹须保留在一起；单独下载 index.html 无法完整运行。
+3. 导入胶图。斜拍图请先在 **泳道对齐 → 四点透视校正** 中拉正，再填写名称和标注；手机端从 **设置** 进入。
+4. 核对泳道和 Marker，填写泳道名，随后导出成图。
 
-这一个 HTML 文件已经包含完整界面和处理功能。保存后可以断网使用，也可以把同一个文件直接发给同事。
+文件下载并解压后，图像处理可以断网使用。无需 AI API Key、后台服务器或运行时依赖；自动识别由本地图像处理算法和内置 Ladder 库完成。
 
-**认准文件名：** 下载的是 **GelFigure-v0.6.15.html**，不是仓库里的 **index.html**，也不是 **Source code (zip)** 或 **Source code (tar.gz)**。不需要点 **Code → Download ZIP**。如果进入了[版本下载页](https://github.com/poplarity/GelFigure/releases/latest)，展开 **Assets（附件）**，只点结尾为 **.html** 的文件即可。
+**想要单文件离线版？** 在源码目录运行 `node scripts/bundle-onefile.mjs`（需 Node.js 22+），然后用浏览器打开生成的 **dist/GelFigure.html**。这个 HTML 已内嵌全部应用脚本和样式，可单独离线使用。Node.js 只在打包时需要，使用时不需要。
 
-**下次接着做：** 关闭前点 **文件 → 保存项目**；手机端在右上角 **⋯** 里（或 **导出 → 保存项目**）。得到的 **.gelfig** 项目文件会保存原图和标注，下次用 GelFigure 打开即可继续。
+**下次接着做：** 关闭前点 **文件 → 保存项目**；手机端在 **⋯** 里（或 **导出 → 保存项目**）。**.gelfig** 文件包含原图、编辑状态和校正参数。
 
-**也可在线使用：** [打开 GelFigure 网页版](https://poplarity.github.io/GelFigure/)。手机、平板优先在浏览器中打开此链接；微信等软件里的 HTML 附件预览不一定能运行工具。
+上游资料：[原项目](https://github.com/poplarity/GelFigure)、[原版在线工具](https://poplarity.github.io/GelFigure/)、[上游版本下载](https://github.com/poplarity/GelFigure/releases)。这些链接指向上游版本；其[下载与打开图解](docs/getting-started.zh-CN.md)仍可用于了解原版。
 
-详细步骤见[下载与打开图解](docs/getting-started.zh-CN.md)，工具内点 **?** 也可查看帮助。
+## 四点透视校正
+
+手动选定凸四边形的四角，将斜拍的平面胶图拉正为矩形。角点由使用者选择，变换在本地完成，不需要 AI 模型或联网。
+
+1. 导入图片，点击 **泳道对齐 → 四点透视校正**。手机从“设置”进入后会自动切换到“原图”。
+2. 拖动四角 **1 左上、2 右上、3 右下、4 左下**，贴合被拍摄平面的边界。滚轮／双指缩放，拖动角点以外的位置平移。交叉、凹陷或超出原图的选择会被拒绝。
+3. 点击 **应用校正** 并核对确认提示。**已有泳道名、标注、分组、条件和剪除设置会清空**，随后重新识别泳道和 Marker；建议先校正、后标注。
+4. 检查结果，再用普通红框裁切、命名和导出。**Ctrl/⌘+Z** 撤销整次校正，重做可恢复；**取消** 或 **Esc** 不改变项目。
+
+原始文件字节保留。Float32 灰度分析和彩色显示使用相同几何；再次校正仍从解码后的原始数据取样，避免对上次校正结果反复插值。项目、本地历史及同尺寸曝光切换保留校正参数。处理日志记录原始四点、原始／输出尺寸和双线性插值，图注提示说明透视变换。
+
+**范围与限制：** 输出宽高根据各对边较长者估算；没有实际尺寸或相机标定时，不能保证恢复真实物理长宽比。该功能矫正平面透视，不能修复镜头畸变或弯曲胶面。定量分析请使用原始数据。“**未裁切图**”导出的是校正后、普通矩形裁切前的图像；“**原始数据**”导出完整原始拍摄文件。
+
+合成示例：左图选择四角，右图为拉正并重新识别泳道后的结果。
+
+<p><img src="docs/perspective-before.png" alt="合成斜拍胶图的四角选择" width="440"> <img src="docs/perspective-after.png" alt="透视校正后重新识别泳道和 Marker" width="440"></p>
+
+**验证范围（2026-11-16）：** 本地完整回归在 Chromium、Firefox、WebKit 各通过 240 项检查，共 720 项；最终四点校正专项在每个内核各通过 7 项，共 21 项。覆盖解析取样、非法选择、手势取消、撤销／重做、原始字节保留、项目、灰度／RGB 几何、方向变换、同尺寸曝光和离线触摸操作。测试图片为合成数据，本 fork 尚未在真实实验胶图或实体手机上验证；这些是本地结果，不代表之后某次 GitHub Actions 的状态。
+
+详见[校正说明与局限](docs/perspective.md)和[专项测试](tests/perspective.mjs)。
 
 <img src="docs/screenshot-zh.png" alt="GelFigure：左边原图，右边成图" width="900">
 
@@ -40,6 +60,7 @@
 
 ## 目录
 
+- [四点透视校正](#四点透视校正)
 - [功能](#功能)
 - [快速开始](#快速开始)
 - [版本](#版本)
@@ -96,7 +117,9 @@
 
 ## 版本
 
-当前版本 **0.6.15**（桌面 Safari 适配、图片粘贴、逐项字重、自由文本框和泳道编号导出修复）。0.6 系列新增蛋白胶、论文常用标注和手机端支持；0.6.3 在每个 Release 附上单文件离线版（`GelFigure-<version>.html`，双击即用），0.6.4 重做手机端（底部导航、全格式导出、长按存图、触屏编辑），0.6.5 让分组文字不再重叠（自动换行 / 缩小字号 / 保持一行），并支持手动换行和逐项设置字号。0.6.7 新增可编辑 PowerPoint 导出，并保留可调整的图片裁切。0.6.8 新增保留原色、系统字体选择和紧凑的 Marker 单位标题。0.6.9 新增历史项目和自动恢复。0.6.10 优化泳道与 Marker 交互，加入自定义 Marker 缓存和默认灰度。0.6.11 修复顶部导出栏并新增泳道名角度调节。0.6.12 新增单泳道文字格式、工具内反馈与支持，并修复箭头间距。0.6.13 新增红色标注、常驻展开的版式区和本地更新日志。0.6.14 新增整图方向、泳道名紧贴胶图和侧边文字自由定位。需要回到旧版本时：`v0.6.14`（分支 [`release/0.6.14`](https://github.com/poplarity/GelFigure/tree/release/0.6.14)）、`v0.6.13`（分支 [`release/0.6.13`](https://github.com/poplarity/GelFigure/tree/release/0.6.13)）、`v0.6.12`（分支 [`release/0.6.12`](https://github.com/poplarity/GelFigure/tree/release/0.6.12)）、`v0.6.11`（分支 [`release/0.6.11`](https://github.com/poplarity/GelFigure/tree/release/0.6.11)）、`v0.6.10`（分支 [`release/0.6.10`](https://github.com/poplarity/GelFigure/tree/release/0.6.10)）、`v0.6.9`（分支 [`release/0.6.9`](https://github.com/poplarity/GelFigure/tree/release/0.6.9)）、`v0.6.8`（分支 [`release/0.6.8`](https://github.com/poplarity/GelFigure/tree/release/0.6.8)）、`v0.6.7`（分支 [`release/0.6.7`](https://github.com/poplarity/GelFigure/tree/release/0.6.7)）、`v0.6.6`（分支 [`release/0.6.6`](https://github.com/poplarity/GelFigure/tree/release/0.6.6)）、`v0.6.5`（分支 [`release/0.6.5`](https://github.com/poplarity/GelFigure/tree/release/0.6.5)）、`v0.6.4`、`v0.6.3`、`v0.6.2`、`v0.6.1`、`v0.6.0` 和 `v0.5.0`。
+本 fork 在上游 **v0.6.15** 基础上新增四点透视校正。应用暂沿用上游版本号；本 fork 的改动见上文及 [CHANGELOG.md](CHANGELOG.md)。
+
+上游基础版本 **0.6.15**（桌面 Safari 适配、图片粘贴、逐项字重、自由文本框和泳道编号导出修复）。0.6 系列新增蛋白胶、论文常用标注和手机端支持；0.6.3 在每个 Release 附上单文件离线版（`GelFigure-<version>.html`，双击即用），0.6.4 重做手机端（底部导航、全格式导出、长按存图、触屏编辑），0.6.5 让分组文字不再重叠（自动换行 / 缩小字号 / 保持一行），并支持手动换行和逐项设置字号。0.6.7 新增可编辑 PowerPoint 导出，并保留可调整的图片裁切。0.6.8 新增保留原色、系统字体选择和紧凑的 Marker 单位标题。0.6.9 新增历史项目和自动恢复。0.6.10 优化泳道与 Marker 交互，加入自定义 Marker 缓存和默认灰度。0.6.11 修复顶部导出栏并新增泳道名角度调节。0.6.12 新增单泳道文字格式、工具内反馈与支持，并修复箭头间距。0.6.13 新增红色标注、常驻展开的版式区和本地更新日志。0.6.14 新增整图方向、泳道名紧贴胶图和侧边文字自由定位。需要回到旧版本时：`v0.6.14`（分支 [`release/0.6.14`](https://github.com/poplarity/GelFigure/tree/release/0.6.14)）、`v0.6.13`（分支 [`release/0.6.13`](https://github.com/poplarity/GelFigure/tree/release/0.6.13)）、`v0.6.12`（分支 [`release/0.6.12`](https://github.com/poplarity/GelFigure/tree/release/0.6.12)）、`v0.6.11`（分支 [`release/0.6.11`](https://github.com/poplarity/GelFigure/tree/release/0.6.11)）、`v0.6.10`（分支 [`release/0.6.10`](https://github.com/poplarity/GelFigure/tree/release/0.6.10)）、`v0.6.9`（分支 [`release/0.6.9`](https://github.com/poplarity/GelFigure/tree/release/0.6.9)）、`v0.6.8`（分支 [`release/0.6.8`](https://github.com/poplarity/GelFigure/tree/release/0.6.8)）、`v0.6.7`（分支 [`release/0.6.7`](https://github.com/poplarity/GelFigure/tree/release/0.6.7)）、`v0.6.6`（分支 [`release/0.6.6`](https://github.com/poplarity/GelFigure/tree/release/0.6.6)）、`v0.6.5`（分支 [`release/0.6.5`](https://github.com/poplarity/GelFigure/tree/release/0.6.5)）、`v0.6.4`、`v0.6.3`、`v0.6.2`、`v0.6.1`、`v0.6.0` 和 `v0.5.0`。
 
 ## 隐私
 
@@ -118,7 +141,8 @@ GelFigure 是静态网页，图像处理不依赖服务器。图片由浏览器�
 
 | 步骤 | 方法 |
 |---|---|
-| 转正 | 在 ±15° 内寻找让加样孔和条带水平的角度。更大角度可手动设置（±45°），并有参考网格。不能校正透视/梯形畸变。 |
+| 转正 | 在 ±15° 内寻找让加样孔和条带水平的角度。更大角度可手动设置（±45°），并有参考网格。透视／梯形畸变可用本 fork 的手动“四点透视校正”；角点不会自动识别。 |
+| 透视校正 | 手动选四角，使用投影变换和双线性插值拉正；应用时清空原标注并重新识别泳道／Marker，保留原始字节且可撤销。 |
 | 裁切 | 根据加样孔所在行和条带区域找到胶块，默认包含加样孔。 |
 | 泳道 | 结合条带信号、胶块边缘和加样孔形状（模板匹配），不会把胶边当成泳道，空孔也能找到。泳道挨在一起的蛋白胶，会用样品尚未扩散的胶顶部纠正泳道间距。仍不对时，可把首尾两条泳道拖到位后等间距排布，或只对红框内重新识别。 |
 | 胶的类型 | 导入时自动判断 DNA 胶还是蛋白胶：Coomassie 蓝染（蓝通道占优）和宽条带指向蛋白胶，细条带和条带多的 Ladder 指向 DNA 胶，迁移曲线的弯曲程度也参与投票。判断依据显示在切换按钮下方。蛋白胶用更宽的平滑和匹配容差，预染 Marker 从 4 条带起即可识别。 |
@@ -143,7 +167,8 @@ GelFigure 是静态网页，图像处理不依赖服务器。图片由浏览器�
 
 GelFigure 参照常见期刊的图像要求（如 Nature、PLOS、JBC；参见 Rossner & Yamada, *J Cell Biol* 2004, "What's in a picture?"）：
 
-- 只做**线性、全图**调整。Gamma 默认锁定为 1，解锁后会写进图注提示。
+- 亮度／对比度默认采用**线性、全图**调整。Gamma 默认锁定为 1，解锁后会写进图注提示。
+- **可选的透视校正属于几何重采样**，会写入处理日志和图注提示。保留原始拍摄文件，定量分析使用原始数据；拉正不保证真实物理长宽比，也不自动保证符合具体期刊政策。
 - 区分**相机过曝**（原始数据已饱和，只能重拍）和**色阶削顶**（显示设置导致，可调回）。
 - 剪除的泳道有可见的**拼接间隙或分隔线**，并生成图注参考文字。不同凝胶的泳道不能拼进同一面板。
 - 每次导出都带处理摘要；未裁切图和原始文件可导出放补充材料。
@@ -168,7 +193,7 @@ Windows、macOS、Linux 上较新的 Chrome、Edge、Firefox，以及 Safari 16.
 
 ## 已知局限
 
-如果页面只剩文字和没有排版的按钮，说明样式文件没有加载成功，或浏览器关闭了页面样式。可按 Ctrl+Shift+R（macOS 为 Command+Shift+R）强制刷新。离线使用请下载 [Releases](https://github.com/poplarity/GelFigure/releases/latest) 中的**单文件 HTML**，或**完整解压 ZIP**，保持 `css/`、`js/` 与 `index.html` 在一起；仓库里的 `index.html` 单独下载不能运行完整工具。
+如果页面只剩文字和没有排版的按钮，说明样式文件没有加载成功，或浏览器关闭了页面样式。可按 Ctrl+Shift+R（macOS 为 Command+Shift+R）强制刷新。使用本 fork 时请[下载并完整解压 ZIP](https://github.com/BiosickQiuence/GelFigure/archive/refs/heads/main.zip)，保持 `css/`、`js/` 与 `index.html` 在一起，或按上文打包 `dist/GelFigure.html`。仓库里的 `index.html` 单独下载不能完整运行；上游 Release 的 HTML 不包含本 fork 的四点校正功能。
 
 浏览器禁止存储或空间不足时，仍可编辑和导出；偏好与自定义 Marker 仅在当前页面暂存，关闭前请使用**保存项目**。自动草稿恢复另需浏览器允许 IndexedDB。
 
@@ -179,7 +204,7 @@ Windows、macOS、Linux 上较新的 Chrome、Edge、Firefox，以及 Safari 16.
 
 ## 开发
 
-以下内容面向修改源码的开发者。只使用工具请按上面的单文件下载步骤操作。源码版需要保留 `index.html` 旁的 `css/` 和 `js/` 文件夹。
+以下内容面向修改源码的开发者。只使用工具请按上面的 ZIP 或单文件打包步骤操作。源码版需要保留 `index.html` 旁的 `css/` 和 `js/` 文件夹。
 
 没有构建步骤，也没有依赖：纯 HTML、CSS、JavaScript，用普通 `<script>` 标签加载，所以也能从 `file://` 直接运行。目录结构和测试方法见 [英文 README 的 Development 部分](README.md#development)。
 
@@ -201,7 +226,7 @@ npm test
 
 ## 致谢
 
-GelFigure 由 [poplarity](https://github.com/poplarity) 设计与开发。
+GelFigure 由 [poplarity](https://github.com/poplarity) 设计与开发。本 fork 由 [BiosickQiuence/GelFigure](https://github.com/BiosickQiuence/GelFigure) 维护，新增四点透视校正和中英文使用说明；保留上游署名与 MIT 许可证。
 
 开发使用的 API 额度由 **Zhao Bowen**（[@zhober](https://github.com/zhober)）提供。
 

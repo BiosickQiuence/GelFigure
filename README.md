@@ -1,12 +1,12 @@
 <div align="center">
 
-# GelFigure
+# GelFigure — Four-point perspective correction
 
 **Turn a raw DNA or protein gel image into a publication-ready figure — in your browser, offline.**
 
-[**Download the single HTML file**](https://github.com/poplarity/GelFigure/releases/download/v0.6.15/GelFigure-v0.6.15.html) · [Use online](https://poplarity.github.io/GelFigure/) · [中文说明](README.zh-CN.md)
+[**Download this fork (ZIP)**](https://github.com/BiosickQiuence/GelFigure/archive/refs/heads/main.zip) · [中文说明](README.zh-CN.md) · [Upstream project](https://github.com/poplarity/GelFigure)
 
-[![CI](https://github.com/poplarity/GelFigure/actions/workflows/ci.yml/badge.svg)](https://github.com/poplarity/GelFigure/actions/workflows/ci.yml)
+[![CI](https://github.com/BiosickQiuence/GelFigure/actions/workflows/ci.yml/badge.svg)](https://github.com/BiosickQiuence/GelFigure/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![No install](https://img.shields.io/badge/install-none-brightgreen)
 ![Images stay local](https://img.shields.io/badge/images-never%20uploaded-brightgreen)
@@ -16,21 +16,41 @@
 
 ## Quick start
 
-**Download one file, open it in your browser, and start making your figure. No installation, ZIP extraction or GitHub account is needed.**
+**This fork adds manual four-point perspective correction to upstream GelFigure v0.6.15. Use this repository's files to try it; the upstream website and upstream release HTML do not include this fork's changes.**
 
-1. **[Download GelFigure-v0.6.15.html](https://github.com/poplarity/GelFigure/releases/download/v0.6.15/GelFigure-v0.6.15.html)** (under 1 MB). Save it to your Desktop or Downloads folder.
-2. **Double-click the downloaded file.** It opens in your browser. If a text editor opens instead, right-click → **Open with** → Firefox, Chrome, Edge or Safari.
-3. **Click “Choose file” and select your gel image.** Check the detected gel type, lanes and marker, click the lane names to edit them, then choose **Export PNG**.
+1. **[Download this fork as a ZIP](https://github.com/BiosickQiuence/GelFigure/archive/refs/heads/main.zip)** and extract the whole archive.
+2. Open **index.html** in Firefox, Chrome, Edge or Safari. Keep the adjacent **css/** and **js/** folders together with it; downloading index.html alone is not sufficient.
+3. Choose a gel image. For an oblique photograph, use **Lane alignment → Four-point perspective correction** before entering names or annotations. On a phone, find it in **Settings**.
+4. Check the lanes and marker labels, enter lane names, then export your figure.
 
-That one HTML file is the complete tool, including its layout and image-processing code. Keep it on your computer or send the same file to a colleague. Once downloaded, it works without an internet connection.
+After downloading and extracting the files, image processing works offline in the browser. No AI API key, backend or runtime dependency is required. Automatic recognition uses local image-processing algorithms and the bundled ladder catalogue.
 
-**Get the right file:** choose the release attachment named **GelFigure-v0.6.15.html**, not the repository's **index.html**, **Source code (zip)** or **Source code (tar.gz)**. You do not need **Code → Download ZIP**. If you reach the [release page](https://github.com/poplarity/GelFigure/releases/latest), expand **Assets** and click the file ending in **.html**.
+**Prefer one HTML file?** From a source checkout, run `node scripts/bundle-onefile.mjs` (Node.js 22+). Open the generated **dist/GelFigure.html** in your browser; that file includes all application scripts and styles and can be used offline on its own. Node.js is needed only to build it, not to use it.
 
-**Keep your work:** use **File → Save project** before closing. On a phone it is under **⋯** (or **Export → Save project**). Your **.gelfig** file contains the original image and annotations; reopen it in GelFigure to continue.
+**Keep your work:** use **File → Save project** before closing. On a phone it is under **⋯** (or **Export → Save project**). The **.gelfig** file contains the original image and editing state, including the correction parameters.
 
-**Prefer the website?** [Open GelFigure online](https://poplarity.github.io/GelFigure/). On phones and tablets, use this link in your browser; an HTML attachment preview in a messaging app may not run the tool.
+Upstream resources: [original project](https://github.com/poplarity/GelFigure), [original online app](https://poplarity.github.io/GelFigure/), and [upstream releases](https://github.com/poplarity/GelFigure/releases). These links refer to the upstream version. Its illustrated opening guide is available in [English](docs/getting-started.md).
 
-Need help? See [the illustrated download and opening guide](docs/getting-started.md) or press **?** inside the app.
+## Four-point perspective correction
+
+Rectify a photograph of a flat gel by selecting a convex quadrilateral and mapping it to a rectangle. The four corners are chosen manually; the operation runs locally with no AI model or network request.
+
+1. Import an image and click **Lane alignment → Four-point perspective correction**. The mobile interface switches from Settings to Image automatically.
+2. Drag corners **1 top-left, 2 top-right, 3 bottom-right, 4 bottom-left** onto the photographed plane's boundaries. Use the wheel/pinch to zoom and drag away from handles to pan. Crossed, concave or out-of-image selections are rejected.
+3. Click **Apply correction** and review the confirmation. **Existing lane names, annotations, groups, conditions and removed-lane settings are cleared**, then lanes and markers are detected again. Correct the image before annotating it.
+4. Inspect the result and continue with the ordinary red crop frame, naming and export. **Ctrl/⌘+Z** undoes the whole correction; redo restores it. **Cancel** or **Escape** leaves the project unchanged.
+
+Original file bytes are retained. Float32 grayscale analysis and RGB display share the same geometry. Repeated corrections sample decoded-source pixels rather than repeatedly resampling the previous corrected raster. Projects, local history and same-size exposure changes retain the correction parameters. The processing log records source corners, original/output dimensions and bilinear interpolation; legend notes disclose the projective transform.
+
+**Limits:** output width and height are estimated from the longer opposing edge lengths. Without known dimensions or camera calibration, this does not establish the true physical aspect ratio. The operation corrects planar perspective, not lens distortion or a curved gel. Use the original data for quantitative analysis. **Uncropped image** exports the corrected image before the regular rectangular crop; **Original data** exports the complete original photograph.
+
+Synthetic example: four-corner selection (left), corrected image and re-detected lanes (right).
+
+<p><img src="docs/perspective-before.png" alt="Synthetic oblique gel with four independently selected corners" width="440"> <img src="docs/perspective-after.png" alt="Rectified synthetic gel with re-detected lanes and marker" width="440"></p>
+
+**Validation (2026-11-16):** the local full regression passed 240 checks in each of Chromium, Firefox and WebKit (720 total); the final perspective suite passed seven checks in each engine (21 total). Coverage includes analytic sampling, invalid selections, pointer cancellation, undo/redo, original-byte preservation, projects, RGB/grayscale geometry, orientation, same-size exposures and offline touch interactions. Images are synthetic; this fork has not been validated on real experimental gels or physical phones. These are local results, not a claim about a later GitHub Actions run.
+
+See [the correction details and limitations](docs/perspective.md) and [the regression tests](tests/perspective.mjs).
 
 <img src="docs/screenshot-en.png" alt="GelFigure: raw gel on the left, finished figure on the right" width="900">
 
@@ -40,6 +60,7 @@ Drop in the image from your gel imager or scanner. GelFigure works out whether i
 
 ## Contents
 
+- [Four-point perspective correction](#four-point-perspective-correction)
 - [Features](#features)
 - [Quick start](#quick-start)
 - [Versions](#versions)
@@ -96,7 +117,9 @@ Drop in the image from your gel imager or scanner. GelFigure works out whether i
 
 ## Versions
 
-The current version is **0.6.15** (desktop Safari fixes, clipboard images, per-item text weights, free text boxes and reliable lane-number exports). The 0.6 series adds protein gels, annotations, and mobile support. 0.6.3 ships a single-file offline build (`GelFigure-<tag>.html`) for double-click use; 0.6.4 reworks the phone layout (bottom bar, export sheet with every format, long-press to save, touch editing); 0.6.5 keeps group labels from overlapping (wrap / shrink / one line), adds typed line breaks and a font size per label. 0.6.7 added editable PowerPoint export with adjustable image crops. 0.6.8 added original colour, system fonts and compact marker-unit headings. 0.6.9 added local project history and automatic recovery. 0.6.10 simplified lane/marker editing and added marker-library caching and grayscale imports. 0.6.11 kept desktop exports right-aligned and added adjustable lane-name angles. 0.6.12 added per-lane text formatting, in-app feedback and support, and compact arrow spacing. 0.6.13 added red annotations, an expanded layout section and local release history. 0.6.14 added whole-image orientation, gel-hugging lane names and freely placed side text. Earlier versions are kept as tags and branches if you need to go back: `v0.6.14` ([`release/0.6.14`](https://github.com/poplarity/GelFigure/tree/release/0.6.14)), `v0.6.13` ([`release/0.6.13`](https://github.com/poplarity/GelFigure/tree/release/0.6.13)), `v0.6.12` ([`release/0.6.12`](https://github.com/poplarity/GelFigure/tree/release/0.6.12)), `v0.6.11` ([`release/0.6.11`](https://github.com/poplarity/GelFigure/tree/release/0.6.11)), `v0.6.10` ([`release/0.6.10`](https://github.com/poplarity/GelFigure/tree/release/0.6.10)), `v0.6.9` ([`release/0.6.9`](https://github.com/poplarity/GelFigure/tree/release/0.6.9)), `v0.6.8` ([`release/0.6.8`](https://github.com/poplarity/GelFigure/tree/release/0.6.8)), `v0.6.7` ([`release/0.6.7`](https://github.com/poplarity/GelFigure/tree/release/0.6.7)), `v0.6.6` ([`release/0.6.6`](https://github.com/poplarity/GelFigure/tree/release/0.6.6)), `v0.6.5` ([`release/0.6.5`](https://github.com/poplarity/GelFigure/tree/release/0.6.5)), `v0.6.4`, `v0.6.3`, `v0.6.2`, `v0.6.1`, `v0.6.0` and `v0.5.0`.
+This fork adds four-point perspective correction on top of upstream **v0.6.15**. The application retains the upstream version identifier; the fork-specific changes are described above and in [CHANGELOG.md](CHANGELOG.md).
+
+The upstream base version is **0.6.15** (desktop Safari fixes, clipboard images, per-item text weights, free text boxes and reliable lane-number exports). The 0.6 series adds protein gels, annotations, and mobile support. 0.6.3 ships a single-file offline build (`GelFigure-<tag>.html`) for double-click use; 0.6.4 reworks the phone layout (bottom bar, export sheet with every format, long-press to save, touch editing); 0.6.5 keeps group labels from overlapping (wrap / shrink / one line), adds typed line breaks and a font size per label. 0.6.7 added editable PowerPoint export with adjustable image crops. 0.6.8 added original colour, system fonts and compact marker-unit headings. 0.6.9 added local project history and automatic recovery. 0.6.10 simplified lane/marker editing and added marker-library caching and grayscale imports. 0.6.11 kept desktop exports right-aligned and added adjustable lane-name angles. 0.6.12 added per-lane text formatting, in-app feedback and support, and compact arrow spacing. 0.6.13 added red annotations, an expanded layout section and local release history. 0.6.14 added whole-image orientation, gel-hugging lane names and freely placed side text. Earlier versions are kept as tags and branches if you need to go back: `v0.6.14` ([`release/0.6.14`](https://github.com/poplarity/GelFigure/tree/release/0.6.14)), `v0.6.13` ([`release/0.6.13`](https://github.com/poplarity/GelFigure/tree/release/0.6.13)), `v0.6.12` ([`release/0.6.12`](https://github.com/poplarity/GelFigure/tree/release/0.6.12)), `v0.6.11` ([`release/0.6.11`](https://github.com/poplarity/GelFigure/tree/release/0.6.11)), `v0.6.10` ([`release/0.6.10`](https://github.com/poplarity/GelFigure/tree/release/0.6.10)), `v0.6.9` ([`release/0.6.9`](https://github.com/poplarity/GelFigure/tree/release/0.6.9)), `v0.6.8` ([`release/0.6.8`](https://github.com/poplarity/GelFigure/tree/release/0.6.8)), `v0.6.7` ([`release/0.6.7`](https://github.com/poplarity/GelFigure/tree/release/0.6.7)), `v0.6.6` ([`release/0.6.6`](https://github.com/poplarity/GelFigure/tree/release/0.6.6)), `v0.6.5` ([`release/0.6.5`](https://github.com/poplarity/GelFigure/tree/release/0.6.5)), `v0.6.4`, `v0.6.3`, `v0.6.2`, `v0.6.1`, `v0.6.0` and `v0.5.0`.
 
 ## Privacy
 
@@ -118,7 +141,8 @@ Both bright-bands-on-dark (EtBr, SYBR, fluorescence) and dark-bands-on-light (Co
 
 | Step | How |
 |---|---|
-| Straightening | Searches ±15° for the angle that makes wells and bands horizontal. Larger angles can be set by hand (±45°), with a reference grid. Perspective (keystone) distortion is not corrected. |
+| Straightening | Searches ±15° for the angle that makes wells and bands horizontal. Larger angles can be set by hand (±45°), with a reference grid. For perspective (keystone) distortion, use this fork’s manual **Four-point perspective correction**; corners are not detected automatically. |
+| Perspective correction | Manually select four corners and rectify the plane with a projective transform and bilinear interpolation. Applying resets annotations and re-detects lanes/markers; original bytes and undo are retained. |
 | Crop | The gel slab is found from the well row and the band region; the default crop includes the wells. |
 | Lanes | Combines band signal, the gel slab edges and the shape of the wells (template matching), so edges are not mistaken for lanes and empty wells are still found. Where lanes run together (crowded protein gels), the top of the gel, where samples have not spread yet, corrects the spacing. If detection is still wrong, place the two end lanes and space the rest evenly, or re-detect inside the red box only. |
 | Gel type | DNA or protein, from the image itself: blue-dominant colour (Coomassie) and broad bands point to protein, thin bands and many evenly spaced ladder bands to DNA, and the curvature of the migration curve votes too. The reasons are shown under the switch. Protein bands are detected with wider smoothing and tolerances; prestained markers are accepted from 4 bands up. |
@@ -143,7 +167,8 @@ The **Layout** section shows the **effective resolution** of the gel itself (gel
 
 GelFigure follows common journal image policies (e.g. Nature, PLOS, JBC; see Rossner & Yamada, *J Cell Biol* 2004, "What's in a picture?"):
 
-- Only **linear, whole-image** adjustments. Gamma is locked at 1 unless explicitly unlocked, and is then reported in the legend notes.
+- Brightness/contrast adjustments are **linear and whole-image by default**. Gamma is locked at 1 unless explicitly unlocked, and is then reported in the legend notes.
+- **Optional perspective correction is geometric resampling**, disclosed in the processing log and legend notes. Keep the original photograph and use original data for quantitative analysis; rectification does not guarantee physical aspect ratio or publication-policy compliance.
 - **Camera saturation** (the raw data is already clipped, so you need to re-image) is reported separately from **contrast clipping** (caused by the display settings and fixable).
 - Removed lanes get a visible **splice gap or line**, and suggested legend text is generated. Never splice lanes from different gels into one panel.
 - Every export carries a processing summary; the uncropped image and the original file can be exported for the supplement.
@@ -168,7 +193,7 @@ When the downloaded HTML is opened directly from disk, some browsers disable Ind
 
 ## Known limitations
 
-If the page looks like plain text and unstyled buttons, its stylesheet has not loaded or page styles have been disabled. Reload with Ctrl+Shift+R (Command+Shift+R on macOS). For offline use, download the **single-file HTML** from [Releases](https://github.com/poplarity/GelFigure/releases/latest), or extract the **whole ZIP** and keep `css/` and `js/` beside `index.html`; the repository's `index.html` alone is not a standalone app.
+If the page looks like plain text and unstyled buttons, its stylesheet has not loaded or page styles have been disabled. Reload with Ctrl+Shift+R (Command+Shift+R on macOS). For this fork, extract the [**whole ZIP**](https://github.com/BiosickQiuence/GelFigure/archive/refs/heads/main.zip) and keep `css/` and `js/` beside `index.html`, or build `dist/GelFigure.html` as described above. The repository’s `index.html` alone is not a standalone app; upstream release HTML files do not include this fork’s correction feature.
 
 If browser storage is blocked or full, the app can still edit and export. Preferences and custom ladders stay in the current tab only; use **Save project** before closing. Local project history and automatic recovery depend on the browser allowing IndexedDB.
 
@@ -179,7 +204,7 @@ If browser storage is blocked or full, the app can still edit and export. Prefer
 
 ## Development
 
-This section is for contributors editing the source. To use GelFigure, follow the single-file download steps above. Source checkouts keep `css/` and `js/` beside `index.html`; those files must stay together.
+This section is for contributors editing the source. To use this fork, follow the ZIP or single-file build steps above. Source checkouts keep `css/` and `js/` beside `index.html`; those files must stay together.
 
 No build step and no dependencies: the app is plain HTML, CSS and JavaScript loaded with ordinary `<script>` tags, so it also runs from `file://`.
 
@@ -191,6 +216,7 @@ js/i18n.js          interface language (L('中文', 'English') pairs)
 js/tiff.js          TIFF decoder            js/engine.js    image analysis
 js/ladders.js       ladder library          js/render.js    figure layout (SVG)
 js/export.js        PNG / TIFF / SVG / logs js/app.js       state, pipeline, undo, projects
+js/perspective.js   four-point selection and source-based projective rectification
 js/editor.js        raw-image canvas        js/ui.js        side panel and top bar
 js/figedit.js       editing on the figure   js/demo.js      synthetic test gel
 js/uitest.js        interaction self-test   test/test.html  engine self-test
@@ -218,7 +244,7 @@ If GelFigure helped with a publication, please cite it; see [CITATION.cff](CITAT
 
 ## Acknowledgements
 
-GelFigure is designed and developed by [poplarity](https://github.com/poplarity).
+GelFigure is designed and developed by [poplarity](https://github.com/poplarity). This fork is maintained under [BiosickQiuence/GelFigure](https://github.com/BiosickQiuence/GelFigure) and adds four-point perspective correction and bilingual usage documentation. The upstream attribution and MIT license are retained.
 
 Development is supported by API tokens provided by **Zhao Bowen** ([@zhober](https://github.com/zhober)).
 

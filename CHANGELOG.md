@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- 增加四点透视校正：自由拖动凸四边形四角，将斜拍胶图拉正为矩形；校正前明确提示清空原标注并重新识别。灰度与原色共享几何，支持撤销／重做、项目恢复、曝光切换和离线单文件；原始数据保留，校正参数与双线性插值写入处理日志和图注提示。
+- Add four-corner perspective correction for oblique gel photographs, with explicit annotation reset and lane/marker re-detection. Grayscale and RGB share geometry; undo, projects, exposures and offline builds retain original pixels and log the projective transform and interpolation.
+
+
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [semantic versioning](https://semver.org/).
 
 ## [Unreleased]

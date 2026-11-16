@@ -237,6 +237,8 @@
       environment: { userAgent: navigator.userAgent, figureFont: G.Render.fontName(S.style.fontFamily), fontFallbacks: G.Render.fontStack(S.style.fontFamily), fontsEmbedded: false },
       source: { file: S.file.name, sha256: S.file.sha256, bytes: S.file.size, width: A.src.w, height: A.src.h, bitDepth: S.file.bits, dpi: S.file.dpi || null },
       rotationDeg: S.rotation, autoRotationDeg: A.autoRotation, orientation: S.orient || null,
+      perspectiveCorrection: S.perspective ? { sourceCorners: S.perspective.points, outputWidth: S.perspective.w, outputHeight: S.perspective.h,
+        originalWidth: A.rawSrc.w, originalHeight: A.rawSrc.h, interpolation: 'bilinear', note: 'Projective rectification; pixels outside the selected quadrilateral are excluded. Original file retained.' } : null,
       crop: S.crop, figureWells: r ? [r[0] + 1, r[1] + 1] : null,
       display: A.displayInfo(),
       levels: Object.assign({ note: A.isColour(S) ? 'original-colour display; grayscale adjustments are not applied' : 'linear whole-image stretch; values are fractions of full scale' }, A.displayLevels(S)),
@@ -281,6 +283,7 @@
     const h = [];
     const A = G.App, R = A.renderState(false);
     const cut = S.lanes.map((l, i) => (l.hidden ? i + 1 : null)).filter(v => v != null);
+    if (S.perspective) h.push('The selected quadrilateral was rectified using a projective transform with bilinear interpolation; the original image is retained separately.');
     if (cut.length) h.push(`Lane${cut.length > 1 ? 's' : ''} ${cut.join(', ')} ${cut.length > 1 ? 'were' : 'was'} removed from the same gel; splice sites are indicated by ` + (S.style.spliceStyle === 'line' ? 'lines.' : 'white gaps.'));
     const lv = A.displayLevels(S);
     if (A.isColour(S)) h.push('Original colours are retained as 8-bit RGB; grayscale contrast, inversion and gamma settings were not applied.');

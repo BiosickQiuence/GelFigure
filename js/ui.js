@@ -880,7 +880,7 @@
     if (!st || !cv.clientWidth) return;
     const dpr = window.devicePixelRatio || 1, W = cv.width = cv.clientWidth * dpr, H = cv.height = 40 * dpr;
     const ctx = cv.getContext('2d');
-    const key = [st.rotation, st.crop.x, st.crop.y, st.crop.w, st.crop.h].join();
+    const key = [st.rotation, st.crop.x, st.crop.y, st.crop.w, st.crop.h, JSON.stringify(st.perspective || null)].join();
     if (!histCache || histCache.key !== key) {
       const c = App.cropImg(), bins = new Float32Array(200), step = Math.max(1, (c.data.length / 300000) | 0);
       for (let i = 0; i < c.data.length; i += step) bins[Math.min(199, (Math.sqrt(Math.max(0, c.data[i])) * 200) | 0)]++;

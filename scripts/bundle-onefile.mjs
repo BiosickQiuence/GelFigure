@@ -2,9 +2,10 @@
  * The app itself does not change: the bundled scripts keep their load order and page structure. */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { checkUpdates } from './check-updates.mjs';
 
-const root = path.resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
+const root = fileURLToPath(new URL('..', import.meta.url));
 const indexPath = path.join(root, 'index.html');
 const outPath = path.join(root, 'dist', 'GelFigure.html');
 checkUpdates(root);
@@ -25,7 +26,7 @@ html = html.replace(/<link rel="stylesheet" href="css\/[^"]+"\s*\/?>/g, `<style>
 
 // inline scripts in the same order as index.html
 // script order must match index.html exactly
-for (const f of ['storage', 'i18n', 'tiff', 'colour', 'ladder-cache', 'ladders', 'engine', 'name-text', 'render', 'export', 'pptx', 'demo', 'app', 'library', 'editor', 'ui', 'figedit', 'mobile', 'marker-ui', 'history-ui', 'support-config', 'feedback', 'export-support', 'releases', 'updates']) {
+for (const f of ['storage', 'i18n', 'tiff', 'colour', 'ladder-cache', 'ladders', 'engine', 'name-text', 'render', 'export', 'pptx', 'demo', 'app', 'library', 'editor', 'ui', 'figedit', 'mobile', 'perspective', 'marker-ui', 'history-ui', 'support-config', 'feedback', 'export-support', 'releases', 'updates']) {
   const code = read(path.join(root, 'js', f + '.js'));
   const tag = new RegExp(`<script src="js/${f}\\.js"><\\/script>`, 'g');
   html = html.replace(tag, `<script>/* js/${f}.js */\n${code}\n</script>`);

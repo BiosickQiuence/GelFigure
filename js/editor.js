@@ -58,6 +58,8 @@
     if (document.getElementById('showSat').checked && !App.isColour()) ctx.drawImage(App.getSatCanvas(), 0, 0);
     ctx.restore();
 
+    if (G.Perspective?.draw(ctx, toScr)) return;
+
     const c = S.crop, a = toScr(c.x, c.y), b = toScr(c.x + c.w, c.y + c.h);
     // dim outside the crop
     const ia = toScr(0, 0), ib = toScr(rot.w, rot.h);
@@ -336,7 +338,8 @@
     const d = drag; drag = null;
     if (!d || !d.moved || !App.S || d.state !== App.S) return;
     const S = App.S, h = d.h;
-    if (h.type === 'crop' || h.type === 'cropmove') S.crop = d.crop0;
+    if (h.type === 'perspective' && G.Perspective.points) G.Perspective.points[h.i] = d.orig;
+    else if (h.type === 'crop' || h.type === 'cropmove') S.crop = d.crop0;
     else if (h.type === 'lane' && d.grid0) App.restoreLaneGrid(d.grid0);
     else if (h.type === 'band' && d.band0) Object.assign(S.markers[h.m].bands[h.i], d.band0);
     else if (h.type === 'arrow' && S.arrows[h.i]) S.arrows[h.i].y = d.y0;
@@ -383,6 +386,13 @@
     }
     if (pinch) return;
     const p = toImg(sx, sy);
+    if (G.Perspective?.points) {
+      lastTap = null;
+      const i = spaceDown ? -1 : G.Perspective.hit(sx, sy, toScr);
+      drag = { state: App.S, h: { type: i < 0 ? 'pan' : 'perspective', i }, sx, sy, p0: p, moved: false, view0: Object.assign({}, view), touch,
+        orig: i < 0 ? null : Object.assign({}, G.Perspective.points[i]) };
+      e.preventDefault(); return;
+    }
     const markHit=App.mode==='marker-band'&&!spaceDown?bandHit(p,(touch?HIT_TOUCH:HIT)/view.s):null;
     if (App.mode === 'arrow' || App.mode === 'lane' || App.mode === 'marker-lane' || App.mode === 'note' || App.mode === 'note-arrow' || App.mode==='marker-band'&&!spaceDown&&(!markHit||G.MarkerUI.pendingSize())) {
       // a mouse click acts at once; a finger may still pan or pinch first, so it acts on a clean tap
@@ -441,6 +451,7 @@
     } else if (e.pointerType !== 'mouse' || e.target !== cv) return;
     const r = cv.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top;
     if (!drag) {
+      if (G.Perspective?.points) { cv.style.cursor = G.Perspective.hit(sx, sy, toScr) >= 0 ? 'move' : 'grab'; return; }
       if (App.mode === 'arrow') {
         const p = toImg(sx, sy), c = App.S.crop;
         const inC = p.y >= c.y && p.y <= c.y + c.h && p.x >= c.x && p.x <= c.x + c.w;
@@ -462,6 +473,7 @@
     if (!drag.moved) return;
     const S = App.S, h = drag.h, rot = App.rot;
     if (h.type === 'pan' || h.type === 'inside') { view.ox = drag.view0.ox + (sx - drag.sx); view.oy = drag.view0.oy + (sy - drag.sy); draw(); return; }
+    if (h.type === 'perspective') { if (G.Perspective.points) G.Perspective.points[h.i] = { x: E_clamp(p.x, 0, rot.w - 1), y: E_clamp(p.y, 0, rot.h - 1) }; draw(); return; }
     if (h.type === 'draw') { const c = S.crop; drag.cur = { x: E_clamp(p.x, c.x, c.x + c.w), y: E_clamp(p.y, c.y, c.y + c.h) }; draw(); return; }
     if (h.type === 'boxmove') { const o = drag.orig, q = S.boxes[h.i]; q.x = E_clamp(o.x + dx, 0, rot.w - o.w); q.y = E_clamp(o.y + dy, 0, rot.h - o.h); draw(); App.refresh(); return; }
     if (h.type === 'boxsize') { const o = drag.orig, q = S.boxes[h.i]; q.w = Math.max(4, Math.min(rot.w - o.x, o.w + dx)); q.h = Math.max(4, Math.min(rot.h - o.y, o.h + dy)); draw(); App.refresh(); return; }
@@ -505,6 +517,7 @@
     const d = drag; drag = null;
     const S = App.S;
     if(d.state!==S)return;
+    if (d.h.type === 'perspective' || G.Perspective?.points) { draw(); return; }
     if (d.h.type === 'draw') {
       const q = d.cur || d.p0, x0 = Math.min(d.p0.x, q.x), x1 = Math.max(d.p0.x, q.x), y0 = Math.min(d.p0.y, q.y), y1 = Math.max(d.p0.y, q.y);
       // Esc during the drag cancelled the tool: draw nothing
@@ -548,7 +561,7 @@
 
   cv.addEventListener('dblclick', (e) => {
     // touch double taps are handled above; some browsers also synthesise a dblclick from them
-    if (!App.S || lastPtr === 'touch' || App.mode) return;
+    if (!App.S || lastPtr === 'touch' || App.mode || G.Perspective?.points) return;
     const r=cv.getBoundingClientRect(),sx=e.clientX-r.left,sy=e.clientY-r.top,h=hitTest(sx,sy,e.shiftKey),mi=markerAt(sx,sy,h);
     if(mi>=0){e.preventDefault();editLaneMarker(mi,sx,sy,h);}
   });
@@ -577,7 +590,7 @@
   // deleting / nudging only when the image area itself has focus — never while typing anywhere.
   // Backspace counts too: it is the key labelled "delete" on a Mac keyboard.
   box.addEventListener('keydown', (e) => {
-    if (!App.S || e.target !== box) return;
+    if (!App.S || e.target !== box || G.Perspective?.points) return;
     // a selection can point past the end after undo or a reload
     if (!App.S.lanes[App.selLane]) App.selLane = -1;
     if (!App.S.arrows[App.selArrow]) App.selArrow = -1;
