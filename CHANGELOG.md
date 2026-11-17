@@ -4,6 +4,8 @@
 
 ## [1.0.0] - 2026-11-17
 
+- 修正窄桌面窗口顶栏溢出，保留设置图标和导出入口。 / Keep Settings and export accessible without header overflow in narrow desktop windows.
+
 GelFigure v1.0.0 — AI-assisted gel review and a beginner-friendly bilingual release.
 
 ### 中文摘要

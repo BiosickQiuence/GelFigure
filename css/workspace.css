@@ -97,3 +97,9 @@
 .ai-disclosure summary { cursor:pointer; }
 .ai-task .ai-body .ai-result>button[data-apply] { top:66px;bottom:auto;display:block;width:100%;margin:0 0 12px;box-shadow:0 3px 8px #1e293b15; }
 @media(max-width:600px){#aiResults.has-ai .ai-result:last-child { order:-1; }}
+
+/* Leave room for export controls in narrow desktop windows across system fonts. */
+@media(max-width:1100px){
+  .settings-entry .d-only { display:none; }
+  .topbar-right .settings-entry { width:32px;padding:0;justify-content:center; }
+}
