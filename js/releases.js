@@ -1,6 +1,15 @@
 /* Short bilingual release summaries, newest first. Keep the first version equal to App.VERSION.
  * Detailed history lives in CHANGELOG.md; this small local catalogue also works in offline HTML. */
 window.GelFigureReleases = Object.freeze([
+  {version:'1.0.0',date:'2026-11-17',zh:[
+    '发布 AI 复核工作台、原色与胶类型规则、统一 Marker 型号选择及预览适配修正。',
+    '提供中英双语 API 入门教程；移除网页更新历史和原赞助/反馈转发入口。',
+    '保留本地编辑、项目恢复、四点校正和多格式导出。'
+  ],en:[
+    'AI review workspace, original appearance, colour-based gel typing, shared Marker selection and preview refitting.',
+    'Beginner bilingual API tutorials; remove in-app release-history and legacy sponsorship/feedback forwarding.',
+    'Local editing, project restoration, perspective correction and multi-format exports remain available.'
+  ]},
   {version:'0.6.15',date:'2026-11-11',zh:[
     '改进桌面 Safari 的编辑高亮和控件显示，统一逐项字重菜单；支持直接粘贴胶图。',
     'Marker 面板可选逐条单位；新增可拖动的多行文本框、引导箭头和侧边文字自由旋转。',

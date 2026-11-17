@@ -90,6 +90,10 @@
     return JSON.stringify({
       tool: 'GelFigure ' + A.VERSION, source: S.file.name, sha256: S.file.sha256,
       figureFont: G.Render.fontName(S.style.fontFamily),
+      dimensions: { decodedSource: {width:A.rawSrc.w,height:A.rawSrc.h}, analysis: {width:A.ensureRot().w,height:A.ensureRot().h}, crop: {width:S.crop.w,height:S.crop.h}, figure: {widthPt:A.buildFigure(false).w,heightPt:A.buildFigure(false).h} },
+      currentSources: {lanes:S.currentSources?.lanes||'legacy', markers:S.markers.map(m=>({well:m.lane+1,method:m.recognition?.method||'local'})), visibleLanes:A.figureLanes().filter(i=>!S.lanes[i].hidden).length},
+      layoutHistory: S.layoutHistory || [],
+      lastMarkerAdoption: S.markerRecognition || null,
       rotationDeg: S.rotation, orientation: S.orient || null, display: A.displayInfo(), levels: A.displayLevels(S), effectiveGelDpi: Math.round(A.effectiveDpi()),
       sensorSaturatedFrac: A.isColour(S) ? null : +k.sensorFrac.toFixed(5), levelClippedFrac: +A.bandClipFrac().toFixed(5),
       splicedLanes: S.lanes.map((l, i) => (l.hidden ? i + 1 : null)).filter(v => v != null),
@@ -233,19 +237,24 @@
     const A = G.App, k = A.clipStats(), r = A.laneRange();
     const bounds = G.Render.laneBounds(S.lanes, A.src.w);
     return {
-      tool: 'GelFigure', version: A.VERSION, exportedAt: new Date().toISOString(),
+      tool: 'GelFigure', version: A.VERSION, build: A.BUILD, exportedAt: new Date().toISOString(),
       environment: { userAgent: navigator.userAgent, figureFont: G.Render.fontName(S.style.fontFamily), fontFallbacks: G.Render.fontStack(S.style.fontFamily), fontsEmbedded: false },
-      source: { file: S.file.name, sha256: S.file.sha256, bytes: S.file.size, width: A.src.w, height: A.src.h, bitDepth: S.file.bits, dpi: S.file.dpi || null },
+      source: { file: S.file.name, sha256: S.file.sha256, bytes: S.file.size, width: A.rawSrc.w, height: A.rawSrc.h, bitDepth: S.file.bits, dpi: S.file.dpi || null },
+      dimensions: { decodedSource: {width:A.rawSrc.w,height:A.rawSrc.h}, analysis: {width:A.ensureRot().w,height:A.ensureRot().h}, crop: {width:S.crop.w,height:S.crop.h}, figure: {widthPt:A.buildFigure(false).w,heightPt:A.buildFigure(false).h} },
+      currentSources: {lanes:S.currentSources?.lanes||'legacy', markers:S.markers.map(m=>({well:m.lane+1,method:m.recognition?.method||'local'})), visibleLanes:A.figureLanes().filter(i=>!S.lanes[i].hidden).length},
+      layoutHistory: S.layoutHistory || [],
+      lastMarkerAdoption: S.markerRecognition || null,
       rotationDeg: S.rotation, autoRotationDeg: A.autoRotation, orientation: S.orient || null,
+      aiLayoutRecognition: S.gelAIBeta || undefined,
       perspectiveCorrection: S.perspective ? { sourceCorners: S.perspective.points, outputWidth: S.perspective.w, outputHeight: S.perspective.h,
         originalWidth: A.rawSrc.w, originalHeight: A.rawSrc.h, interpolation: 'bilinear', note: 'Projective rectification; pixels outside the selected quadrilateral are excluded. Original file retained.' } : null,
       crop: S.crop, figureWells: r ? [r[0] + 1, r[1] + 1] : null,
       display: A.displayInfo(),
-      levels: Object.assign({ note: A.isColour(S) ? 'original-colour display; grayscale adjustments are not applied' : 'linear whole-image stretch; values are fractions of full scale' }, A.displayLevels(S)),
+      levels: Object.assign({ note: A.isOriginal(S) ? 'original source appearance; grayscale adjustments are not applied' : 'linear whole-image stretch; values are fractions of full scale' }, A.displayLevels(S)),
       savedGrayscaleLevels: Object.assign({}, S.levels),
       clipping: {
         basis: 'grayscale analysis image; not an assessment of individual RGB channels',
-        grayscaleAdjustmentsApplied: !A.isColour(S),
+        grayscaleAdjustmentsApplied: !A.isOriginal(S),
         sensorSaturatedPixels: k.sensor, sensorSaturatedFrac: k.sensorFrac,
         levelClippedHighPixels: k.high, levelClippedLowPixels: k.low,
         levelClippedOnBandSideFrac: A.bandClipFrac(), pixelsInCrop: k.n
@@ -253,9 +262,9 @@
       resolution: { gelWidthMm: A.gelWidthMm(), gelPixelsAcross: A.visibleWidthPx(), effectiveGelDpi: Math.round(A.effectiveDpi()), exportDpi: S.style.dpi },
       lanes: S.lanes.map((l, i) => ({ well: i + 1, x: Math.round(l.x * 10) / 10, name: l.name,nameRuns:G.NameText.runs(l),nameStyle:G.NameText.style(l.nameStyle),removedFromFigure: !!l.hidden,
         removal: l.hidden ? { reason: l.hiddenReason || 'manual', xFrom: Math.round(bounds[i][0]), xTo: Math.round(bounds[i][1]) } : undefined })),
-      gel: { type: A.gelKind(), sizeUnit: A.sizeUnit(), detection: A.gelDetection ? { kind: A.gelDetection.kind, confidence: Math.round((A.gelDetection.confidence || 0) * 100) / 100, manual: !!A.gelDetection.manual, reasons: (A.gelDetection.reasons || []).map(r => A.gelReasonText(r)).filter(Boolean) } : null },
+      gel: { type: A.gelKind(), sizeUnit: A.sizeUnit(), detection: A.gelDetection ? { kind: A.gelDetection.kind, ruleAgreement: Math.round((A.gelDetection.confidence || 0) * 100) / 100, note:'Heuristic agreement score, not measured accuracy or probability', manual: !!A.gelDetection.manual, reasons: (A.gelDetection.reasons || []).map(r => A.gelReasonText(r)).filter(Boolean) } : null },
       annotationColours: { default:'black; region boxes use white on a dark gel', red:'#d32f2f' },
-      markers: S.markers.map(m => ({ well: m.lane + 1, ladder: (G.Ladders.get(m.ladderId) || {}).name, unit: m.unit, color:m.color==='red'?'red':'default', fitScore: m.score, bands: m.bands.map(b => ({ bp: b.bp, y: Math.round(b.y * 10) / 10, autoMatched: b.matched, manual: b.manual, labelled: b.show, color:b.color==='red'?'red':'inherit' })) })),
+      markers: S.markers.map(m => ({ well: m.lane + 1, ladder: (G.Ladders.get(m.ladderId) || {}).name || null, recognition:m.recognition || undefined, sizeSelection:m.orderPairing || undefined, unassignedBands:m.unassignedBands || undefined, unit: m.unit, color:m.color==='red'?'red':'default', fitScore: m.score, bands: m.bands.map(b => ({ bp: b.bp, y: Math.round(b.y * 10) / 10, autoMatched: b.matched, manual: b.manual, labelled: b.show, color:b.color==='red'?'red':'inherit' })) })),
       arrows: S.arrows.map(a => {
         const e = A.estimateInfo(a.y);
         const isBp = A.sizeUnit() === 'bp';
@@ -283,6 +292,7 @@
     const h = [];
     const A = G.App, R = A.renderState(false);
     const cut = S.lanes.map((l, i) => (l.hidden ? i + 1 : null)).filter(v => v != null);
+    if(S.gelAIBeta)h.push('AI-assisted beta layout selected a band-containing lane region. Current lane visibility and splice locations are disclosed below.');
     if (S.perspective) h.push('The selected quadrilateral was rectified using a projective transform with bilinear interpolation; the original image is retained separately.');
     if (cut.length) h.push(`Lane${cut.length > 1 ? 's' : ''} ${cut.join(', ')} ${cut.length > 1 ? 'were' : 'was'} removed from the same gel; splice sites are indicated by ` + (S.style.spliceStyle === 'line' ? 'lines.' : 'white gaps.'));
     const lv = A.displayLevels(S);
@@ -310,5 +320,36 @@
     return h;
   }
 
-  G.Export = { download, saveAs, deliver: null, exportPNG, exportTIFF, exportSVG, exportUncropped, exportOriginal, processingLog, legendHints, svgToCanvas, encodeTiffGray, encodeTiffRGB, pngDecorate };
+  async function reviewPackage(S,format='png') {
+    if (!['png','svg','tiff','pptx'].includes(format)) throw new Error('Unsupported review figure format');
+    const A=G.App,snapshot=A.snapshot(),source=A.srcBuffer,project=await A.projectBlob(),figure=A.buildFigure(false),log=processingLog(S),entries=[];
+    const unchanged=()=>{if(A.S!==S||A.srcBuffer!==source||A.snapshot()!==snapshot)throw new Error(G.L('打包期间项目已变化，请重新导出','Project changed during packaging; export again'));};
+    unchanged();
+    let final;
+    if(format==='svg')final=new Blob([figure.svg],{type:'image/svg+xml'});
+    else if(format==='pptx')final=await G.PPTX.build();
+    else {
+      const canvas=await svgToCanvas(figure.svg,figure.w,figure.h,S.style.dpi);
+      if(format==='png'){
+        const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+        if(!blob)throw new Error(G.L('成图编码失败','Figure encoding failed'));
+        final=await pngDecorate(blob,S.style.dpi,{Software:'GelFigure '+A.VERSION,Description:summaryText(S)});
+      }else{
+        const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data,rgb=new Uint8Array(canvas.width*canvas.height*3);
+        for(let i=0,j=0;i<pixels.length;i+=4){rgb[j++]=pixels[i];rgb[j++]=pixels[i+1];rgb[j++]=pixels[i+2];}
+        final=new Blob([encodeTiffRGB(rgb,canvas.width,canvas.height,S.style.dpi,summaryText(S))]);
+      }
+    }
+    unchanged();
+    const ext=S.file.name.match(/\.[a-z0-9]+$/i)?.[0]||'.bin',finalName='figure.'+(format==='tiff'?'tif':format);
+    entries.push(['original'+ext,new Uint8Array(source)],['project.gelfig',new Uint8Array(await project.arrayBuffer())],[finalName,new Uint8Array(await final.arrayBuffer())],['processing-log.json',JSON.stringify(log,null,2)],['legend-draft.txt',legendHints(S).join('\n')+'\n\nVerify sample identities and all disclosures before submission.\n']);
+    const files=[];
+    for(const [name,data] of entries){const bytes=typeof data==='string'?new TextEncoder().encode(data):data;files.push({name,bytes:bytes.byteLength,sha256:await A.sha256(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength))});}
+    unchanged();
+    const manifest={schema:1,tool:'GelFigure',version:A.VERSION,build:A.BUILD,createdAt:new Date().toISOString(),sourceSha256:S.file.sha256,files,dimensions:log.dimensions,resolution:log.resolution,crop:log.crop,laneMapping:log.lanes,disclosures:log.legendHints,note:'Local review package; not uploaded or certified by a journal. Raw image and project may contain private experimental data.'};
+    entries.push(['manifest.json',JSON.stringify(manifest,null,2)]);
+    return G.PPTX.zip(entries,'application/zip');
+  }
+
+  G.Export = { reviewPackage, download, saveAs, deliver: null, exportPNG, exportTIFF, exportSVG, exportUncropped, exportOriginal, processingLog, legendHints, svgToCanvas, encodeTiffGray, encodeTiffRGB, pngDecorate };
 })(window);

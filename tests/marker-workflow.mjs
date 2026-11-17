@@ -162,7 +162,7 @@ export async function markerWorkflowChecks(browser,base,root,engine){
    });assert(r);
   });
   await check('protein reference contains protein ladders, and editors never appear in exported SVG',async()=>{
-   await p.evaluate(async()=>{await App.load({name:'synthetic-protein.tif',buffer:Demo.encodeTiff16(Demo.makeProteinGel())});MarkerUI.open(0);});
+   await p.evaluate(async()=>{await App.load({name:'synthetic-protein.tif',buffer:Demo.encodeTiff16(Demo.makeProteinGel())});App.setGelType('protein');MarkerUI.open(0);});
    assert(await p.locator('#markerReferenceModel option').evaluateAll(os=>os.every(o=>Ladders.kindOf(Ladders.get(o.value))==='protein')));
    assert((await p.locator('.marker-ref-lane').textContent()).includes('kDa'));
    assert(await p.evaluate(()=>{const svg=App.buildFigure(false).svg;return !svg.includes('data-edit=')&&!svg.includes('markerReference')&&!svg.includes('ladder-reference');}));await p.locator('#markerReferenceClose').click();

@@ -67,9 +67,7 @@
         card.querySelector('.open-project').onclick = () => action(async () => {
           if (id === App.projectId) { close(); return; }
           if (!await UI.archiveCurrent()) return;
-          App.busy(true, L('正在恢复历史项目…', 'Restoring recent project…'));
-          try { await App.restoreHistory(id); close(); UI.toast(L('已恢复原图和全部调整', 'Restored original images and all edits')); }
-          finally { App.busy(false); }
+          if(await App.restoreHistory(id)!==false){close();UI.toast(L('已恢复原图和全部调整', 'Restored original images and all edits'));}
         });
         card.querySelector('.rename-project').onclick = () => rename(card, id);
         card.querySelector('.delete-project').onclick = () => action(async () => {

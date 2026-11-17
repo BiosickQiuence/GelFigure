@@ -101,7 +101,7 @@
     const buffers = records.map(r => r.buffer);
     const sources = records.map(({ buffer, ...rec }) => clone(rec));
     const meta = { projectId, projectName: App.projectName || App.S.file.name, name: App.S.file.name,
-      sha256: App.S.file.sha256, state, initial: App.initial, autoRotation: App.autoRotation,
+      sha256: App.S.file.sha256, state, initial: App.projectInitial(), autoRotation: App.autoRotation,
       savedAt: Date.now(), app: 'GelFigure ' + App.VERSION,
       ladders: clone(G.Ladders.defsFor(App.S.markers.map(m => m.ladderId))), sources,
       expIdx: App.exposures ? App.expIdx : null,
@@ -137,6 +137,9 @@
     catch (e) { return null; }
   };
   App.restoreHistory = async projectId => {
+    const generation=++App.sourceGeneration;
+    App.busy(true,L('正在恢复历史项目…','Restoring recent project…'));
+    try {
     const saved = await enqueue(async () => {
       await withMigration(() => {});
       let meta, buffers;
@@ -150,6 +153,7 @@
       });
       return { meta, buffers };
     });
+    if(generation!==App.sourceGeneration)return false;
     const { meta, buffers } = saved;
     if (!meta) throw new Error(L('找不到这个历史项目', 'Project not found in local history'));
     if (buffers.some(b => !b)) throw new Error(L('缓存图片缺失，请打开保存的项目文件', 'A cached image is missing; open the saved project file'));
@@ -162,18 +166,26 @@
     const state = JSON.parse(meta.state);
     // Decode and validate before replacing the working session. Restoring never re-runs detection.
     const input = await App.readInput({ name: rec.name, buffer: raw });
+    if(generation!==App.sourceGeneration)return false;
     if (input.sha256 !== meta.sha256) throw new Error(L('缓存原图校验失败', 'Cached image checksum mismatch'));
     (meta.ladders || []).forEach(d => G.Ladders.importDef(d));
     App.newCachedProject(meta.projectId, meta.projectName);
     const exposures = meta.expIdx == null ? null : meta.sources.map((s, i) => ({ ...s, buffer: buffers[i] }));
-    App.restoreSnapshot(input, state, meta.initial, meta.autoRotation, exposures, exposures ? at : null);
+    App.restoreSnapshot(input, state, meta.initial, meta.autoRotation, exposures, exposures ? at : null,generation);
     App.cachedSnapshot = App.snapshot();
-    await App.saveDraft();
+    await App.saveDraft();return generation===App.sourceGeneration;
+    }catch(error){if(generation!==App.sourceGeneration)return false;throw error;}
+    finally{if(generation===App.sourceGeneration)App.busy(false);}
   };
   App.restoreDraft = async () => {
-    const meta = await App.peekDraft();
-    if (!meta) throw new Error(L('没有可恢复的项目', 'No project to restore'));
-    return App.restoreHistory(meta.projectId || 'legacy_' + meta.savedAt);
+    const generation=++App.sourceGeneration;
+    App.busy(true,L('正在恢复历史项目…','Restoring recent project…'));
+    try{
+      const meta = await App.peekDraft();
+      if(generation!==App.sourceGeneration)return false;
+      if (!meta) throw new Error(L('没有可恢复的项目', 'No project to restore'));
+      return await App.restoreHistory(meta.projectId || 'legacy_' + meta.savedAt);
+    }finally{if(generation===App.sourceGeneration)App.busy(false);}
   };
   App.renameHistory = (projectId, name) => enqueue(async () => {
     const cleaned = name.trim().slice(0, 160); if (!cleaned) return;

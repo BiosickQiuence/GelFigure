@@ -145,6 +145,12 @@
           dv.setUint16(r + i * 2, (a + p) & 0xffff, le);
         }
       }
+    } else if (bits === 32) {
+      const dv = new DataView(view.buffer, view.byteOffset, view.byteLength);
+      for (let y = 0; y < h; y++) for (let i = spp; i < w * spp; i++) {
+        const at = (y * w * spp + i) * 4;
+        dv.setUint32(at, (dv.getUint32(at, le) + dv.getUint32(at - spp * 4, le)) >>> 0, le);
+      }
     }
   }
 
@@ -206,6 +212,8 @@
     const planar = (t[284] || [1])[0];
     const predictor = (t[317] || [1])[0];
     const fmt = (t[339] || [1])[0]; // 1 uint, 2 int, 3 float
+    if (![1, 2].includes(predictor) || (predictor === 2 && (![8, 16, 32].includes(bits) || ![1, 2].includes(fmt))))
+      throw new Error(G.L('不支持的 TIFF Predictor / 位深 / 样本格式组合，请导出为无 Predictor 的 TIFF', 'Unsupported TIFF Predictor / bit depth / sample format combination; export TIFF without a predictor'));
     // 1/2/4-bit data (two-colour or 16-colour palettes, mostly) is packed several samples per byte
     const packed = bits < 8;
     if (![1, 2, 4, 8, 16, 32].includes(bits) || (packed && spp !== 1)) throw new Error(G.L('不支持的位深: ', 'Unsupported bit depth: ') + bits + ' bit');

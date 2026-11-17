@@ -24,7 +24,7 @@
     for (let i = 0; i < 256; i++) { let c = i; for (let k = 0; k < 8; k++) c = (c >>> 1) ^ ((c & 1) ? 0xedb88320 : 0); t[i] = c >>> 0; }
     return t;
   })();
-  function zip(entries) {
+  function zip(entries, mime = MIME) {
     const local = [], central = []; let offset = 0, cdSize = 0;
     entries.forEach(([name, data]) => {
       const n = enc.encode(name), b = typeof data === 'string' ? enc.encode(data) : data;
@@ -42,7 +42,7 @@
     });
     const end = new Uint8Array(22), v = new DataView(end.buffer);
     v.setUint32(0, 0x06054b50, true); v.setUint16(8, entries.length, true); v.setUint16(10, entries.length, true); v.setUint32(12, cdSize, true); v.setUint32(16, offset, true);
-    return new Blob([...local, ...central, end], { type: MIME });
+    return new Blob([...local, ...central, end], { type: mime });
   }
   function rels(items) {
     return XML + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + items.map(([id, type, target]) => `<Relationship Id="${id}" Type="${type.startsWith('http') ? type : REL + type}" Target="${target}"/>`).join('') + '</Relationships>';
@@ -233,5 +233,5 @@
     return packageFile(fig, objects, new Uint8Array(await clean.arrayBuffer()));
   }
   async function exportFile(name) { G.Export.download(await build(), name); }
-  G.PPTX = { build, exportFile, MIME };
+  G.PPTX = { build, exportFile, zip, MIME };
 })(window);

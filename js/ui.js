@@ -3,6 +3,7 @@
   'use strict';
   const App = G.App, E = G.Engine, L = G.L;
   const $ = id => document.getElementById(id);
+  document.querySelectorAll('[data-app-version]').forEach(el=>{el.textContent='v'+App.VERSION;});
   const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const toSlider = v => Math.round(Math.sqrt(Math.max(0, Math.min(1, v))) * 1000);
   const fromSlider = s => (s / 1000) ** 2;
@@ -77,7 +78,7 @@
     if (!await archiveCurrent()) return;
     // phones: very large camera photos are scaled to what a phone browser can draw (mobile.js)
     if (G.Mobile && G.Mobile.fitPhotos) files = await G.Mobile.fitPhotos(files);
-    await App.load(files.length > 1 ? files : files[0]);
+    if(await App.load(files.length > 1 ? files : files[0])===false)return;
     if (!S()) return;
     const r = range(), n = r ? r[1] - r[0] + 1 : 0, nw = S().lanes.length, nm = S().markers.length;
     let msg = L(`识别完成：${nw} 个加样孔，出图 ${n} 条泳道` + (nm ? `，${nm} 个 Marker` : '，未找到 Marker'),
@@ -93,8 +94,8 @@
   }
   async function openProject(f) {
     if (!await archiveCurrent()) return;
-    try { App.busy(true, L('正在打开项目…', 'Opening project…')); await App.openProject(await f.arrayBuffer()); toast(L('项目已打开', 'Project opened')); }
-    catch (e) { alert(L('打开项目失败：', 'Could not open the project: ') + e.message); } finally { App.busy(false); }
+    try { if(await App.openProject(f)===false)return; toast(L('项目已打开', 'Project opened')); }
+    catch (e) { alert(L('打开项目失败：', 'Could not open the project: ') + e.message); }
   }
   App.onDropFile = f => load([f]);
   function bindFile(id) { $(id).addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) load(fs); }); }
@@ -171,6 +172,7 @@
     }).join('');
     box.querySelectorAll('.expo-item').forEach(el => el.onclick = async () => {
       const r = await App.switchExposure(+el.dataset.k);
+      if(!r.ok)return;
       if (r.kept) toast(L(`已切换到 ${S().file.name}，标注全部保留`, `Switched to ${S().file.name}; all annotations kept`));
       else if (r.namesCarried) toast(L('这张尺寸不同，已重新识别；泳道名按顺序沿用，请核对', 'This image has a different size and was re-detected; lane names were carried over in order — please check'));
       else if (r.kept === false) toast(L('这张的构图与之前不同，已重新识别，标注未沿用', 'This image is framed differently and was re-detected; annotations were not carried over'), 4200);
@@ -223,11 +225,12 @@
   function preflight() {
     return new Promise(resolve => {
       if (App.prefs().preflight === false) return resolve(true);
-      const items = App.preflight(), serious = items.filter(i => i.level === 'block' || i.level === 'warn');
+      const items = App.preflight(), serious = items.filter(i => i.level === 'block' || i.level === 'warn' || i.level === 'info');
       if (!serious.length) return resolve(true);
       const lab = { block: L('需处理', 'Fix'), warn: L('注意', 'Warning'), info: L('提示', 'Note') };
       const box = $('pfList');
-      box.innerHTML = items.map((it, k) => `<div class="pf-item"><span class="lv ${it.level}">${lab[it.level]}</span><span class="tx">${esc(it.text)}</span>${it.fix ? `<button class="btn sm" data-fix="${k}">${esc(it.fix.label)}</button>` : ''}</div>`).join('');
+      const figure=App.buildFigure(false);
+      box.innerHTML = `<p class="export-dimensions">${L(`文件 ${S().style.dpi} dpi · 胶图有效 ${Math.round(App.effectiveDpi())} dpi · 胶图宽 ${App.gelWidthMm().toFixed(1)} mm · 成图 ${(figure.w/G.Render.MM).toFixed(1)} × ${(figure.h/G.Render.MM).toFixed(1)} mm`,`File ${S().style.dpi} dpi · effective gel ${Math.round(App.effectiveDpi())} dpi · gel width ${App.gelWidthMm().toFixed(1)} mm · figure ${(figure.w/G.Render.MM).toFixed(1)} × ${(figure.h/G.Render.MM).toFixed(1)} mm`)}</p>` + items.map((it, k) => `<div class="pf-item"><span class="lv ${it.level}">${lab[it.level]}</span><span class="tx">${esc(it.text)}</span>${it.fix ? `<button class="btn sm" data-fix="${k}">${esc(it.fix.label)}</button>` : ''}</div>`).join('');
       box.querySelectorAll('[data-fix]').forEach(b => b.onclick = () => { items[+b.dataset.fix].fix.run(); App.commit(); b.disabled = true; b.textContent = L('已修正', 'Fixed'); });
       $('pfOff').checked = false;
       $('preflightDlg').classList.remove('hidden');
@@ -244,7 +247,7 @@
       const f = App.buildFigure(false), dpi = S().style.dpi, eff = Math.round(App.effectiveDpi()), fmt = kind === 'tiff' ? 'TIFF' : 'PNG';
       if (kind === 'tiff') await G.Export.exportTIFF(f.svg, f.w, f.h, dpi, `${baseName()}_figure_${dpi}dpi.tif`, S());
       else await G.Export.exportPNG(f.svg, f.w, f.h, dpi, `${baseName()}_figure_${dpi}dpi.png`, S());
-      toast(L(`已导出 ${dpi} dpi ${fmt}`, `Exported ${dpi} dpi ${fmt}`) + (eff < dpi ? L(`（胶图本身 ${eff} dpi）`, ` (the gel itself is ${eff} dpi)`) : ''));
+      toast(L(`已导出 ${dpi} dpi ${fmt}`, `Exported ${dpi} dpi ${fmt}`) + (eff < dpi ? L(`（文件 ${dpi} dpi；胶图有效 ${eff} dpi）`, ` (file ${dpi} dpi; effective gel ${eff} dpi)`) : ''));
       G.dispatchEvent(new Event('gelfigure-figure-exported'));
     } catch (e) { alert(e.message); } finally { App.busy(false); }
   }
@@ -264,6 +267,21 @@
   $('btnOriginal').onclick = () => { if (needImage()) return; G.Export.exportOriginal(S(), App.srcBuffer); toast(L('已导出原始文件', 'Exported the original file') + ' (SHA-256 ' + S().file.sha256.slice(0, 12) + '…)'); };
   $('btnLog').onclick = () => { if (needImage()) return; G.Export.download(new Blob([JSON.stringify(G.Export.processingLog(S()), null, 2)], { type: 'application/json' }), baseName() + '_processing_log.json'); };
 
+  $('btnReviewPackage').onclick=async()=>{
+    if(needImage()||!(await preflight()))return;
+    App.busy(true,L('正在打包审阅材料…','Packaging review materials…'));
+    try{const blob=await G.Export.reviewPackage(S(),$('reviewFormat').value);G.Export.download(blob,baseName()+'_review.zip');toast(L('已导出审阅包，含原图、项目、成图和处理记录','Review package exported: original, project, figure and processing records'));}
+    catch(e){alert(e.message);}finally{App.busy(false);}
+  };
+  $('btnSaveAppearance').onclick=()=>{
+    if(needImage())return;const name=$('stylePresetName').value.trim()||L('实验室版式','Lab style');
+    G.Export.download(new Blob([JSON.stringify(App.styleTemplate(name),null,2)],{type:'application/json'}),baseName()+'_appearance.json');
+  };
+  $('btnLabDefault').onclick=()=>{
+    if(needImage())return;const t=App.styleTemplate($('stylePresetName').value.trim());App.setPref('stylePreset',t);toast(L('已设为新图像的默认版式','Set as the default appearance for new images'));
+  };
+  $('btnClearLabDefault').onclick=()=>{App.setPref('stylePreset',null);toast(L('已取消指定的实验室默认版式','Lab appearance default cleared'));};
+
   /* ---------- project / style files ---------- */
   $('btnSaveProj').onclick = async () => {
     if (needImage()) return;
@@ -276,7 +294,13 @@
     const f = e.target.files[0]; e.target.value = '';
     if (!f || needImage()) return;
     try {
-      const t = JSON.parse(await f.text()), chk = App.checkTemplate(t), a = chk.templateLanes, b = chk.figureLanes;
+      const t = JSON.parse(await f.text());
+      if(t.gelfigStyle===1){
+        const st=App.checkStyleTemplate(t),summary=`${t.name||'Style'}\n${G.Render.fontName(st.fontFamily)} · ${st.fontPt} pt · ${st.lineWidthPt} pt · ${st.autoWidth?'auto':st.gelWidthMm+' mm'} · ${st.dpi} dpi`;
+        if(confirm(summary+'\n'+L('仅套用版式、显示方式和单位形式，保留样本名及标注。继续？','Apply appearance, display mode and unit style, keeping sample names and annotations?')))App.applyStyleTemplate(t);
+        return;
+      }
+      const chk = App.checkTemplate(t), a = chk.templateLanes, b = chk.figureLanes;
       if (a && a !== b && !confirm(L(
         `样式有 ${a} 条泳道，当前出图范围是 ${b} 条。\n套用后会从当前第一条泳道起按顺序对应，并把出图范围调整为 ${a} 条。继续吗？`,
         `The style has ${a} lanes; the figure currently shows ${b}.\nNames will be applied in order from the first lane and the figure range set to ${a} lanes. Continue?`))) return;
@@ -286,9 +310,9 @@
   });
   $('btnResetAll').onclick = () => {
     if (needImage()) return;
-    if (!confirm(L('重置整图：旋转、裁切、泳道、Marker、名称、分组、箭头、版式全部回到刚导入时的样子。\n此操作会清空撤销记录。继续吗？',
-      'Reset everything: rotation, crop, lanes, markers, names, groups, arrows and layout go back to how they were right after import.\nThis clears the undo history. Continue?'))) return;
-    App.resetAll(); G.Editor.fitCrop(); toast(L('已回到导入时的状态', 'Back to the state after import'));
+    if (!confirm(L('重置整图：回到导入后的结果；在复核工作区采用结果后，回到最近一次采用的结果。\n此操作会清空撤销记录。继续吗？',
+      'Reset edits to the post-import result, or the most recently adopted review result.\nThis clears the undo history. Continue?'))) return;
+    App.resetAll(); G.Editor.fitCrop(); toast(L('已恢复导入／采用时的结果', 'Restored the import / adopted result'));
   };
 
   /* ---------- 1 image ---------- */
@@ -514,7 +538,7 @@
     try{
       await G.Ladders.ready;const lad=G.Ladders.saveCustom(name,parsed.sizes,kind);
       if(!G.Ladders.isFavorite(lad.id))G.Ladders.toggleFavorite(lad.id);
-      if(state&&state===S()&&state.markers.length){const m=state.markers[0];m.ladderId=lad.id;m.bands=[];m.ladderLocked=true;App.alignMarker(0);App.commit();}
+      if(state&&state===S()&&state.markers.length){const m=state.markers[0];if(m.bandMode==='fixed')G.MarkerAI.editMarker(0,lad.id);else{m.ladderId=lad.id;m.bands=[];m.ladderLocked=true;App.alignMarker(0);App.commit();}}
       renderFavs();const saved=await G.Ladders.flush();
       $('customSizes').value='';$('customParse').textContent='';
       toast(saved?L('Marker 已存入本机库并加入常用，下次打开仍可选择','Marker saved locally and added to favourites; available next time'):
@@ -608,8 +632,9 @@
           <button class="star${G.Ladders.isFavorite(m.ladderId) ? '' : ' off'}" data-f="fav" title="${L('把这个型号设为/取消常用（常用型号在自动识别时优先）', 'Add this ladder to / remove it from favourites (preferred during detection)')}">★</button>
           <button class="x" data-f="del" title="${L('不作为 Marker', 'Not a marker')}">×</button></div>
         <label class="marker-lane-select">${L('所在泳道', 'Marker lane')}<select data-f="lane">${st.lanes.map((l,i) => laneOpt(i,m.lane)).join('')}</select></label>
-        <select data-f="ladder" aria-label="${L('Marker 型号', 'Ladder model')}">${ladderOptions(all, m.ladderId)}</select>
-        <div class="marker-actions"><button class="btn sm primary" data-f="align">${L('识别此泳道', 'Detect bands here')}</button><button class="btn sm" data-f="guide">${L('校准 / 图例', 'Calibrate / reference')}</button><button class="btn sm ghost" data-f="labels">${L('显示 / 字号', 'Labels / font')}</button><button class="btn sm ghost" data-f="move">${L('换泳道', 'Change lane')}</button></div>
+        <select data-f="ladder" aria-label="${L('Marker 型号', 'Ladder model')}">${m.ladderId?'':`<option value="">${L('未确定','Undetermined')}</option>`}${ladderOptions(all, m.ladderId)}</select>
+        ${m.recognition?`<p class="hint">${L('采用来源','Applied source')}: ${m.recognition.method==='ai'?'AI':L('本地算法','Local algorithm')}${m.recognition.edited?L(' · 已人工编辑',' · manually edited'):''}${m.bandMode==='fixed'?L(' · 固定坐标，不吸附本地峰值',' · fixed coordinates; no local peak snapping'):''}${m.unassignedBands?.length?L(` · ${m.unassignedBands.length} 项未确定`,` · ${m.unassignedBands.length} undetermined`):''}${m.orderPairing?.mismatch?L(` · 顺序配对数量不一致（${m.orderPairing.detectedCount}/${m.orderPairing.selectedCount}）`,` · order-pair counts differ (${m.orderPairing.detectedCount}/${m.orderPairing.selectedCount})`):''}</p>`:''}
+        <div class="marker-actions">${m.bandMode==='fixed'?`<button class="btn sm" data-f="fixed">${L('编辑坐标 / 未确定条带','Edit coordinates / unknown bands')}</button>`:''}<button class="btn sm primary" data-f="align">${L('识别此泳道', 'Detect bands here')}</button><button class="btn sm" data-f="guide">${L('校准 / 图例', 'Calibrate / reference')}</button><button class="btn sm ghost" data-f="labels">${L('显示 / 字号', 'Labels / font')}</button><button class="btn sm ghost" data-f="move">${L('换泳道', 'Change lane')}</button></div>
         <div class="row2">
           <select data-f="side"><option value="auto">${L('标签：自动分侧', 'Labels: auto side')}</option><option value="left">${L('标签在左', 'Labels left')}</option><option value="right">${L('标签在右', 'Labels right')}</option></select>
           <select data-f="unit">${App.gelKind() === 'protein'
@@ -628,11 +653,12 @@
       const m = st.markers[+card.dataset.mi], q = f => card.querySelector(`[data-f="${f}"]`);
       q('side').value = m.side; q('unit').value = m.unit;
       q('guide').onclick = () => G.MarkerUI.open(+card.dataset.mi);
+      if(m.bandMode==='fixed'){q('fixed').onclick=()=>G.MarkerAI.editMarker(+card.dataset.mi);q('align').disabled=true;q('match').disabled=true;}
       q('align').onclick = done(() => { App.alignMarker(+card.dataset.mi); toast(L('按当前型号识别此泳道，保留手动定位；其他泳道不变', 'Detected this lane with its current ladder; manual anchors kept, other lanes unchanged')); });
       q('labels').onclick = () => G.MarkerUI.labelPopover(+card.dataset.mi,-1,q('labels'));
       q('move').onclick = () => G.MarkerUI.pickLane(+card.dataset.mi);
       q('lane').onchange = e => { if (!G.MarkerUI.assignLane(+e.target.value, +card.dataset.mi)) e.target.value = String(m.lane); };
-      q('ladder').addEventListener('change', done(e => { m.ladderId = e.target.value; m.bands = []; m.ladderLocked = true; App.prefLadder = m.ladderId; App.alignMarker(+card.dataset.mi); }));
+      q('ladder').addEventListener('change', done(e => { if(m.bandMode==='fixed'){G.MarkerAI.editMarker(+card.dataset.mi,e.target.value);return;} m.ladderId = e.target.value; m.bands = []; m.ladderLocked = true; App.prefLadder = m.ladderId; App.alignMarker(+card.dataset.mi); }));
       q('side').addEventListener('change', done(e => { m.side = e.target.value; }));
       q('unit').addEventListener('change', done(e => { m.unit = e.target.value; App.prefUnit = m.unit; }));
       q('del').onclick = done(() => { App.removeMarker(+card.dataset.mi); });
@@ -772,13 +798,9 @@
   });
   $('btnResetLayout').onclick = done(() => { App.resetLayout(); toast(L('版式已重置为默认（Ctrl+Z 可撤销）', 'Layout reset to defaults (Ctrl+Z to undo)')); });
   function updateDpiLine() {
-    const eff = Math.round(App.effectiveDpi()), safe = App.maxSafeWidthMm(300), w = App.gelWidthMm();
-    $('dpiLine').innerHTML = eff >= 300
-      ? `${L('胶图有效分辨率', 'Effective gel resolution')} <span class="ok">${eff} dpi</span>`
-      : `${L('胶图有效分辨率', 'Effective gel resolution')} <span class="bad">${eff} dpi</span>` +
-        L(`（&lt;300）：凝胶宽不超过 <b>${safe} mm</b> 才能保证 300 dpi`, ` (&lt;300): keep the gel at most <b>${safe} mm</b> wide for 300 dpi`) +
-        (w > safe ? ` <button class="btn sm" id="btnSafeW">${L(`改为 ${safe} mm`, `Use ${safe} mm`)}</button>` : '');
-    const b = $('btnSafeW'); if (b) b.onclick = done(() => { S().style.autoWidth = false; S().style.gelWidthMm = Math.max(10, safe); });
+    const eff=Math.round(App.effectiveDpi()),dpi=S().style.dpi,safe=App.maxSafeWidthMm(dpi),w=App.gelWidthMm();
+    $('dpiLine').innerHTML=L(`文件 ${dpi} dpi · 胶图有效 <b>${eff} dpi</b> · 胶图宽 ${w.toFixed(1)} mm`,`File ${dpi} dpi · effective gel <b>${eff} dpi</b> · gel width ${w.toFixed(1)} mm`)+(eff<dpi?L(`<br>达到 ${dpi} dpi：胶图宽不超过 ${safe} mm`,`<br>For ${dpi} dpi: gel width at most ${safe} mm`)+(w>safe?` <button class="btn sm" id="btnSafeW">${L(`改为 ${safe} mm`,`Use ${safe} mm`)}</button>`:''):'');
+    const b=$('btnSafeW');if(b)b.onclick=done(()=>{S().style.autoWidth=false;S().style.gelWidthMm=safe;});
   }
   $('fitFull').onclick = () => G.Editor.fitFull();
   $('fitCrop').onclick = () => G.Editor.fitCrop();
@@ -826,13 +848,13 @@
   function syncControls() {
     const st = S(), y = st.style;
     $('invChk').checked = !!st.levels.invert;
-    const colour = App.isColour();
+    const colour = App.isOriginal();
     $('displayModeSeg').querySelectorAll('[data-display]').forEach(b => {
-      b.disabled = b.dataset.display === 'colour' && !App.hasColour();
+      b.disabled = false;
       b.classList.toggle('on', b.dataset.display === (colour ? 'colour' : 'gray'));
     });
     $('displayModeNote').textContent = !App.hasColour()
-      ? L('原文件没有可用颜色，不能还原成真实彩图。', 'The source has no colour data to restore.')
+      ? (colour ? L('保留原始黑白外观，未应用灰度的反色、对比度或 Gamma。', 'Original monochrome appearance is retained without grayscale inversion, contrast or gamma.') : L('原图为黑白图；当前使用灰度调整。可切回保留原色。', 'The source is monochrome; grayscale adjustments are active. Switch to Original colour to retain its appearance.'))
       : colour ? L('保留原色，仍可旋转、裁切和标注。灰度的反色、对比度和 Gamma 不会应用到彩图。', 'Original colours are retained; rotation, crop and annotations still work. Grayscale inversion, contrast and gamma are not applied.')
         : L('识别一直使用灰度；切换显示不会改变泳道和标注。', 'Detection always uses grayscale; switching appearance keeps lanes and annotations.');
     $('grayPolarity').classList.toggle('hidden', colour);
@@ -844,7 +866,7 @@
     const kind = App.gelKind();
     document.querySelectorAll('#gelSeg button').forEach(b => b.classList.toggle('on', b.dataset.gel === kind));
     const det = App.gelDetection;
-    $('gelTypeNote').textContent = det ? (det.manual ? L('手动指定', 'set by you') : L(`自动判断 ${Math.round((det.confidence || 0) * 100)}%`, `detected ${Math.round((det.confidence || 0) * 100)}%`)) : '';
+    $('gelTypeNote').textContent = det ? (det.manual ? L('手动指定', 'set by you') : L('规则判断 · 请核对', 'Rule-based estimate · verify')) : '';
     $('gelTypeWhy').textContent = det && det.reasons && det.reasons.length
       ? (det.manual ? L('识别错了可以在这里切换；切换会保留泳道名、分组和箭头。', 'Detection can be wrong — switch here. Names, groups and arrows are kept.')
         : L('判断依据：', 'Detected from: ') + det.reasons.filter(r => (r.w > 0) === (kind === 'protein')).slice(0, 3).map(r => App.gelReasonText(r)).filter(Boolean).join(L('；', '; ')))
@@ -961,11 +983,11 @@
       const det = App.gelDetection;
       if (det && !det.manual) {
         const pct = Math.round((det.confidence || 0) * 100);
-        if (App.gelKind() === 'protein') toast(P(L(`识别为蛋白胶（${pct}%）：Marker 按 kDa 标注。不是蛋白胶？在左侧第 1 步切换。`,
-          `Read as a protein gel (${pct}%): marker sizes in kDa. Not protein? Switch in step 1 on the left.`),
-          L(`识别为蛋白胶（${pct}%）：Marker 按 kDa 标注。不是蛋白胶？在「设置」第 1 步切换。`,
-            `Read as a protein gel (${pct}%): marker sizes in kDa. Not protein? Switch in Settings, step 1.`)), 5200);
-        else if (pct >= 60) toast(L(`识别为 DNA 胶（${pct}%）：Marker 按 bp 标注`, `Read as a DNA gel (${pct}%): marker sizes in bp`), 3200);
+        if (App.gelKind() === 'protein') toast(P(L(`规则判断为蛋白胶，请核对：Marker 按 kDa 标注。不是蛋白胶？在左侧第 1 步切换。`,
+          `Rule-based protein-gel estimate; verify: marker sizes in kDa. Not protein? Switch in step 1 on the left.`),
+          L(`规则判断为蛋白胶，请核对：Marker 按 kDa 标注。不是蛋白胶？在「设置」第 1 步切换。`,
+            `Rule-based protein-gel estimate; verify: marker sizes in kDa. Not protein? Switch in Settings, step 1.`)), 5200);
+        else if (pct >= 60) toast(L(`规则判断为 DNA 胶，请核对：Marker 按 bp 标注`, `Rule-based DNA-gel estimate; verify: marker sizes in bp`), 3200);
       }
     }
     if (what === 'refresh') { livePreview(); return; }

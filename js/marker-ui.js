@@ -100,7 +100,7 @@
     }).join('')}</svg>`;
   }
   function render(reset){
-    const m=current();if(!m){close();return;}if(m.ladderId!==applied){if(candidate===applied)candidate=m.ladderId;applied=m.ladderId;}const lad=G.Ladders.get(candidate)||G.Ladders.get(m.ladderId);if(!lad)return;
+    const m=current();if(!m){close();return;}if(m.ladderId!==applied){if(candidate===applied)candidate=m.ladderId;applied=m.ladderId;}const lad=G.Ladders.get(candidate)||G.Ladders.get(m.ladderId);if(!lad){close();return;}
     const top=reset?0:card.querySelector('.marker-reference-scroll')?.scrollTop||0,preview=candidate!==m.ladderId;
     card.innerHTML=`<div class="marker-ref-head"><b>${L('Marker 参考','Marker reference')}</b><button id="markerReferenceClose" aria-label="${L('结束校准','Finish calibration')}">×</button></div>
       <div class="marker-ref-lane">${L('泳道','Lane')} ${m.lane+1} · ${m.unit==='kDa'?'kDa':'bp'}</div>
@@ -113,8 +113,8 @@
     requestAnimationFrame(layout);
     $('markerReferenceClose').onclick=close;
     $('markerReferenceModel').onchange=e=>{candidate=e.target.value;selected=null;render(true);};
-    if($('markerUseModel'))$('markerUseModel').onclick=()=>{m.ladderId=candidate;m.bands=[];m.ladderLocked=true;m.userAssigned=true;App.prefLadder=candidate;App.alignMarker(index(m));App.commit();render(true);};
-    $('markerAlign').disabled=preview;$('markerAlign').onclick=()=>{App.alignMarker(index(m));App.commit();UI.toast(L('只更新这个 Marker 泳道，保留手动定位','Updated this marker lane only; manual anchors kept'));};
+    if($('markerUseModel'))$('markerUseModel').onclick=()=>{if(m.bandMode==='fixed'){G.MarkerAI.editMarker(index(m),candidate);return;}m.ladderId=candidate;m.bands=[];m.ladderLocked=true;m.userAssigned=true;App.prefLadder=candidate;App.alignMarker(index(m));App.commit();render(true);};
+    $('markerAlign').disabled=preview||m.bandMode==='fixed';$('markerAlign').onclick=()=>{App.alignMarker(index(m));App.commit();UI.toast(L('只更新这个 Marker 泳道，保留手动定位','Updated this marker lane only; manual anchors kept'));};
     $('markerRefLabels').onclick=()=>labelPopover(index(m),-1,$('markerRefLabels'));
     card.querySelectorAll('[data-size]').forEach(el=>{
       const choose=()=>{if(preview){UI.toast(L('先点“使用此型号”再标注','Use this ladder before marking'));return;}selected=+el.dataset.size;closePicker();render();$('modeText').textContent=L(`已选 ${size(selected,m)}，点黄色 Marker 泳道上的实际条带`,`${size(selected,m)} selected: click its real band on the yellow marker lane`);};
@@ -131,21 +131,21 @@
     const used=S().markers.findIndex(m=>m.lane===i);if(mi!=null&&used>=0&&used!==mi){UI.toast(L('这个泳道已经是另一个 Marker','That lane is already another marker'));return false;}
     if(mi==null&&used>=0){S().markers[used].userAssigned=true;App.commit();open(used);return true;}
     if(mi==null){mi=S().markers.length;S().markers.push(App.newMarker(i));}const m=S().markers[mi];if(!m)return false;
-    if(m.lane!==i){if(S().lanes[m.lane]?.name==='M')S().lanes[m.lane].name='';m.lane=i;m.bands=[];}
-    m.userAssigned=true;delete S().lanes[i].markerExcluded;App.selLane=i;if(!S().lanes[i].name)S().lanes[i].name='M';App.alignMarker(mi);App.commit();open(mi);return true;
+    if(m.lane!==i){if(S().lanes[m.lane]?.name==='M')S().lanes[m.lane].name='';m.lane=i;if(m.bandMode!=='fixed')m.bands=[];}
+    m.userAssigned=true;if(m.recognition)m.recognition.edited=true;delete S().lanes[i].markerExcluded;App.selLane=i;if(!S().lanes[i].name)S().lanes[i].name='M';App.alignMarker(mi);App.commit();open(mi);return true;
   }
   function pickLane(mi){if(!S())return;UI.flushPending();close();closeLabels();moving=mi??null;G.FigEdit.setMode('marker-lane');if(G.Mobile&&UI.isPhone())G.Mobile.setView('raw');G.Editor.fitCrop();}
   function chooseLane(i){if(assignLane(i,moving))moving=null;}
   function pickAt(x){const lanes=UI.figLanes();if(lanes.length)chooseLane(lanes.reduce((a,b)=>Math.abs(S().lanes[a].x-x)<Math.abs(S().lanes[b].x-x)?a:b));}
   function snap(m,y,free){
-    y=E.clamp(y,S().crop.y,S().crop.y+S().crop.h);if(free)return y;
+    y=E.clamp(y,S().crop.y,S().crop.y+S().crop.h);if(free||m.bandMode==='fixed')return y;
     const tolerance=Math.max(3,8/G.Editor.zoom()),peaks=App.lanePeaks(m.lane).map(p=>p.y+S().crop.y);
     const best=peaks.reduce((a,b)=>Math.abs(b-y)<Math.abs(a-y)?b:a,Infinity);return Math.abs(best-y)<=tolerance?best:y;
   }
   function placeBand(m,bp,y,oldBp){
     if(!S().markers.includes(m))return;let b=m.bands.find(b=>b.bp===bp);if(!b){b={bp,ref:(G.Ladders.get(m.ladderId)?.ref||[]).includes(bp)};m.bands.push(b);}
     if(oldBp!=null&&oldBp!==bp){const old=m.bands.find(b=>b.bp===oldBp);if(old)Object.assign(old,{manual:false,matched:false,show:false,excluded:true});}
-    Object.assign(b,{y,manual:true,matched:true,show:true});delete b.excluded;m.userAssigned=true;App.matchMarkers(false,[m]);selected=null;closePicker();App.commit();
+    Object.assign(b,{y,manual:true,matched:true,show:true});delete b.excluded;if(m.recognition)m.recognition.edited=true;if(m.unassignedBands)m.unassignedBands=m.unassignedBands.filter(u=>u.size!==bp&&(u.y==null||Math.abs(u.y-y)>0.5));m.userAssigned=true;App.matchMarkers(false,[m]);selected=null;closePicker();App.commit();
     $('modeText').textContent=L('点黄色泳道条带选大小，或先在参考图选大小再点实际条带；拖黄线微调','Click a band on the yellow lane to choose its size, or choose a reference size first; drag yellow lines to adjust');
   }
   function bandPicker(m,y,oldBp){

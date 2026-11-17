@@ -263,8 +263,13 @@
     }
     // 20. protein gel: detected automatically, kDa labels, manual switch keeps annotations, DNA regression
     {
+      const blueGel = gel => {
+        const rgb = new Uint8Array(gel.data.length * 3);
+        gel.data.forEach((v,i)=>{const g=Math.max(10,Math.min(240,Math.round(v*255)));rgb.set([g-8,g+2,g+10],i*3);});
+        return G.Export.encodeTiffRGB(rgb,gel.width,gel.height,300,'Synthetic blue protein gel');
+      };
       const pg = G.Demo.makeProteinGel({ tilt: 0.6 });
-      await App.load(new File([G.Demo.encodeTiff16(pg)], 'demo_protein.tif', { type: 'image/tiff' }));
+      await App.load(new File([blueGel(pg)], 'demo_protein.tif', { type: 'image/tiff' }));
       const prot = {
         kind: App.gelKind(), unit: App.sizeUnit(), confidence: App.gelDetection && App.gelDetection.confidence,
         ladderKind: (G.Ladders.get((App.S.markers[0] || {}).ladderId) || {}).kind,
@@ -289,7 +294,7 @@
 
       // a crowded gel: sample lanes carry more bands than the ladder, so only the lane a ladder
       // explains completely may be taken for the marker
-      await App.load(new File([G.Demo.encodeTiff16(G.Demo.makeProteinGel({ crowded: true, tilt: 0 }))], 'demo_lysate.tif', { type: 'image/tiff' }));
+      await App.load(new File([blueGel(G.Demo.makeProteinGel({ crowded: true, tilt: 0 }))], 'demo_lysate.tif', { type: 'image/tiff' }));
       const fl3 = G.UI.figLanes();
       R.crowded = {
         kind: App.gelKind(), markers: App.S.markers.map(m => m.lane),
@@ -307,7 +312,7 @@
 
       // a purification gel: lysate lanes that some ladder fits on its own must still fail the
       // migration curve of the real marker, so only the marker lane is kept
-      await App.load(new File([G.Demo.encodeTiff16(G.Demo.makeProteinGel({ purification: true, tilt: 0.8 }))], 'demo_purification.tif', { type: 'image/tiff' }));
+      await App.load(new File([blueGel(G.Demo.makeProteinGel({ purification: true, tilt: 0.8 }))], 'demo_purification.tif', { type: 'image/tiff' }));
       const fl5 = G.UI.figLanes();
       R.purification = { markers: App.S.markers.map(m => fl5.indexOf(m.lane)), candidates: (App.markerCandidates || []).length };
 
@@ -454,6 +459,11 @@
       App.S.lanes.forEach((l, i) => { l.name = names[i]; }); App.commit();
     }
     document.title = 'UITEST-AT 25 ' + JSON.stringify(R);
+    // Local comparison never mutates the current project or contains API settings.
+    {
+      const before=App.snapshot();G.MarkerAI.captureLocal();
+      R.aiMarker={previewOnly:App.snapshot()===before,noSettingsInState:!Object.keys(App.S).some(k=>/apikey|endpoint|comparison/i.test(k))};
+    }
     // 19. autosaved draft survives a reload (needs a browser with working IndexedDB: ?uitest=1&draft=1;
     // headless Edge never answers indexedDB.open and holds its virtual clock)
     if (/[?&]draft=1/.test(location.search)) {

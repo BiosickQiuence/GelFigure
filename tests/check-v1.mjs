@@ -1,0 +1,8 @@
+import './backup-outputs.cjs';
+import http from 'node:http';import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';import {execFileSync} from 'node:child_process';
+import {chromium,firefox,webkit} from 'playwright';
+import {updateChecks} from './updates.mjs';import {feedbackChecks} from './feedback.mjs';import {exportSupportChecks} from './export-support.mjs';
+const root=fileURLToPath(new URL('..',import.meta.url));execFileSync(process.execPath,['scripts/bundle-onefile.mjs'],{cwd:root,stdio:'inherit'});
+const server=http.createServer((req,res)=>{const rel=decodeURIComponent(new URL(req.url,'http://local').pathname),file=path.resolve(root,'.'+rel);if(!file.startsWith(root)||!fs.existsSync(file)||fs.statSync(file).isDirectory()){res.writeHead(404);res.end();return;}res.setHeader('Content-Type',file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/javascript; charset=utf-8');fs.createReadStream(file).pipe(res);});
+await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base='http://127.0.0.1:'+server.address().port;let ok=true;
+try{for(const engine of process.argv.slice(2).length?process.argv.slice(2):['chromium','firefox','webkit']){const browser=await ({chromium,firefox,webkit}[engine]).launch();try{for(const suite of [updateChecks,feedbackChecks,exportSupportChecks]){const rows=await suite(browser,base,root,engine);for(const row of rows)console.log(engine,...row);ok&&=rows.every(row=>row[0]==='ok');}}finally{await browser.close();}}}finally{server.close();}process.exitCode=ok?0:1;

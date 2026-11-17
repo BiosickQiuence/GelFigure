@@ -499,7 +499,7 @@
       App.dragLane(h.i, drag.x0 + dx, drag.grid0, e.altKey);
     } else if (h.type === 'band') {
       const b = S.markers[h.m].bands[h.i];
-      b.y = Math.max(0, Math.min(rot.h, drag.y0 + dy)); b.manual = true; b.matched = false;
+      b.y = Math.max(0, Math.min(rot.h, drag.y0 + dy)); b.manual = true; b.matched = false;if(S.markers[h.m].recognition)S.markers[h.m].recognition.edited=true;
     } else if (h.type === 'arrow') {
       S.arrows[h.i].y = Math.max(0, Math.min(rot.h, drag.y0 + dy));
     }

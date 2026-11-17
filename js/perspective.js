@@ -15,18 +15,22 @@
     return (crosses.every(v => v > 1) || crosses.every(v => v < -1)) && points.every((p, i) => distance(p, points[(i + 1) % 4]) >= 2);
   }
   // Unit square -> quadrilateral homography (corners TL, TR, BR, BL).
-  function mapping(points) {
+  function mapping(points, inverse = false) {
     const [a, b, c, d] = points;
     const dx = a.x - b.x + c.x - d.x, dy = a.y - b.y + c.y - d.y;
     const bx = b.x - c.x, by = b.y - c.y, dx2 = d.x - c.x, dy2 = d.y - c.y;
     const det = bx * dy2 - dx2 * by;
     const g = (dx * dy2 - dx2 * dy) / det, h = (bx * dy - dx * by) / det;
-    return (u, v) => {
-      const den = g * u + h * v + 1;
-      return { x: ((b.x - a.x + g * b.x) * u + (d.x - a.x + h * d.x) * v + a.x) / den,
-        y: ((b.y - a.y + g * b.y) * u + (d.y - a.y + h * d.y) * v + a.y) / den };
-    };
+    let m=[b.x-a.x+g*b.x,d.x-a.x+h*d.x,a.x,b.y-a.y+g*b.y,d.y-a.y+h*d.y,a.y,g,h,1];
+    if(inverse){
+      const [A,B,C,D,F,H,J,K,N]=m,adj=[F*N-H*K,C*K-B*N,B*H-C*F,H*J-D*N,A*N-C*J,C*D-A*H,D*K-F*J,B*J-A*K,A*F-B*D];
+      const determinant=A*adj[0]+B*adj[3]+C*adj[6];
+      if(!Number.isFinite(determinant)||Math.abs(determinant)<1e-10)throw new Error(L('校正矩阵不可逆，请调整四点','Correction matrix is singular; adjust the corners'));
+      m=adj;
+    }
+    return (u,v)=>{const den=m[6]*u+m[7]*v+m[8];return {x:(m[0]*u+m[1]*v+m[2])/den,y:(m[3]*u+m[4]*v+m[5])/den};};
   }
+
   function validate(spec, w, h) {
     if (!spec || !valid(spec.points, w, h) || !Number.isInteger(spec.w) || !Number.isInteger(spec.h) || spec.w < 3 || spec.h < 3 || spec.w > 32767 || spec.h > 32767 || spec.w * spec.h > Math.max(w * h, 16777216))
       throw new Error(L('校正范围无效：四点须组成图内的凸四边形，输出尺寸不能过大。', 'Invalid correction: choose a convex quadrilateral inside the image with a supported output size.'));
@@ -65,15 +69,34 @@
     validate(spec, App.rawSrc.w, App.rawSrc.h);
     return spec;
   }
-  function apply(points) {
+  function apply(points, layout = null) {
     const spec = specification(points), S = App.S;
-    S.perspective = spec; S.orient = ''; S.rotation = 0; S.autoRotation = 0;
-    S.crop = { x: 0, y: 0, w: spec.w, h: spec.h };
-    ['lanes', 'markers', 'groups', 'conditions', 'arrows', 'boxes', 'brackets', 'labels', 'notes'].forEach(k => { S[k] = []; });
+    if(layout&&(!layout.meta||typeof layout.meta!=='object'||!Number.isFinite(layout.pitch)||layout.pitch<=0||!Number.isFinite(layout.halfWidth)||layout.halfWidth<=0||!Array.isArray(layout.lanes)||!layout.lanes.length||layout.lanes.length>200||!layout.lanes.some(l=>!l.hidden)||layout.lanes.some((l,i)=>!Number.isFinite(l.x)||l.x<0||l.x>spec.w-1||(i&&l.x-layout.lanes[i-1].x<1))))throw new Error(L('AI 泳道定位无效，未应用','Invalid AI lane positions; nothing applied'));
+    // Compute against a candidate state and restore every derived cache on failure.
+    const before = Object.assign({}, App);
+    App.S = JSON.parse(JSON.stringify(S));
+    const candidate = App.S;
+    try {
+    candidate.perspective = spec; candidate.orient = ''; candidate.rotation = 0; candidate.autoRotation = 0;
+    candidate.crop = { x: 0, y: 0, w: spec.w, h: spec.h };
+    ['lanes', 'markers', 'groups', 'conditions', 'arrows', 'boxes', 'brackets', 'labels', 'notes'].forEach(k => { candidate[k] = []; });
     App.selLane = App.selArrow = -1; App.selAnno = null;
     App.cropMeta = null; App._emptyKey = null; App.laneNotice = App.ladderNotice = null;
     App.ensureSrc(); App.ensureRot();
-    App.autoLanes(); App.autoMarkers(); App.updateSaturation();
+    if(layout){
+      if(candidate.gelAIBeta)candidate.layoutHistory=(candidate.layoutHistory||[]).concat(candidate.gelAIBeta);
+      candidate.lanes=JSON.parse(JSON.stringify(layout.lanes));candidate.lanePitch=layout.pitch;candidate.laneHalfW=layout.halfWidth;candidate.laneLinked=false;candidate.gelAIBeta=JSON.parse(JSON.stringify(layout.meta));
+      if(layout.meta.removedInternalLanes){candidate.style.spliceStyle=candidate.style.spliceStyle==='line'?'line':'gap';candidate.style.spliceGapPt=Math.max(1.5,candidate.style.spliceGapPt||0);}
+    }else{
+      if(candidate.gelAIBeta)candidate.layoutHistory=(candidate.layoutHistory||[]).concat(candidate.gelAIBeta);
+      delete candidate.gelAIBeta;App.autoLanes();App.autoMarkers();
+    }
+    App.updateSaturation();
+    candidate.currentSources = Object.assign({}, candidate.currentSources, {lanes: layout ? 'ai-reviewed' : 'local', markers: 'local'});
+    if (layout) App.setResetBaseline();
+    } catch (error) { Object.keys(App).forEach(key=>{if(!(key in before))delete App[key];});Object.assign(App, before);throw error; }
+    // Keep the existing state identity so open editors can observe one successful change.
+    Object.keys(S).forEach(key => { delete S[key]; }); Object.assign(S, candidate); App.S = S;
     App.commit();
   }
   function stop() {

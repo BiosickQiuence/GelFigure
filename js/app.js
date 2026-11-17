@@ -30,6 +30,7 @@
   const angleOf = v => (v != null && v !== '' && Number.isFinite(+v) ? +v : null);
 
   const App = {
+    sourceGeneration: 0, // latest source operation owns installation and busy state
     S: null,            // serialisable state
     // The automatic angle belongs to this orientation and must survive undo/project restore.
     get autoRotation() { return this.S?.autoRotation; },
@@ -59,7 +60,7 @@
   App.defaultStyle = defaultStyle;
   App.onDropFile = null;   // set by the UI layer
 
-  App.VERSION = '0.6.15';
+  App.VERSION = '1.0.0';
   App.prefs = prefs;
   App.setPref = function (k, v) { const p = prefs(); p[k] = v; G.PrefStorage.setItem(PREF_KEY, JSON.stringify(p)); };
 
@@ -120,10 +121,28 @@
     App._colourBg = null;
     App._orientOnInstall = E.orientId(orient);
   }
+  // Decoded sources used by undo remain in memory; pixels never enter serialised snapshots.
+  let sourceInputs = new Map();
+  function installSource(input, orient) {
+    sourceInputs.set(input.sha256, input);
+    sourcePixels(input.img, orient);
+    App.srcBuffer = input.buffer;
+    App._colorStats = input.img.colorStats || null;
+    App.loadWarnings = input.img.warnings || [];
+    App.rot = null; App.satCanvas = null; App._display = null; App._clipKey = null;
+  }
+  function restoreState(snapshot) {
+    ++App.sourceGeneration;
+    const state = JSON.parse(snapshot), input = sourceInputs.get(state.file.sha256);
+    if (!input) throw new Error(L('撤销所需的原始图像不可用', 'The original image required by undo is unavailable'));
+    installSource(input, state.orient);
+    App.S = state;
+    App.expIdx = App.exposures ? App.exposures.findIndex(e => e.sha256 === state.file.sha256 && e.name === state.file.name) : null;
+    App.ensureRot(); busy(false);
+  }
   function startFrom(input, orient) {
     const img = input.img;
-    sourcePixels(img, orient);
-    App.srcBuffer = input.buffer;
+    installSource(input, orient);
     App.rot = null; App.satCanvas = null; App._display = null; App._clipKey = null;
     const p = prefs();
     // provisional state so ensureSrc() can derive the oriented buffer before detection runs
@@ -132,7 +151,7 @@
     App.S = {
       file: { name: input.name, bits: img.bits, dpi: img.dpi, actualMax: img.actualMax, sha256: input.sha256, size: input.buffer.byteLength },
       bright: E.detectBright(App.src),
-      displayMode: 'gray',
+      displayMode: 'colour',
       rotation: 0,
       orient: App._orientOnInstall,
       levels: { black: 0, white: 1, gamma: 1, invert: p.invert != null ? p.invert : false },
@@ -142,7 +161,7 @@
       markers: [],
       groups: [], conditions: [], arrows: [],
       boxes: [], brackets: [], labels: [], notes: [],
-      style: normalStyle(p.style),
+      style: normalStyle(p.stylePreset ? p.stylePreset.style : p.style),
       saturatedInCrop: 0
     };
     App.invertInherited = p.invert != null;
@@ -153,6 +172,7 @@
     App.gelDetection = null;
     App.hist = []; App.future = [];
     App.autoAll(true);
+    if(p.stylePreset)App.applyStyleTemplate({...p.stylePreset,displayMode:'colour'});
     // the state right after automatic processing: target of "reset everything"
     App.initial = App.snapshot();
     App.autoRotation = App.S.rotation;
@@ -162,24 +182,30 @@
   App.load = async function (file) {
     if (Array.isArray(file) && file.length > 1) return App.loadMany(file);
     if (Array.isArray(file)) file = file[0];
+    const generation=++App.sourceGeneration;
     busy(true, L('正在读取并自动识别…', 'Reading and detecting…'));
     await new Promise(r => setTimeout(r, 30));
     try {
+      if(generation!==App.sourceGeneration)return false;
       const input = await App.readInput(file);
+      if(generation!==App.sourceGeneration)return false;
       await App.saveDraft();
+      if(generation!==App.sourceGeneration)return false;
       App.newCachedProject();
-      App.exposures = null;
+      App.exposures = null; App.expIdx = null; sourceInputs = new Map();
       startFrom(input);
-      App.emit('loaded');
+      App.emit('loaded');return true;
     } catch (e) {
+      if(generation!==App.sourceGeneration)return false;
       console.error(e);
       alert(L('读取失败：', 'Could not read the file: ') + e.message);
-    } finally { busy(false); }
+    } finally { if(generation===App.sourceGeneration)busy(false); }
   };
 
   /* Several exposures of one gel: score each on a downsampled copy, open the best. Only the chosen
    * image is kept decoded; the others keep their file bytes and are decoded again when picked. */
   App.loadMany = async function (files) {
+    const generation=++App.sourceGeneration;
     busy(true, L(`正在评估 ${files.length} 张曝光…`, `Scoring ${files.length} exposures…`));
     await new Promise(r => setTimeout(r, 30));
     try {
@@ -188,7 +214,9 @@
       for (let k = 0; k < files.length; k++) {
         busy(true, L(`正在评估第 ${k + 1} / ${files.length} 张…`, `Scoring exposure ${k + 1} / ${files.length}…`));
         await new Promise(r => setTimeout(r, 0));
+        if(generation!==App.sourceGeneration)return false;
         const input = await App.readInput(files[k]);
+        if(generation!==App.sourceGeneration)return false;
         const img = { w: input.img.width, h: input.img.height, data: input.img.data };
         const q = E.exposureScore(img);
         list.push({ name: input.name, buffer: input.buffer, sha256: input.sha256, w: img.w, h: img.h, bits: input.img.bits,
@@ -200,15 +228,18 @@
       const order = list.map((e, i) => i).sort((a, b) => list[b].score - list[a].score);
       list.forEach((e, i) => { e.rank = order.indexOf(i) + 1; });
       await App.saveDraft();
+      if(generation!==App.sourceGeneration)return false;
       App.newCachedProject();
       App.exposures = list;
+      sourceInputs = new Map();
       App.expIdx = bestInput.k;
       startFrom(bestInput);
-      App.emit('loaded');
+      App.emit('loaded');return true;
     } catch (e) {
+      if(generation!==App.sourceGeneration)return false;
       console.error(e);
       alert(L('读取失败：', 'Could not read the file: ') + e.message);
-    } finally { busy(false); }
+    } finally { if(generation===App.sourceGeneration)busy(false); }
   };
 
   function thumbnail(img, bright, rgb) {
@@ -227,16 +258,21 @@
    * kept, only the pixels and contrast change. Different size: re-detect, names carried in order. */
   App.switchExposure = async function (k) {
     const ex = App.exposures && App.exposures[k];
-    if (!ex || k === App.expIdx) return { ok: true };
+    if (!ex) return { ok: true };
+    const generation=++App.sourceGeneration,exposures=App.exposures,projectId=App.projectId;
+    if(k===App.expIdx){busy(false);return {ok:true,kept:true};}
+    const current=()=>generation===App.sourceGeneration&&App.exposures===exposures&&App.projectId===projectId;
+    const stale=()=>({ok:false,stale:true});
     busy(true, L('正在切换曝光…', 'Switching exposure…'));
     await new Promise(r => setTimeout(r, 20));
     try {
-      const img = await G.TIFF.decodeBuffer(ex.buffer, ex.name);
-      const S = App.S;
+      if(!current())return stale();
+      const input = sourceInputs.get(ex.sha256) || { name: ex.name, buffer: ex.buffer, sha256: ex.sha256, img: await G.TIFF.decodeBuffer(ex.buffer, ex.name) };
+      if(!current())return stale();
+      const img = input.img, S = App.S;
       App.expIdx = k;
       if (img.width === App.rawSrc.w && img.height === App.rawSrc.h) {
-        sourcePixels(img, S.orient);
-        if (!App.sourceRGB) S.displayMode = 'gray';
+        installSource(input, S.orient);
         App._colorStats = img.colorStats || null;
         App.loadWarnings = img.warnings || [];
         App.srcBuffer = ex.buffer;
@@ -245,17 +281,21 @@
         App.autoLevels();
         App.updateSaturation();
         App.refineMarkers();   // same geometry: keep band assignments
+        if(S.resetBaseline)App.setResetBaseline();
         App.commit();
         return { ok: true, kept: true };
       }
       const names = App.figureLanes().map(i => S.lanes[i].name);
-      startFrom({ name: ex.name, buffer: ex.buffer, img, sha256: ex.sha256 }, S.orient);
+      const history = App.hist.slice(), initial = App.initial;
+      startFrom(input, S.orient);
+      App.hist = history; App.initial = initial; App.future = [];
       const fl = App.figureLanes();
       const same = fl.length === names.length;
-      if (same) { fl.forEach((i, j) => { App.S.lanes[i].name = names[j]; }); App.commit(); }
-      App.emit('loaded');
+      if (same) fl.forEach((i, j) => { App.S.lanes[i].name = names[j]; });
+      App.commit(); App.emit('loaded');
       return { ok: true, kept: false, namesCarried: same };
-    } finally { busy(false); }
+    } catch(error){if(!current())return stale();throw error;}
+    finally { if(current())busy(false); }
   };
 
   // lanes that appear in the figure, left to right
@@ -267,17 +307,18 @@
 
   // ---------- pipeline ----------
   App.hasColour = function () { return !!App.sourceRGB; };
-  App.isColour = function (S) { return !!App.sourceRGB && (S || App.S).displayMode === 'colour'; };
-  App.displayLevels = function (S) { return App.isColour(S) ? { black: 0, white: 1, gamma: 1, invert: false } : (S || App.S).levels; };
-  App.displayInfo = function () { return { mode: App.isColour() ? 'original-colour' : 'grayscale', sourceHasColour: App.hasColour(), rgbDisplayBits: App.isColour() ? 8 : null, grayscaleAdjustmentsApplied: !App.isColour() }; };
+  App.isOriginal = function (S) { return (S || App.S).displayMode === 'colour'; };
+  App.isColour = function (S) { return !!App.sourceRGB && App.isOriginal(S); };
+  App.displayLevels = function (S) { return App.isOriginal(S) ? { black: 0, white: 1, gamma: 1, invert: false } : (S || App.S).levels; };
+  App.displayInfo = function () { return { mode: App.isOriginal() ? (App.hasColour() ? 'original-colour' : 'original-grayscale') : 'grayscale', sourceHasColour: App.hasColour(), rgbDisplayBits: App.isColour() ? 8 : null, grayscaleAdjustmentsApplied: !App.isOriginal() }; };
   App.setDisplayMode = function (mode) {
-    if (!App.S || (mode === 'colour' && !App.hasColour())) return false;
+    if (!App.S) return false;
     App.S.displayMode = mode === 'colour' ? 'colour' : 'gray';
     App._display = null;
     return true;
   };
   App.displayDark = function () {
-    if (!App.isColour()) return !!App.S.bright !== !!App.S.levels.invert;
+    if (!App.isColour()) return !!App.S.bright !== !!App.displayLevels().invert;
     const s = App.S, r = s.crop, key = [s.file.sha256, s.rotation, r.x, r.y, r.w, r.h].join('|');
     if (!App._colourBg || App._colourBg.key !== key) App._colourBg = { key, dark: G.Colour.isDark(App.sourceRGB, App.src.w, App.src.h, r, s.rotation) };
     return App._colourBg.dark;
@@ -376,6 +417,8 @@
     const a = deg * Math.PI / 180, co = Math.cos(a), si = Math.sin(a), cx = (w - 1) / 2, cy = (h - 1) / 2;
     return (x, y) => ({ x: co * (x - cx) - si * (y - cy) + cx, y: si * (x - cx) + co * (y - cy) + cy });
   }
+  // Unknown band positions stay null; known AI positions follow geometry without peak snapping.
+  App.coordinateBands = m => m.bands.concat((m.unassignedBands || []).filter(b => Number.isFinite(b.y)));
   App.setRotation = function (deg) {
     const S = App.S;
     deg = Math.max(-App.MAX_ROT, Math.min(App.MAX_ROT, Math.round((+deg || 0) * 10) / 10));
@@ -386,7 +429,7 @@
     const T = (x, y) => { const dx = x - cx, dy = y - cy; return { x: co * dx - si * dy + cx, y: si * dx + co * dy + cy }; };
     const c = S.crop, ccx = c.x + c.w / 2, ccy = c.y + c.h / 2;
     const laneX0 = S.lanes.map(l => l.x);
-    S.markers.forEach(m => { const lx = laneX0[m.lane]; if (lx == null) return; m.bands.forEach(b => { b.y = T(lx, b.y).y; }); });
+    S.markers.forEach(m => { const lx = laneX0[m.lane]; if (lx == null) return; App.coordinateBands(m).forEach(b => { b.y = T(lx, b.y).y; }); });
     S.arrows.forEach(a => { a.y = T(ccx, a.y).y; });
     (S.brackets || []).forEach(b => { b.y1 = T(ccx, b.y1).y; b.y2 = T(ccx, b.y2).y; });
     // a box keeps its size; its centre moves with the gel
@@ -413,7 +456,7 @@
     App._peakCrop = App.bandStrip();
     try {
       S.markers.forEach(m => {
-        if (!S.lanes[m.lane] || !m.bands.length) return;
+        if (m.bandMode === 'fixed' || !S.lanes[m.lane] || !m.bands.length) return;
         const peaks = App.lanePeaks(m.lane).map(p => p.y + S.crop.y);
         const ys = m.bands.map(b => b.y).sort((a, b) => a - b);
         m.bands.forEach(b => {
@@ -440,11 +483,13 @@
   App.resetRotation = function () { App.setRotation(App.autoRotation || 0); App.afterRotation(); };
   // everything back to the moment after import; the undo chain starts again from there
   App.resetAll = function () {
-    if (!App.initial) return;
-    App.S = JSON.parse(App.initial);
-    App.ensureSrc();
-    App.rot = null; App.ensureRot();
-    App.hist = [App.initial]; App.future = [];
+    const explicitBaseline = App.S.resetBaseline;
+    const baseline = explicitBaseline || App.initial;
+    if (!baseline) return;
+    restoreState(baseline);
+    if(explicitBaseline)App.S.resetBaseline=baseline;
+    dropSelection();
+    App.hist = [App.snapshot()]; App.future = [];
     savePrefs();
     App.emit('change');
   };
@@ -454,7 +499,7 @@
    *  - levels: pixels pushed past the black / white point by the contrast setting (display only,
    *    but a band core flattened this way is just as lost in the figure) */
   App.clipStats = function () {
-    const S = App.S, lv = S.levels;
+    const S = App.S, lv = App.displayLevels();
     const key = [S.rotation, S.crop.x, S.crop.y, S.crop.w, S.crop.h, lv.black, lv.white].join('|');
     if (App._clipKey === key) return App._clip;
     const c = App.cropImg(), d = c.data, n = d.length;
@@ -485,6 +530,7 @@
    * chooses which of them appear in the figure, so cropping never adds/removes lanes. */
   App.autoLanes = function () {
     const S = App.S, rot = App.ensureRot();
+    S.currentSources = Object.assign({}, S.currentSources, {lanes:'local'});
     let lat = E.detectLaneLattice(rot, S.bright, S.crop, App.cropMeta);
     /* On a crowded gel neighbouring lanes merge in the band region and the measured pitch comes out
      * a whole multiple of the real one. The top of the gel still separates them, so it is used only
@@ -549,7 +595,7 @@
     const S = App.S, old = S.lanes, c = S.crop, inCrop = l => l.x >= c.x && l.x <= c.x + c.w;
     const ids = old.map((_,i)=>i).filter(i=>inCrop(old[i])), oldMarkers = S.markers.slice();
     const markerIds = new Set(oldMarkers.map(m=>m.lane)), tol = (S.lanePitch || pitch || 40) * 0.45;
-    const locked = new Set(oldMarkers.filter(m=>m.userAssigned || m.ladderLocked || m.bands.some(b=>b.manual)).map(m=>m.lane));
+    const locked = new Set(oldMarkers.filter(m=>m.bandMode==='fixed' || m.userAssigned || m.ladderLocked || m.bands.some(b=>b.manual)).map(m=>m.lane));
     ids.forEach(i=>{if(old[i].hidden || old[i].markerExcluded)locked.add(i);});
     const slots = xs.map(x=>({x,old:-1}));
     for (const i of ids.filter(i=>locked.has(i))) {
@@ -862,7 +908,7 @@
       w: Math.round(Math.abs(c2.x - c1.x) + 1), h: Math.round(Math.abs(c2.y - c1.y) + 1),
     };
     S.lanes.forEach(l => { l.x = P(l.x, 0).x; });
-    S.markers.forEach(m => { m.bands.forEach(b => { b.y = P(0, b.y).y; }); swapSide(m); });
+    S.markers.forEach(m => { App.coordinateBands(m).forEach(b => { b.y = P(0, b.y).y; }); swapSide(m); });
     S.arrows.forEach(a => { a.y = P(0, a.y).y; swapSide(a); });
     (S.brackets || []).forEach(b => { b.y1 = P(0, b.y1).y; b.y2 = P(0, b.y2).y; swapSide(b); });
     (S.boxes || []).forEach(b => {
@@ -909,7 +955,11 @@
    * ladder that fits it best as evidence. A weak guess never overrides the user's favourites. */
   App.guessGelType = function () {
     const S = App.S;
-    if (!S || !S.lanes.length) return null;
+    if (!S) return null;
+    App._gelVoteInput = null;
+    const colour = E.detectGelType({ colorStats: App._colorStats });
+    if (colour.colourRule) return applyGelVote(colour, null);
+    if (!S.lanes.length) return null;
     const c = App.bandStrip(), h = c.h, rg = App.laneRange() || [0, S.lanes.length - 1];
     let best = null, richLanes = 0, laneCount = 0;
     for (let i = rg[0]; i <= rg[1]; i++) {
@@ -996,6 +1046,11 @@
     const def = App.defaultLadder(kind);
     const fav = (G.Ladders.favoritesOf(kind)[0] || {}).id;
     S.markers.forEach(m => {
+      if(m.bandMode==='fixed'){
+        m.unassignedBands=m.bands.filter(b=>!b.excluded).map(b=>({y:b.y,size:null})).concat((m.unassignedBands||[]).map(b=>({y:b.y,size:null})));
+        m.bands=[];m.ladderId='';delete m.orderPairing;m.unit=G.Ladders.unitOfKind(kind);m.userAssigned=true;m.ladderLocked=false;
+        if(m.recognition){m.recognition.edited=true;delete m.recognition.sizeAssignment;}return;
+      }
       const l = G.Ladders.get(m.ladderId);
       if (!l || G.Ladders.kindOf(l) !== kind) m.ladderId = fav || def;
       m.unit = G.Ladders.unitOfKind(kind);
@@ -1006,8 +1061,9 @@
   }
 
   // find ladder lanes (many sharp bands) and pick ladders for them
-  App.autoMarkers = function () {
+  App.autoMarkers = function (ladderId) {
     const S = App.S;
+    S.currentSources = Object.assign({}, S.currentSources, {markers:'local'});
     App._peakCrop = App.bandStrip();
     try {
       const peaks = S.lanes.map((l, i) => App.lanePeaks(i));
@@ -1017,7 +1073,9 @@
       const kind = App.gelKind(), mode = kind;
       // prestained protein markers have fewer bands than DNA ladders, so the ladder-lane bar is lower
       const minBands = kind === 'protein' ? 4 : 6;
-      const all = G.Ladders.all(kind), favs = G.Ladders.favoritesOf(kind).map(l => l.id);
+      const chosen = ladderId && G.Ladders.get(ladderId);
+      if (ladderId && (!chosen || G.Ladders.kindOf(chosen) !== kind)) throw new Error(L('请选择当前胶类型中有效的 Marker 型号', 'Select a valid marker model for the current gel type'));
+      const all = chosen ? [chosen] : G.Ladders.all(kind), favs = chosen ? [chosen.id] : G.Ladders.favoritesOf(kind).map(l => l.id);
       const h = App._peakCrop.h;
       /* Which lanes are marker lanes? Not simply "the ones with the most bands": on a protein gel a
        * whole-cell lysate lane has more bands than any ladder and some ladder fits a subset of them.
@@ -1136,7 +1194,7 @@
   // match all markers jointly; manually placed bands are kept as anchors
   App.matchMarkers = function (fresh, subset) {
     const S = App.S, outer = App._peakCrop, c = outer || App.bandStrip();
-    const targets = subset || S.markers;
+    const targets = (subset || S.markers).filter(m => m.bandMode !== 'fixed');
     const ms = targets.filter(m => G.Ladders.get(m.ladderId) && S.lanes[m.lane]);
     targets.forEach(m => { if (!ms.includes(m)) m.bands = []; });
     if (!ms.length) return;
@@ -1173,7 +1231,7 @@
   App.detectMarkersInCrop = function () {
     const S=App.S,r=App.laneRange();if(!r)return 0;
     const inside=m=>m.lane>=r[0]&&m.lane<=r[1], previous=S.markers.slice(),names=S.lanes.map(l=>l.name);
-    const protectedOnes=previous.filter(m=>inside(m)&&(m.userAssigned||m.ladderLocked||m.bands.some(b=>b.manual))&&!S.lanes[m.lane].markerExcluded);
+    const protectedOnes=previous.filter(m=>inside(m)&&(m.bandMode==='fixed'||m.userAssigned||m.ladderLocked||m.bands.some(b=>b.manual))&&!S.lanes[m.lane].markerExcluded);
     App.autoMarkers();
     const found=S.markers.filter(m=>!protectedOnes.some(p=>Math.abs(p.lane-m.lane)<=1));
     found.forEach(m=>{
@@ -1194,6 +1252,7 @@
   };
   App.alignMarker = function (mi) {
     const m=App.S.markers[mi];if(!m)return;
+    if(m.bandMode==='fixed')return; // AI/manual fixed coordinates require explicit comparison or editing.
     m.userAssigned=true;App.matchMarkers(false,[m]);
   };
   App.removeMarker = function (mi) {
@@ -1203,7 +1262,7 @@
   };
   App.removeMarkerBand = function (mi,bp) {
     const m=App.S.markers[mi],b=m&&m.bands.find(b=>b.bp===bp);if(!b)return;
-    m.userAssigned=true;Object.assign(b,{show:false,manual:false,matched:false,excluded:true});App.matchMarkers(false,[m]);
+    m.userAssigned=true;if(m.recognition)m.recognition.edited=true;Object.assign(b,{show:false,manual:false,matched:false,excluded:true});App.matchMarkers(false,[m]);
   };
 
   // hide labels that would collide in the final figure; keep reference bands first
@@ -1422,9 +1481,11 @@
     const S = App.S, st = S.style, out = [];
     const add = (level, text, fix) => out.push({ level, text, fix });
     const eff = App.effectiveDpi();
-    const safe = App.maxSafeWidthMm(300);
+    const safe = App.maxSafeWidthMm(st.dpi);
     if (eff < 300) add('block', L(`胶图有效分辨率 ${Math.round(eff)} dpi（< 300）。选的 ${st.dpi} dpi 只会放大像素。`, `The gel is ${Math.round(eff)} dpi at this size (< 300). Exporting at ${st.dpi} dpi only enlarges the pixels.`),
       { label: L(`把凝胶宽度改为 ${safe} mm`, `Set gel width to ${safe} mm`), run: () => { st.autoWidth = false; st.gelWidthMm = safe; } });
+    if (eff >= 300 && eff < st.dpi) add('info', L(`文件将按 ${st.dpi} dpi 导出；胶图有效分辨率为 ${Math.round(eff)} dpi。`, `The file uses ${st.dpi} dpi; effective gel resolution is ${Math.round(eff)} dpi.`),
+      {label:L(`胶图宽度改为 ${safe} mm 以达到 ${st.dpi} dpi`, `Use ${safe} mm gel width for ${st.dpi} dpi`),run:()=>{st.autoWidth=false;st.gelWidthMm=safe;}});
     const k = App.clipStats(), bc = App.bandClipFrac();
     const sp = (k.sensorFrac * 100).toFixed(2), bp = (bc * 100).toFixed(2);
     if (!App.isColour() && k.sensorFrac > 0.0005) add('warn', L(`相机过曝：裁切区 ${sp}% 像素饱和。建议换一张较短曝光。`, `Camera saturation: ${sp}% of the pixels in the crop are saturated. Consider a shorter exposure.`));
@@ -1445,7 +1506,7 @@
     if (st.lineWidthPt < 0.25) add('warn', L(`线宽 ${st.lineWidthPt} pt 太细。`, `Line width ${st.lineWidthPt} pt is too thin.`), { label: L('改为 0.5 pt', 'Use 0.5 pt'), run: () => { st.lineWidthPt = 0.5; } });
     if (wmm > 183) add('warn', L(`成图宽 ${wmm.toFixed(0)} mm，超过双栏宽度（约 180 mm）。`, `The figure is ${wmm.toFixed(0)} mm wide, wider than a double column (about 180 mm).`));
     (fig.overlaps || []).forEach(w => add('warn', w));
-    if (!App.isColour() && S.levels.gamma !== 1) add('warn', L(`Gamma = ${S.levels.gamma}：非线性调整，图注中必须说明。`, `Gamma = ${S.levels.gamma}: a non-linear adjustment that must be stated in the legend.`));
+    if (!App.isOriginal() && S.levels.gamma !== 1) add('warn', L(`Gamma = ${S.levels.gamma}：非线性调整，图注中必须说明。`, `Gamma = ${S.levels.gamma}: a non-linear adjustment that must be stated in the legend.`));
     if (S.lanes.some(l => l.hidden)) add('info', L('有剪除的泳道：成图已加拼接间隙，图注中需说明（见"图注可参考"）。', 'Lanes were removed: splice gaps are added; state this in the legend (see "Legend notes").'));
     if (S.arrows.some(a => a.size && !a.sizeText && (App.estimateInfo(a.y) || {}).extrap)) add('info', L('有箭头大小为外推估算值（已标 ≈）。', 'Some arrow sizes are extrapolated (marked ≈).'));
     if (!S.markers.length) add('warn', L('成图中没有 Marker。', 'The figure has no marker lane.'));
@@ -1473,6 +1534,7 @@
     raf = requestAnimationFrame(() => { raf = 0; App.emit('refresh'); });
   };
 
+  App.BUILD = 'v1.0.0';
   App.snapshot = function () { return JSON.stringify(App.S); };
   App.commit = function () {
     if (!App.S) return;
@@ -1494,25 +1556,45 @@
   App.undo = function () {
     if (App.hist.length < 2) return;
     dropSelection();
+    restoreState(App.hist[App.hist.length - 2]);
     App.future.push(App.hist.pop());
-    App.S = JSON.parse(App.hist[App.hist.length - 1]);
-    App.ensureSrc();     // a restored state may have a different orientation
     App.saveDraftSoon();
     App.emit('change');
   };
   App.redo = function () {
     if (!App.future.length) return;
     dropSelection();
-    const s = App.future.pop();
-    App.hist.push(s);
-    App.S = JSON.parse(s);
-    App.ensureSrc();
+    const s = App.future[App.future.length - 1];
+    restoreState(s);
+    App.future.pop(); App.hist.push(s);
     App.saveDraftSoon();
     App.emit('change');
   };
 
   // ---------- templates ----------
   // templates are relative to the first lane of the figure, so they fit the next gel wherever it was loaded
+  App.styleTemplate = function (name) {
+    const unit=(App.S.markers[0]||{}).unit||App.sizeUnit();
+    const style={};Object.keys(defaultStyle()).filter(k=>k!=='panelLetter').forEach(k=>{style[k]=App.S.style[k];});
+    return {gelfigStyle:1,name:String(name||'Lab style').slice(0,120),style,displayMode:App.S.displayMode,unitMode:unit==='none'?'none':unit.endsWith('-inline')?'inline':'heading'};
+  };
+  App.checkStyleTemplate = function (t) {
+    if (!t || t.gelfigStyle!==1 || !t.style || typeof t.style!=='object' || Array.isArray(t.style) || !['none','inline','heading'].includes(t.unitMode) || !['gray','colour'].includes(t.displayMode))
+      throw new Error(L('不是有效的版式模板','Invalid appearance template'));
+    const defaults=defaultStyle();
+    if(Object.keys(t.style).some(k=>k==='panelLetter'||!Object.hasOwn(defaults,k)||!(k==='labelAngle'?(t.style[k]==='auto'||Number.isFinite(t.style[k])&&t.style[k]>=0&&t.style[k]<=90):defaults[k]===null?(t.style[k]===null||Number.isFinite(t.style[k])&&t.style[k]>=4&&t.style[k]<=24):typeof t.style[k]===typeof defaults[k]&&(typeof t.style[k]!=='number'||Number.isFinite(t.style[k])))))
+      throw new Error(L('版式模板包含不支持的字段或数值','Appearance template contains unsupported fields or values'));
+    const style=normalStyle(t.style);
+    if (![300,600,1200].includes(style.dpi) || !Number.isFinite(style.fontPt) || style.fontPt<4 || style.fontPt>24 || !Number.isFinite(style.lineWidthPt) || style.lineWidthPt<=0 || !Number.isFinite(style.gelWidthMm) || style.gelWidthMm<=0 || style.gelWidthMm>180)
+      throw new Error(L('版式模板的字号、宽度或分辨率无效','Invalid template font size, width or resolution'));
+    return style;
+  };
+  App.applyStyleTemplate = function (t) {
+    const style=App.checkStyleTemplate(t);style.panelLetter=App.S.style.panelLetter;App.S.style=style;
+    App.setDisplayMode(t.displayMode==='colour'?'colour':'gray');
+    App.S.markers.forEach(m=>{const base=App.gelKind()==='protein'?'kDa':/^kb/.test(m.unit)?'kb':'bp';m.unit=t.unitMode==='none'?'none':base+(t.unitMode==='inline'?'-inline':'');});
+    App.commit();
+  };
   App.template = function () {
     const S = App.S, r = App.laneRange() || [0, S.lanes.length - 1], rel = i => i - r[0];
     const lanes = [];
@@ -1539,7 +1621,7 @@
       brackets: (S.brackets || []).map(b => ({ text: b.text, side: b.side, bp1: App.estimateBp(b.y1), bp2: App.estimateBp(b.y2), pt: b.pt || null, weight: b.weight || null, color:b.color })).filter(b => b.bp1 && b.bp2),
       // recorded for reference only: each gel is straightened on its own
       rotation: S.rotation,
-      style: S.style, displayMode: App.isColour() ? 'colour' : 'gray' };
+      style: S.style, displayMode: App.isOriginal() ? 'colour' : 'gray' };
   };
   // facts the UI needs before applying (lane-count mismatch, ladders that cannot be resolved)
   App.checkTemplate = function (t) {
@@ -1581,7 +1663,7 @@
     S.groups = (t.groups || []).map(g => Object.assign({ from: abs(g.from), to: abs(g.to), text: g.text || '' }, ptOf(g)));
     S.conditions = (t.conditions || []).map(c => Object.assign({ name: c.name, values: S.lanes.map((l, i) => (i >= r[0] && i - r[0] < (c.values || []).length ? c.values[i - r[0]] : '')) }, ptOf(c)));
     S.style = normalStyle(t.style);
-    if (t.displayMode === 'colour' || t.displayMode === 'gray') App.setDisplayMode(t.displayMode === 'colour' && App.hasColour() ? 'colour' : 'gray');
+    if (t.displayMode === 'colour' || t.displayMode === 'gray') App.setDisplayMode(t.displayMode === 'colour' ? 'colour' : 'gray');
     App.fixIndices();
     App.matchMarkers(true);
     if(mk.length)tl.forEach((l,k)=>{
@@ -1637,13 +1719,23 @@
       throw new Error(L('项目文件解压失败，文件可能已损坏', 'The project file could not be decompressed; it may be damaged'));
     }
   }
+  // A saved project contains one source. Bind reset to a state with those exact bytes.
+  App.projectInitial = function () {
+    const initial = App.S.resetBaseline || App.initial;
+    return initial && JSON.parse(initial).file.sha256 === App.S.file.sha256 ? initial : App.snapshot();
+  };
+  App.setResetBaseline = function () {
+    const state = Object.assign({}, App.S); delete state.resetBaseline;
+    App.S.resetBaseline = JSON.stringify(state);
+  };
   App.projectData = function () {
     const S = App.S;
     return {
-      gelfigProject: 1, app: 'GelFigure ' + App.VERSION, savedAt: new Date().toISOString(),
+      gelfigProject: 1, app: 'GelFigure ' + App.VERSION, build: App.BUILD, savedAt: new Date().toISOString(),
       source: { name: S.file.name, sha256: S.file.sha256, bytes: b64(App.srcBuffer) },
       ladders: G.Ladders.defsFor(S.markers.map(m => m.ladderId)),
-      initial: App.initial, autoRotation: App.autoRotation,
+      // A comparison-enabled project persists only the adopted recognition, including an empty result.
+      initial: App.projectInitial(), autoRotation: App.autoRotation,
       state: S
     };
   };
@@ -1652,24 +1744,36 @@
     return (await gz(json)) || new Blob([json], { type: 'application/json' });
   };
   App.openProject = async function (buffer) {
+    const generation=++App.sourceGeneration;
+    busy(true,L('正在打开项目…','Opening project…'));
+    try {
+    if(buffer instanceof Blob)buffer=await buffer.arrayBuffer();
     await G.Ladders.ready;
+    if(generation!==App.sourceGeneration)return false;
     const u = new Uint8Array(buffer, 0, 2);
     const text = u[0] === 0x1f && u[1] === 0x8b ? await gz(new Blob([buffer]), true) : new TextDecoder().decode(buffer);
+    if(generation!==App.sourceGeneration)return false;
     const P = JSON.parse(text);
     if (!P.gelfigProject) throw new Error(L('不是 GelFigure 项目文件', 'Not a GelFigure project file'));
     const raw = unb64(P.source.bytes);
     const input = { name: P.source.name, buffer: raw, img: await G.TIFF.decodeBuffer(raw, P.source.name), sha256: await App.sha256(raw) };
+    if(generation!==App.sourceGeneration)return false;
     if (P.source.sha256 && input.sha256 !== P.source.sha256) throw new Error(L('项目里的原始图像校验失败（SHA-256 不一致），文件可能已损坏', 'The original image inside the project fails its SHA-256 check; the file may be damaged'));
     await App.saveDraft();
+    if(generation!==App.sourceGeneration)return false;
     (P.ladders || []).forEach(d => G.Ladders.importDef(d));
     App.newCachedProject();
-    restore(input, P.state, P.initial, P.autoRotation);
+    restore(input, P.state, P.initial, P.autoRotation,null,null,generation);return true;
+    }catch(error){if(generation!==App.sourceGeneration)return false;throw error;}
+    finally{if(generation===App.sourceGeneration)busy(false);}
   };
-  function restore(input, state, initial, autoRotation, exposures = null, expIdx = null) {
+  function restore(input, state, initial, autoRotation, exposures = null, expIdx = null, generation) {
+    if(generation===undefined)generation=++App.sourceGeneration;
+    if(generation!==App.sourceGeneration)return false;
     // the saved orientation belongs to the stored coordinates: apply it before the state is installed.
     // Projects written before orientation existed carry no field and mean "as decoded".
-    sourcePixels(input.img, state && state.orient);
-    App.srcBuffer = input.buffer;
+    sourceInputs = new Map();
+    installSource(input, state && state.orient);
     App.rot = null; App.satCanvas = null; App._display = null; App._clipKey = null; App._emptyKey = null;
     App.exposures = exposures; App.expIdx = expIdx;
     // notices and detection inputs of the previous image do not belong to this project
@@ -1677,7 +1781,7 @@
     App.S = state;
     App.S.style = normalStyle(App.S.style);
     // Old projects were displayed in grayscale; reopening must not silently change their appearance.
-    App.S.displayMode = App.S.displayMode === 'colour' && App.hasColour() ? 'colour' : 'gray';
+    App.S.displayMode = App.S.displayMode === 'colour' ? 'colour' : 'gray';
     ['boxes', 'brackets', 'labels', 'notes'].forEach(k => { if (!Array.isArray(App.S[k])) App.S[k] = []; });   // older projects
     // projects made before protein mode existed carry no gelType: take it from the marker ladder
     if (App.S.gelType !== 'dna' && App.S.gelType !== 'protein') {
@@ -1698,6 +1802,8 @@
     App.ensureRot();
     App.emit('loaded');
     App.emit('change');
+    if(generation===App.sourceGeneration)busy(false);
+    return true;
   }
 
   // History and project files share the same restoration path.

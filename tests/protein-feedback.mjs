@@ -135,7 +135,7 @@ export async function proteinFeedbackChecks(browser, base) {
           const bg = .10 + .01 * Math.sin(x / 210) + .008 * Math.cos(y / 150), i = y * g.width + x;
           g.data[i] = bg + (g.data[i] - bg) * .13;
         }
-        await App.load({ name: 'synthetic-faint-180.tif', buffer: Demo.encodeTiff16(g) });
+        await App.load({ name: 'synthetic-faint-180.tif', buffer: Demo.encodeTiff16(g) });App.setGelType('protein');
         const S = App.S;
         const lane = S.lanes.reduce((best, l, i) => Math.abs(l.x - t.x0) < Math.abs(S.lanes[best].x - t.x0) ? i : best, 0);
         S.markers = [App.newMarker(lane, 'thermo_26616')]; App.matchMarkers(true);

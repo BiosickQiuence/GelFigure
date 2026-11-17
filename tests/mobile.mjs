@@ -46,11 +46,11 @@ export async function mobileChecks(browser, base, engine) {
     });
     await check('phone: export sheet offers every format and the resolution', async () => {
       await p.locator('#mExport').tap();
-      const n = await p.locator('#exportSheet [data-x]').count();
+      const formats = await p.locator('#exportSheet [data-x]').evaluateAll(items=>items.map(e=>e.dataset.x).sort());
       await p.locator('#mDpiSeg [data-dpi="300"]').tap();
       const dpi = await p.evaluate(() => App.S.style.dpi);
       await p.locator('#exportSheet .sheet-x').tap();
-      return n === 8 && dpi === 300 ? true : { n, dpi };
+      return JSON.stringify(formats)===JSON.stringify(['log','original','png','pptx','project','review','svg','tiff','uncropped'])&&dpi===300?true:{formats,dpi};
     });
     await check('phone: an exported PNG opens as a picture to long-press, not a download', async () => {
       let downloaded = false;

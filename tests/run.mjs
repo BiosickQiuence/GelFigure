@@ -5,6 +5,7 @@
  *   tests/mobile.mjs                      phone layout and touch (emulated phone per engine), desktop unchanged
  * The app is served from a throw-away local HTTP server (no network access is needed).
  * Usage: node tests/run.mjs [--browser=chromium,firefox,webkit] [--channel=msedge] */
+import './backup-outputs.cjs';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -17,8 +18,16 @@ import { pptxChecks } from './pptx.mjs';
 import { fontChecks } from './fonts.mjs';
 import { unitHeaderChecks } from './unit-header.mjs';
 import { colourChecks } from './colour.mjs';
+import { colourMarkerChecks } from './colour-marker.mjs';
 import { historyChecks } from './history.mjs';
 import { perspectiveChecks } from './perspective.mjs';
+import { aiMarkerChecks } from './ai-marker.mjs';
+import { aiBandControlChecks } from './check-ai-band-controls.mjs';
+import { aiOrderChecks } from './check-ai-order.mjs';
+import { applyReturnChecks } from './check-apply-return.mjs';
+import { workspaceChecks } from './workspace.mjs';
+import { previewFitChecks } from './preview-fit.mjs';
+import { layoutBetaChecks } from './check-layout-beta.mjs';
 import { workflowChecks } from './workflow.mjs';
 import { ladderCacheChecks } from './ladder-cache.mjs';
 import { layoutControlChecks } from './layout-controls.mjs';
@@ -54,6 +63,7 @@ function serve() {
 // interface self-test expectations: [description, predicate on the result object]
 const UI_CHECKS = [
   ['no exception', r => !r.error],
+  ['AI comparison preview stays out of project state', r => r.aiMarker.previewOnly && r.aiMarker.noSettingsInState],
   ['Enter moves to the next lane', r => r.enterNext.name1 === 'Sample A' && r.enterNext.editorOpen],
   ['IME Enter does not commit', r => r.imeEnter.stillEditing],
   ['Backspace/Delete never delete lanes while typing', r => r.backspace.lanesBefore === r.backspace.whileTyping],
@@ -139,6 +149,11 @@ async function runIn(name, base) {
     if (ladderCache.some(r => r[0] === 'FAIL')) out.ok = false;
     const perspective = await perspectiveChecks(browser, base, ROOT, name);
     out.results.push(...perspective); if (perspective.some(r => r[0] === 'FAIL')) out.ok = false;
+    const aiMarker=await aiMarkerChecks(browser,base,ROOT,name);out.results.push(...aiMarker);if(aiMarker.some(r=>r[0]==='FAIL'))out.ok=false;
+    const betaChecks=await layoutBetaChecks(browser,ROOT,name);out.results.push(...betaChecks);if(betaChecks.some(r=>r[0]==='FAIL'))out.ok=false;
+    const returnChecks=await applyReturnChecks(browser,ROOT,name);out.results.push(...returnChecks);if(returnChecks.some(r=>r[0]==='FAIL'))out.ok=false;
+    const sizeOrder=await aiOrderChecks(browser,ROOT,name);out.results.push(...sizeOrder);if(sizeOrder.some(r=>r[0]==='FAIL'))out.ok=false;
+    const bandControls=await aiBandControlChecks(browser,ROOT,name);out.results.push(...bandControls);if(bandControls.some(r=>r[0]==='FAIL'))out.ok=false;
     const workflow = await workflowChecks(browser, base, ROOT, name);
     out.results.push(...workflow);
     if (workflow.some(r => r[0] === 'FAIL')) out.ok = false;
@@ -187,7 +202,7 @@ async function runIn(name, base) {
       if (errs.length) fail('interface page errors', errs.join(' | '));
       await page.close();
     }
-    // privacy: CSP must stop unapproved origins; feedback alone has a narrowly configured exception
+    // CSP still blocks HTTP origins/assets; HTTPS connections permit explicitly configured AI APIs.
     {
       const page = await ctx.newPage();
       await page.goto(`${base}/index.html`);
@@ -201,7 +216,7 @@ async function runIn(name, base) {
         const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = t + '/css'; document.head.appendChild(l);
       }, outside.url);
       await page.waitForTimeout(2000);
-      outside.hits.length ? fail('no request reaches an unapproved origin', outside.hits.join(', ')) : pass('no request reaches an unapproved origin');
+      outside.hits.length ? fail('no request reaches an unapproved origin', outside.hits.join(', ')) : pass('CSP blocks HTTP connections and external assets');
       await page.close();
     }
     // Chinese interface loads and detects the demo gel
@@ -233,6 +248,12 @@ for (const name of browsers) {
   if (!ENGINES[name]) { console.error(`unknown browser: ${name}`); allOk = false; continue; }
   const t0 = Date.now();
   const r = await runIn(name, base);
+  const workspaceBrowser=await ENGINES[name].launch();
+  try {const fit=await previewFitChecks(workspaceBrowser,ROOT,name);r.results.push(...fit);r.ok&&=fit.every(x=>x[0]==='ok');const added=await colourMarkerChecks(workspaceBrowser,ROOT,name);r.results.push(...added);r.ok&&=added.every(x=>x[0]==='ok');const checks=await workspaceChecks(workspaceBrowser,ROOT,name);r.results.push(...checks);r.ok&&=checks.every(x=>x[0]==='ok');}finally{await workspaceBrowser.close();}
+  for(const [script,args] of [['refactor.mjs',['--browser='+name]],['provenance.mjs',[name]],['source-races.mjs',[name]]]){
+    try{execFileSync(process.execPath,['--require','./tests/backup-outputs.cjs','tests/'+script,...args],{cwd:ROOT,stdio:'inherit'});r.results.push(['ok',script+' regression checks']);}
+    catch(e){r.ok=false;r.results.push(['fail',script+' regression checks',e.message]);}
+  }
   console.log(`\n${name}${channel && name === 'chromium' ? ` (${channel})` : ''} — ${r.ok ? 'PASS' : 'FAIL'} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
   r.results.forEach(([s, what, detail]) => console.log(`  ${s === 'ok' ? '✓' : '✗'} ${what}${detail ? `\n      ${detail}` : ''}`));
   allOk = allOk && r.ok;

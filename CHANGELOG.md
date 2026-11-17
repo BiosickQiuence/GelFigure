@@ -2,13 +2,21 @@
 
 ## Unreleased
 
-- 增加四点透视校正：自由拖动凸四边形四角，将斜拍胶图拉正为矩形；校正前明确提示清空原标注并重新识别。灰度与原色共享几何，支持撤销／重做、项目恢复、曝光切换和离线单文件；原始数据保留，校正参数与双线性插值写入处理日志和图注提示。
-- Add four-corner perspective correction for oblique gel photographs, with explicit annotation reset and lane/marker re-detection. Grayscale and RGB share geometry; undo, projects, exposures and offline builds retain original pixels and log the projective transform and interpolation.
+## [1.0.0] - 2026-11-17
 
+GelFigure v1.0.0 — AI-assisted gel review and a beginner-friendly bilingual release.
 
-All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [semantic versioning](https://semver.org/).
+### 中文摘要
 
-## [Unreleased]
+- 发布页内 AI 泳道与 Marker 复核、四点校正、可编辑条带和顺序配对；新图默认保留原色，蓝色按蛋白胶、黑白按 DNA 胶处理，顶部一次选择 Marker 型号供本地与 AI 共用。
+- 修复应用 AI Marker 后右侧预览缩小的问题；保留 DPI、预览缩放、原图字节、人工保护、撤销/恢复和 PNG / TIFF / SVG / PPTX / 审阅包导出。
+- 重写中英文 README，提供无需编程的 API 配置步骤、明确模型 ID、官方出处、CORS/密钥/额度排错；网页统一为 v1.0.0，移除更新历史 UI 和原作者赞助/反馈转发，反馈及 Star 转向本仓库。
+
+### English
+
+- Ship inline AI lane/Marker review, perspective correction, editable bands and sequential size pairing. New inputs retain original appearance; blue/monochrome rules select protein/DNA, with one shared model choice for local and AI recognition.
+- Refit the figure immediately after review closes, preserving DPI, zoom, original bytes, manual protections, undo/restoration and PNG/TIFF/SVG/editable PPTX/review-package export.
+- Replace the bilingual README with no-code API onboarding, exact vision-model IDs, official sources and troubleshooting. Normalize the website to v1.0.0, remove release-history UI and legacy donation/forwarded-feedback destinations, and route feedback/Star to this repository.
 
 ## [0.6.15] - 2026-11-11
 

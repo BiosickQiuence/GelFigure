@@ -89,7 +89,7 @@
       const w = Math.round(f.w * dpi / 72), h = Math.round(f.h * dpi / 72), mm = v => (v / G.Render.MM).toFixed(0);
       const eff = Math.round(App.effectiveDpi());
       $('mDpiInfo').innerHTML = L(`成图 ${mm(f.w)} × ${mm(f.h)} mm · ${w} × ${h} 像素`, `Figure ${mm(f.w)} × ${mm(f.h)} mm · ${w} × ${h} px`)
-        + (eff < dpi ? L(`（胶图本身 ${eff} dpi）`, ` (the gel itself is ${eff} dpi)`) : '')
+        + (eff < dpi ? L(`（文件 ${dpi} dpi；胶图有效 ${eff} dpi）`, ` (file ${dpi} dpi; effective gel ${eff} dpi)`) : '')
         + (w * h > PX_LIMIT ? '<br><span class="bad">' + L('这么大的图手机浏览器可能画不出来，请选较低的分辨率', 'Too large for a phone browser to draw — choose a lower resolution') + '</span>' : '');
     }
     $('mPreflight').checked = App.prefs().preflight !== false;
@@ -108,7 +108,7 @@
     exportSync();
   });
   // the sheet only forwards to the desktop export buttons: one code path for both layouts
-  const XBTN = { png: 'btnPNG', tiff: 'btnTIFF', svg: 'btnSVG', pptx: 'btnPPTX', uncropped: 'btnUncropped', original: 'btnOriginal', log: 'btnLog', project: 'btnSaveProj' };
+  const XBTN = { png: 'btnPNG', tiff: 'btnTIFF', svg: 'btnSVG', pptx: 'btnPPTX', uncropped: 'btnUncropped', original: 'btnOriginal', log: 'btnLog', project: 'btnSaveProj', review:'btnReviewPackage' };
   $('exportSheet').addEventListener('click', e => {
     const b = e.target.closest('[data-x]'); if (!b) return;
     closeSheets();
@@ -123,16 +123,18 @@
     history: () => G.HistoryUI.open(),
     saveProj: () => $('btnSaveProj').click(),
     saveTpl: () => $('btnSaveTpl').click(),
+    saveAppearance:()=> $('btnSaveAppearance').click(),
+    labDefault:()=> $('btnLabDefault').click(),
+    clearLabDefault:()=> $('btnClearLabDefault').click(),
     loadTpl: () => $('tplInput').click(),
     help: () => $('helpDlg').classList.remove('hidden'),
-    updates: () => G.Updates.open($('btnMore')),
     community: () => G.ExportSupport.openHub($('btnMore')),
     lang: () => $('btnLang').click(),
     reset: () => $('btnResetAll').click()
   };
   $('btnMore').onclick = () => {
     const has = !!S();
-    $('moreSheet').querySelectorAll('[data-m="saveProj"],[data-m="saveTpl"],[data-m="loadTpl"],[data-m="reset"]').forEach(b => b.classList.toggle('hidden', !has));
+    $('moreSheet').querySelectorAll('[data-m="saveProj"],[data-m="saveTpl"],[data-m="loadTpl"],[data-m="saveAppearance"],[data-m="labDefault"],[data-m="clearLabDefault"],[data-m="reset"]').forEach(b => b.classList.toggle('hidden', !has));
     openSheet('moreSheet');
   };
   $('moreSheet').addEventListener('click', e => {

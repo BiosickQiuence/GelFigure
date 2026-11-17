@@ -1,15 +1,13 @@
 # Security and privacy
 
-GelFigure processes images entirely in the browser, without an image-processing server or telemetry. Images are read from files you choose and exports are saved through browser downloads. The CSP permits the app’s own resources and one configured feedback endpoint. Only an explicit feedback submission sends typed text, optional reply email and the app version to FormSubmit for email delivery. The form does not read images, filenames, lane names or project contents. Requests omit credentials, use an origin-only referrer and do not follow redirects. Submissions need internet access; local HTML files provide a copy/open-online fallback. External sponsorship and Star pages open only on explicit clicks.
+GelFigure v1.0.0 processes local images and exports in the browser. Only an explicit AI-recognition action sends the complete geometrically processed analysis image and selected model/catalogue to the user-configured HTTPS endpoint. The analysis image is not limited to the red figure crop. API requests omit cookies, reject redirects, and include only the protocol payload; API keys are sent only as authorization to that endpoint.
 
-The maintainer explicitly approved publishing the configured feedback recipient address. Activation links, inbox credentials, API secrets and unrelated personal data must never be committed. `scripts/configure-feedback.mjs` updates the endpoint and its exact CSP allowance together; the bundle preserves that allowance. Prefer opaque form IDs for new recipients, or obtain approval before using `--public-email`.
+Keys stay in page memory by default. Optional browser persistence is plaintext local storage on that computer/origin; never use it on a shared machine. Keys, endpoints and raw AI responses are not placed in projects, processing records or image exports. The service provider controls retention of images uploaded to it.
 
-Data kept on your computer, in the browser's local storage for this page only:
+There is no third-party feedback forwarding, payment destination or sponsorship QR code in the active application. Explicit feedback/Star links open https://github.com/BiosickQiuence/GelFigure. Posting an issue is the user's own GitHub action, not an automatic app submission. Do not post keys, private gel images or unpublished data publicly.
 
-- preferences (language, layout defaults, last ladder, pre-flight setting);
-- custom ladders and favourites;
-- autosaved projects (original images and annotations). Local project history includes all exposures; entries can be deleted from Recent projects. Clearing browser site data also removes the cache. Cached data is not embedded in the downloaded HTML.
+Browser-local data can include preferences, custom marker models and autosaved projects with originals/annotations/exposures. Local caches are not permanent backups and are not embedded in downloaded HTML. Save `.gelfig` and marker-library backups separately before clearing site data or changing browsers.
 
-## Reporting a vulnerability
+## Reporting security concerns
 
-If you find a way for a crafted image or project file to run code, leak data or bypass the Content Security Policy, please report it privately through GitHub's [private vulnerability reporting](https://github.com/poplarity/GelFigure/security/advisories/new) rather than a public issue.
+Use this repository's [Security tab](https://github.com/BiosickQiuence/GelFigure/security). If private vulnerability reporting is available, use it for sensitive reports. If it is not available, do not post credentials, confidential data or a sensitive exploit publicly; contact the maintainer through GitHub first.

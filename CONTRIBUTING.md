@@ -1,64 +1,11 @@
 # Contributing to GelFigure
 
-Thank you for helping! Issues and pull requests in English or Chinese are both welcome. 中文或英文提交均可。
+Use https://github.com/BiosickQiuence/GelFigure for issues and contributions. New UI text must be bilingual; figures and processing records use English. Preserve original bytes, whole-image processing integrity, explicit adoption, undo, and offline single-file operation. No runtime dependencies or automatic model/service switching are introduced.
 
-## Reporting a problem
+AI recognition is an explicit user action through an HTTPS OpenAI-compatible Chat Completions vision API. Keys remain separate from serializable application state. Treat model output as untrusted: validate format, coordinate bounds, gel type and catalogue sizes before adoption. Real or unpublished gels must not be committed; tests and documentation images use synthetic data only.
 
-Please use the [issue templates](https://github.com/poplarity/GelFigure/issues/new/choose). The most useful reports include:
+Read `AGENTS.md` for current architecture and release conventions. With Node.js 22+, run `npm ci`, install Playwright's Chromium/Firefox/WebKit, and run `npm test`. Validate the standalone artifact using `node scripts/bundle-onefile.mjs`. Keep current version, package metadata, citation, download URLs, catalogue and changelog synchronized.
 
-- browser and operating system, and whether you used the online version, the single-file `GelFigure-vVERSION.html`, or `index.html` from a ZIP (and whether the ZIP was fully extracted);
-- the gel type (DNA or protein), the imager or scanner, and the file type (e.g. "gel imager, 16-bit TIFF");
-- what you expected and what happened; a screenshot helps a lot;
-- the **processing log** (*Export ▾ → Processing log (JSON)*). It contains settings and statistics but no pixel data. Remove lane names first if they are confidential.
+Add meaningful regression coverage for changed behavior. Never turn an expected absent/unknown band into an invented known coordinate. Keep manual protections, source/project restoration, fixed AI positions and exported geometry consistent.
 
-**Gel images.** An image on which detection fails is the best possible bug report, but only attach one if you are allowed to share it publicly. Unpublished data, patient-derived material or anything under a confidentiality agreement should not be posted. A cropped or downscaled copy is often enough.
-
-## Adding a ladder
-
-Built-in ladders live in [`js/ladders.js`](js/ladders.js):
-
-```js
-// DNA ladders go in the DNA array, protein ladders in the PROTEIN array below it
-{ id: 'neb1kb', name: 'NEB 1 kb DNA Ladder (N3232)', sizes: [10000, 8000, /* … */ 500], ref: [3000] },
-{ id: 'biorad_dual', name: 'Bio-Rad Precision Plus Dual Color (161-0374)', sizes: [250, 150, /* … */ 10], ref: [75, 25] },
-```
-
-- `id`: short, unique, lowercase.
-- `name`: `Vendor Product name (catalogue number)`.
-- `sizes`: every **visible** band, largest to smallest — bp for DNA ladders, kDa for protein ladders (the apparent molecular weights the manufacturer prints for the prestained bands).
-- `ref`: the brighter or coloured reference bands, if the datasheet marks any.
-
-Also add a row to [`docs/ladders.md`](docs/ladders.md) with the catalogue number and a link to the manufacturer's datasheet the sizes come from. A wrong size produces a wrong figure, so ladders without a source cannot be merged.
-
-If the band sizes turn out to be identical to a ladder that is already there, say so in the pull request: both can still be listed (the reference bands and the name in the legend differ), but detection will not be able to tell them apart, so they belong in the "cannot be told apart" section of `docs/ladders.md`.
-
-## Development
-
-There is no build step. Edit the files and reload `index.html`. [AGENTS.md](AGENTS.md) describes the architecture, the release process and known pitfalls in more depth.
-
-- **Keep it dependency-free** and loadable from `file://`: plain `<script>` tags, no ES modules, no CDN, no automatic external requests. Explicit text feedback is the sole submission exception: use the configured endpoint, do not attach image/project data, and keep its exact CSP allowance.
-- **Every interface string is bilingual.** In JavaScript, write `L('中文', 'English')`; in HTML, put the English text in `data-en` (or `data-en-html`, `data-en-title`, `data-en-placeholder`). Text that goes into figures, legends, logs and exported files stays in English.
-- **Image-processing changes must stay honest:** only linear whole-image adjustments by default, nothing removed silently, and anything that changes how the data looks is recorded in the processing log.
-- Match the existing style: small functions, comments that explain *why*.
-
-### Tests
-
-```bash
-npm install
-npx playwright install chromium firefox webkit
-npm test                        # engine + interaction self-tests in all three engines
-npm test -- --browser=firefox   # a single engine
-```
-
-`test/test.html` checks the TIFF decoder, deskew, crop, lane and ladder detection and rendering on synthetic gels. `index.html?demo=1&uitest=1` drives the interface: editing, IME handling, rotation, lane removal, templates, exports, project files, exposures and drafts. Please add a check to `js/uitest.js` (and an assertion to `tests/run.mjs`) for new behaviour.
-
-Targeted interaction/export suites also live in `tests/`; add coverage there when that better exercises the change. Run `node scripts/check-updates.mjs` and `node scripts/bundle-onefile.mjs` to validate release summaries and the offline build. At release time, the newest `js/releases.js` entry must match `App.VERSION` with a date and 1–3 short bullets in both Chinese and English. Keep the full technical history in `CHANGELOG.md`; see `AGENTS.md` for release and handover details.
-
-## Pull requests
-
-1. Fork and create a branch.
-2. Make the change, with tests where it makes sense.
-3. Run `npm test`.
-4. Describe what changed and why; add a line to [CHANGELOG.md](CHANGELOG.md) under *Unreleased*.
-
-By contributing you agree that your contribution is licensed under the [MIT License](LICENSE).
+Marker catalogue additions require an exact manufacturer model, size list, reference bands and a source in `docs/ladders.md`. Never add an unsourced scientific size list. Contributions use the MIT terms in `LICENSE`.

@@ -5,12 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#131c29">
 <meta name="format-detection" content="telephone=no">
-<!-- Images stay local. The sole external connect-src allowance is the configured text-feedback endpoint, used only on an explicit submission. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data: blob:; connect-src 'self' file: data: blob: https://formsubmit.co/ajax/wyang404%40qq.com; object-src 'none'; base-uri 'none'; form-action 'none'">
-<meta name="description" content="GelFigure: turn a raw DNA or protein gel image into a publication-ready figure in the browser. Offline image processing; gel images stay local.">
-<title>GelFigure</title>
+<!-- Images stay local unless the user explicitly requests AI recognition. HTTPS connect-src permits user-configured APIs; scripts, images and forms remain restricted. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data: blob:; connect-src 'self' file: data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="description" content="GelFigure: turn a raw DNA or protein gel image into a publication-ready figure in the browser. Local image processing; optional AI recognition sends an analysis image only on request.">
+<title>GelFigure v1.0.0 · 胶图整理与 AI 复核</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111827'/%3E%3Cg fill='%23fff'%3E%3Crect x='6' y='8' width='6' height='2.2' rx='1'/%3E%3Crect x='6' y='13' width='6' height='2.2' rx='1'/%3E%3Crect x='6' y='18' width='6' height='2.2' rx='1'/%3E%3Crect x='6' y='23' width='6' height='2.2' rx='1'/%3E%3Crect x='19' y='15' width='7' height='3' rx='1.2'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/marker-ai.css">
+<link rel="stylesheet" href="css/gel-ai-beta.css">
+<link rel="stylesheet" href="css/workspace.css">
 </head>
 <body>
 <header class="topbar">
@@ -28,16 +31,20 @@
         <label><span data-en="Open image…">打开图片…</span><small data-en="Select several exposures of one gel to pick the best automatically">可一次选多张同一块胶的不同曝光，自动挑最佳</small><input type="file" id="fileInput3" accept=".tif,.tiff,.png,.jpg,.jpeg,.bmp,image/*" multiple hidden></label>
         <label><span data-en="Open project…">打开项目…</span><small data-en=".gelfig project file (original image and all annotations)">.gelfig 项目文件（含原图和全部标注）</small><input type="file" id="projInput" accept=".gelfig,.json" hidden></label>
         <button id="btnHistory" data-en="Recent projects…">历史项目…</button>
-        <button id="btnUpdates"><span data-en="Release history…">更新日志…</span><small data-app-version></small></button>
         <button id="btnSaveProj"><span data-en="Save project…">保存项目…</span><small data-en="Original image + every setting and annotation; continue on any computer">原图 + 全部参数和标注，可在任何电脑接着做</small></button>
         <div class="menu-sep"></div>
+        <label><span data-en="Appearance template name">版式模板名称</span><input id="stylePresetName" type="text" maxlength="120" value="Lab style"></label>
+        <button id="btnSaveAppearance" data-en="Save appearance only…">导出仅版式模板…</button>
+        <button id="btnLabDefault" data-en="Use current appearance as lab default">将当前版式设为实验室默认</button>
+        <button id="btnClearLabDefault" data-en="Clear lab default">取消实验室默认版式</button>
         <button id="btnSaveTpl"><span data-en="Save style…">保存样式…</span><small data-en="Lane names, markers, groups, layout — reuse for similar gels">泳道名、Marker、分组、版式，下次同类胶一键套用</small></button>
         <label><span data-en="Apply style…">载入样式…</span><input type="file" id="tplInput" accept=".json" hidden></label>
         <div class="menu-sep"></div>
-        <button id="btnResetAll" class="danger" data-en="Reset everything (back to import)">重置整图（回到刚导入时）</button>
+        <button id="btnResetAll" class="danger" data-en="Reset edits (import / adopted result)">重置调整（导入／采用结果）</button>
       </div>
     </div>
-    <button class="icon-btn community-entry d-only" id="btnCommunity" title="反馈、赞助与 GitHub Star" data-en-title="Feedback, support and GitHub Star" aria-label="反馈与支持"><span aria-hidden="true">♡</span><span class="community-label" data-en="Feedback / support">反馈 / 支持</span></button>
+    <button class="icon-btn community-entry d-only" id="btnCommunity" title="GitHub 反馈与 Star" data-en-title="GitHub feedback and Star" aria-label="GitHub 反馈与 Star"><span aria-hidden="true">♡</span><span class="community-label" data-en="GitHub feedback">GitHub 反馈</span></button>
+    <button class="icon-btn settings-entry" id="btnSettings" title="设置：AI 接口" data-en-title="Settings: AI API" aria-label="设置"><span aria-hidden="true">⚙</span><span class="d-only" data-en="Settings">设置</span></button>
     <button class="icon-btn" id="btnHelp" title="使用说明" data-en-title="Help">?</button>
     <button class="icon-btn lang-btn" id="btnLang">EN</button>
     <span class="divider"></span>
@@ -53,6 +60,8 @@
         <div class="menu-sep"></div>
         <button id="btnUncropped"><span data-en="Uncropped image (same processing)">未裁切图（与成图同处理）</span><small data-en="For the supplement: same contrast and orientation, crop box and well numbers marked">补充材料用：同一对比度/方向，标出裁切框与孔号</small></button>
         <button id="btnOriginal"><span data-en="Original data (file + SHA-256)">原始数据（原文件 + SHA-256）</span><small data-en="The untouched source file, byte-identical">未经任何处理的原始文件，逐字节一致</small></button>
+        <label><span data-en="Figure format in review package">审阅包内成图格式</span><select id="reviewFormat"><option value="png">PNG</option><option value="tiff">TIFF</option><option value="svg">SVG</option><option value="pptx">PPTX</option></select></label>
+        <button id="btnReviewPackage"><span data-en="Review package (ZIP)">一键导出审阅包（ZIP）</span><small data-en="Original + project + figure + log + legend draft + SHA-256 manifest">原图 + 项目 + 成图 + 日志 + 图例草稿 + SHA-256 清单</small></button>
         <button id="btnLog"><span data-en="Processing log (JSON)">处理日志 JSON</span><small data-en="File fingerprint, all parameters, clipping, effective resolution">文件指纹、全部参数、削顶统计、有效分辨率</small></button>
         <div class="menu-sep"></div>
         <label class="menu-check"><input type="checkbox" id="preflightOn" checked> <span data-en="Check before export">导出前检查</span></label>
@@ -75,15 +84,15 @@
       <label class="btn primary big"><span data-en="Choose file">选择文件</span><input type="file" id="fileInput2" accept=".tif,.tiff,.png,.jpg,.jpeg,.bmp,.gelfig,image/*" multiple hidden></label>
       <button class="btn big" id="btnDemo" data-en="Try the example">看看示例</button>
       <button class="btn big" id="btnHistoryStart" data-en="Open a recent project">打开历史项目</button>
-      <p class="hint d-only" id="offlineDownload"><a href="https://github.com/poplarity/GelFigure/releases/download/v0.6.15/GelFigure-v0.6.15.html" data-en="Download for offline use — one HTML file">下载离线版：只需一个 HTML 文件</a><br><span data-en="Save to your computer, then open in your browser. No installation or extraction.">保存到电脑，用浏览器打开；不用安装、不用解压。</span></p>
-      <button class="updates-start" id="btnUpdatesStart"><span data-app-version></span><span data-en="Release history">更新日志</span></button>
+      <p class="hint d-only" id="offlineDownload"><a href="https://github.com/BiosickQiuence/GelFigure/releases/download/v1.0.0/GelFigure-v1.0.0.html" data-en="Download for offline use — one HTML file">下载离线版：只需一个 HTML 文件</a><br><span data-en="Save to your computer, then open in your browser. No installation or extraction.">保存到电脑，用浏览器打开；不用安装、不用解压。</span></p>
+      <p class="hint"><span data-app-version></span> · <span data-en="Local editing; optional AI review">本地编辑，可选 AI 复核</span></p>
       <div id="draftBox" class="draft hidden">
         <div><span data-en="Your most recent project:">最近一次的项目：</span><b id="draftName"></b><br><span class="muted small" id="draftTime"></span></div>
         <div class="inline"><button class="btn sm primary" id="btnDraftRestore" data-en="Restore">恢复</button><button class="btn sm ghost" id="btnDraftDrop" data-en="Delete cache">删除缓存</button></div>
       </div>
       <p class="hint d-only" data-en="You can drop several exposures of the same gel at once; the best one is picked automatically.">可以一次拖入同一块胶的多张不同曝光，自动挑出最合适的一张。</p>
       <p class="hint m-only" data-en="You can pick several exposures of the same gel at once; the best one is chosen automatically.">可以一次选择同一块胶的多张不同曝光，自动挑出最合适的一张。</p>
-      <p class="privacy" data-en="Images are processed only in this browser and never uploaded.">图片只在本机浏览器处理，不会上传。</p>
+      <p class="privacy" data-en="Local detection stays in your browser. Optional AI Marker sends a full analysis-image copy to your configured HTTPS API only when you click recognition.">本地识别在浏览器内完成。可选 AI Marker 仅在主动点击识别时，向你填写的 HTTPS 接口发送完整分析图副本。</p>
       <p class="hint storage-note hidden" data-en="Preference storage is unavailable; editing and export still work. Check the separate marker-library cache status. Save a project before closing.">偏好存储不可用，仍可编辑和导出；Marker 库是否保存成功请看其缓存状态。关闭前请保存项目。</p>
     </div>
 
@@ -163,6 +172,8 @@
           <p class="hint" data-en="Runs both steps inside the red crop. Confirmed marker choices and manual anchors are kept.">在红框内一起识别；保留手动确认的 Marker 和定位点。</p>
         </div>
         <p class="hint" data-en="Drag the red box directly to change the figure crop.">出图范围直接拖动原图上的红框调整。</p>
+        <button class="btn sm primary" id="btnGelAIBeta" data-en="AI lane correction + lane count">AI 泳道校正与计数</button>
+        <p class="hint" data-en="Preview first. Crops around band-containing lanes, not the whole gel; internal empty lanes are cut with splice markers.">先预览核对。围绕有条带的泳道校正，不取整块胶；中间空泳道以带拼接标记的方式移除。</p>
         <button class="btn sm" id="btnPerspective" data-en="Four-point perspective correction">四点透视校正</button>
         <p class="hint" data-en="For oblique photos: drag four corners, then rectify. Applying clears names/annotations and re-detects lanes/markers; undo is available.">用于斜拍胶图：拖动四角后拉正。应用时清空名称与标注，重新识别泳道和 Marker；可撤销。</p>
 
@@ -196,6 +207,8 @@
       <section class="sec">
         <div class="sec-head"><span class="sec-n">3</span>Marker<span class="sec-status" id="stMarker"></span></div>
         <p class="lead" data-en="Pick a marker lane, choose its ladder, then Detect bands. The reference stays beside the image; click a number on the figure to edit its label.">选泳道、选型号，再点“识别此泳道”。图例留在原图旁；点成图数字可改显示、删除和字号。</p>
+        <button class="btn primary" id="btnAIMarker" data-en="AI Marker · review">AI Marker · 复核</button>
+        <p class="hint" data-en="Optional vision API; only an explicit click sends the complete analysis image. Manual perspective correction is unchanged.">可选视觉接口；只有主动点击才上传完整分析图。四点矫正仍手调。</p>
         <div id="markerList"></div>
         <div class="field inline">
           <button class="btn sm" id="btnAddMarker" data-en="Pick a marker lane">点选 Marker 泳道</button>
@@ -379,6 +392,7 @@
     <button class="sheet-item" data-x="tiff"><span class="si-ic">TIF</span><span class="si-tx"><span data-en="TIFF (LZW)">TIFF（LZW）</span><small data-en="Keeps figure colours; grayscale when no colour is present">保留成图颜色；纯灰度图导出灰度</small></span></button>
     <button class="sheet-item" data-x="svg"><span class="si-ic">SVG</span><span class="si-tx"><span data-en="SVG (vector)">SVG 矢量图</span><small data-en="Text stays editable in Illustrator or Inkscape">文字可在 Illustrator / Inkscape 中编辑</small></span></button>
     <button class="sheet-item" data-x="pptx"><span class="si-ic">PPT</span><span class="si-tx"><span data-en="PowerPoint (editable .pptx)">PowerPoint（可编辑 .pptx）</span><small data-en="Finished layout; editable text/shapes and crop (uncropped pixels included)">保留成图排版；文字图形可编辑、可重新裁切（含全图数据）</small></span></button>
+    <button class="sheet-item" data-x="review"><span class="si-ic">ZIP</span><span class="si-tx"><span data-en="Review package">一键审阅包</span><small data-en="Original, project, figure, log, legend and hash manifest">原图、项目、成图、日志、图例与校验清单</small></span></button>
     <div class="sheet-label" data-en="For the supplement">补充材料</div>
     <button class="sheet-item" data-x="uncropped"><span class="si-ic">▣</span><span class="si-tx"><span data-en="Uncropped image (same processing)">未裁切图（与成图同处理）</span><small data-en="Crop box and well numbers marked">标出裁切框与孔号</small></span></button>
     <button class="sheet-item" data-x="original"><span class="si-ic">RAW</span><span class="si-tx"><span data-en="Original data (file + SHA-256)">原始数据（原文件 + SHA-256）</span><small data-en="The untouched source file">未经任何处理的原始文件</small></span></button>
@@ -400,14 +414,16 @@
     <button class="sheet-item" data-m="saveProj"><span class="si-ic">↓</span><span class="si-tx"><span data-en="Save project">保存项目</span><small data-en="Continue on any device">换设备也能接着做</small></span></button>
     <div class="sheet-sep"></div>
     <button class="sheet-item" data-m="saveTpl"><span class="si-ic">✎</span><span class="si-tx"><span data-en="Save style">保存样式</span><small data-en="Lane names, markers, groups, layout — reuse for similar gels">泳道名、Marker、分组、版式，下次同类胶一键套用</small></span></button>
+    <button class="sheet-item" data-m="saveAppearance"><span class="si-ic">Aa</span><span class="si-tx"><span data-en="Save appearance only">保存仅版式模板</span><small data-en="Shared appearance without sample names or annotations">共享版式，不带样本名与实验标注</small></span></button>
+    <button class="sheet-item" data-m="labDefault"><span class="si-ic">Aa</span><span class="si-tx"><span data-en="Use current appearance as lab default">将当前版式设为实验室默认</span></span></button>
+    <button class="sheet-item" data-m="clearLabDefault"><span class="si-ic">Aa</span><span class="si-tx"><span data-en="Clear lab default">取消实验室默认版式</span></span></button>
     <button class="sheet-item" data-m="loadTpl"><span class="si-ic">⤓</span><span class="si-tx"><span data-en="Apply style…">载入样式…</span></span></button>
     <div class="sheet-sep"></div>
     <button class="sheet-item" data-m="help"><span class="si-ic">?</span><span class="si-tx"><span data-en="How to use">使用说明</span></span></button>
-    <button class="sheet-item" data-m="updates"><span class="si-ic">↻</span><span class="si-tx"><span data-en="Release history">更新日志</span><small data-app-version></small></span></button>
-    <button class="sheet-item" data-m="community"><span class="si-ic">♡</span><span class="si-tx"><span data-en="Feedback / support / Star">反馈 / 支持作者 / Star</span><small data-en="Always available, with or without an image">随时可打开，无需先导出图片</small></span></button>
+    <button class="sheet-item" data-m="community"><span class="si-ic">♡</span><span class="si-tx"><span data-en="GitHub feedback / Star">GitHub 反馈 / Star</span><small data-en="Always available, with or without an image">随时可打开，无需先导出图片</small></span></button>
     <button class="sheet-item" data-m="lang"><span class="si-ic">文</span><span class="si-tx"><span>English / 中文</span></span></button>
-    <button class="sheet-item danger" data-m="reset"><span class="si-ic">↺</span><span class="si-tx"><span data-en="Reset everything (back to import)">重置整图（回到刚导入时）</span></span></button>
-    <p class="sheet-foot" data-en-html="GelFigure · open source (MIT) · images never leave this device<br><a href='https://github.com/poplarity/GelFigure' target='_blank' rel='noopener'>github.com/poplarity/GelFigure</a>">GelFigure · 开源（MIT）· 图片只在本机处理<br><a href="https://github.com/poplarity/GelFigure" target="_blank" rel="noopener">github.com/poplarity/GelFigure</a></p>
+    <button class="sheet-item danger" data-m="reset"><span class="si-ic">↺</span><span class="si-tx"><span data-en="Reset edits (import / adopted result)">重置调整（导入／采用结果）</span></span></button>
+    <p class="sheet-foot" data-en-html="GelFigure · open source (MIT) · local editing; AI sends only on request<br><a href='https://github.com/BiosickQiuence/GelFigure' target='_blank' rel='noopener'>github.com/BiosickQiuence/GelFigure</a>">GelFigure · 开源（MIT）· 本地编辑；AI 识别仅在主动发送时上传<br><a href="https://github.com/BiosickQiuence/GelFigure" target="_blank" rel="noopener">github.com/BiosickQiuence/GelFigure</a></p>
   </div>
 </div>
 
@@ -465,7 +481,7 @@
 
 <div id="helpDlg" class="dlg hidden"><div class="dlg-body">
   <button class="dlg-x" id="btnHelpClose" title="关闭" data-en-title="Close">×</button>
-  <div class="help-updates"><span data-app-version></span><button class="btn sm" id="btnHelpUpdates" data-en="Release history">更新日志</button></div>
+  <p class="hint"><span data-app-version></span> · <a href="https://github.com/BiosickQiuence/GelFigure#api-setup" target="_blank" rel="noopener noreferrer" data-en="API setup tutorial">API 配置教程</a></p>
   <div class="m-only" data-en-html="
   <h3>On a phone</h3>
   <ul>
@@ -486,7 +502,7 @@
   </div>
   <div data-en-html="
   <h3>Offline use: download just one file</h3>
-  <p>Download <a href='https://github.com/poplarity/GelFigure/releases/download/v0.6.15/GelFigure-v0.6.15.html'>GelFigure-v0.6.15.html</a>, save it to your computer, then double-click to open in your browser. No installation or ZIP extraction. The repository's index.html alone is not the complete tool.</p>
+  <p>Download <a href='https://github.com/BiosickQiuence/GelFigure/releases/download/v1.0.0/GelFigure-v1.0.0.html'>GelFigure-v1.0.0.html</a>, save it to your computer, then double-click to open in your browser. No installation or ZIP extraction. The repository's index.html alone is not the complete tool.</p>
   <p>Recent projects in the top bar or File menu (⋯ on a phone) keeps images and edits in this browser, including all exposures. You can rename, delete and reopen them without re-detection. Importing another image keeps the previous project. Clearing browser data removes the cache.</p>
   <p>For a backup or another computer, use File → Save project (⋯ on a phone). A .gelfig file contains the selected exposure and its annotations; keep other exposure files separately. If caching fails, save a project file before switching images.</p>
   <h3>Fastest way to a figure</h3>
@@ -520,9 +536,9 @@
     <li>Also export the uncropped image and the original file for the supplement.</li>
   </ul>
   <p class='muted small d-only'>Shortcuts: Ctrl+Z undo · Ctrl+Shift+Z redo · Space+drag pan · wheel zoom · H remove/restore lane · Esc cancel</p>
-  <p class='muted small'>Open source (MIT): <a href='https://github.com/poplarity/GelFigure' target='_blank' rel='noopener'>github.com/poplarity/GelFigure</a> — bug reports and ladder additions welcome.</p>">
+  <p class='muted small'>Open source (MIT): <a href='https://github.com/BiosickQiuence/GelFigure' target='_blank' rel='noopener'>github.com/BiosickQiuence/GelFigure</a> — bug reports and ladder additions welcome.</p>">
   <h3>离线使用：只下载一个文件</h3>
-  <p>下载 <a href="https://github.com/poplarity/GelFigure/releases/download/v0.6.15/GelFigure-v0.6.15.html">GelFigure-v0.6.15.html</a>，保存到电脑，双击用浏览器打开即可。不用安装、不用解压。仓库里的 index.html 单独下载不包含完整工具。</p>
+  <p>下载 <a href="https://github.com/BiosickQiuence/GelFigure/releases/download/v1.0.0/GelFigure-v1.0.0.html">GelFigure-v1.0.0.html</a>，保存到电脑，双击用浏览器打开即可。不用安装、不用解压。仓库里的 index.html 单独下载不包含完整工具。</p>
   <p>顶栏或“文件 → 历史项目”（手机在右上角 ⋯）可打开本浏览器缓存的图片和编辑进度，包括全部曝光。支持改名、删除，恢复时不会重新识别；导入下一张图会保留上一张的进度。清理浏览器数据会清除缓存。</p>
   <p>备份或换电脑时，请用“文件 → 保存项目”（手机在 ⋯）。.gelfig 保存当前曝光的原图和标注，其他曝光的原文件请另行保留。缓存失败时，建议先保存项目文件再切换图片。</p>
   <h3>最快的出图方式</h3>
@@ -556,7 +572,7 @@
     <li>建议同时导出"未裁切图"和"原始数据"放补充材料。</li>
   </ul>
   <p class="muted small d-only">快捷键：Ctrl+Z 撤销 · Ctrl+Shift+Z 重做 · 空格+拖动 平移 · 滚轮 缩放 · H 剪除/恢复泳道 · Esc 取消当前操作</p>
-  <p class="muted small">开源（MIT）：<a href="https://github.com/poplarity/GelFigure" target="_blank" rel="noopener">github.com/poplarity/GelFigure</a> —— 欢迎反馈问题、补充 Ladder 型号。</p>
+  <p class="muted small">开源（MIT）：<a href="https://github.com/BiosickQiuence/GelFigure" target="_blank" rel="noopener">github.com/BiosickQiuence/GelFigure</a> —— 欢迎反馈问题、补充 Ladder 型号。</p>
   </div>
 </div></div>
 
@@ -605,11 +621,12 @@
 <script src="js/mobile.js"></script>
 <script src="js/perspective.js"></script>
 <script src="js/marker-ui.js"></script>
+<script src="js/ai-workspace.js"></script>
+<script src="js/marker-ai.js"></script>
+<script src="js/gel-ai-beta.js"></script>
 <script src="js/history-ui.js"></script>
 <script src="js/support-config.js"></script>
 <script src="js/feedback.js"></script>
 <script src="js/export-support.js"></script>
-<script src="js/releases.js"></script>
-<script src="js/updates.js"></script>
 </body>
 </html>

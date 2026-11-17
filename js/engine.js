@@ -1261,6 +1261,13 @@
    *   curve     – a straight line in log(size) fits a DNA ladder tightly; prestained markers spread
    * Returns {kind, confidence 0..1, reasons[], score(-1..1)} where score > 0 favours protein. */
   function detectGelType(input) {
+    // Import policy: visible blue takes precedence; monochrome sources are DNA.
+    // Ignore isolated blue noise below 0.5% of the decoder's sampled pixels.
+    const colour = input.colorStats, blue = !!colour && colour.blueFrac >= 0.005;
+    if (blue || !colour || colour.chroma < 0.06) {
+      return { kind: blue ? 'protein' : 'dna', confidence: 1, score: blue ? 1 : -1, colourRule: true,
+        reasons: [{ w: blue ? 1 : -1, code: blue ? 'colour' : 'grey', v: blue ? { blue: Math.round(colour.blueFrac * 1000) / 10 } : {} }] };
+    }
     const reasons = [];
     let score = 0, voted = 0;
     // codes, not sentences: the UI translates them; v is the measured value behind the vote

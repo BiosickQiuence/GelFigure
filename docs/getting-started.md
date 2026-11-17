@@ -1,62 +1,7 @@
-# Download one file and start making figures
+# Getting started with GelFigure v1.0.0
 
-[中文说明](getting-started.zh-CN.md) · [Back to the project](../README.md)
+Open https://biosickqiuence.github.io/GelFigure/ or download `GelFigure-v1.0.0.html` from https://github.com/BiosickQiuence/GelFigure/releases/tag/v1.0.0 and double-click it. Local editing needs no API account or developer tools.
 
-**On a computer, you need just one HTML file. No installation, ZIP extraction or GitHub account.**
+Import → check type/orientation → correct crop/lanes → confirm Marker and per-band pairing → edit labels → save `.gelfig` and export.
 
-![Download HTML → Open in a browser → Import your gel](quickstart-en.svg)
-
-## 1. Download
-
-**[Download GelFigure-v0.6.15.html](https://github.com/poplarity/GelFigure/releases/download/v0.6.15/GelFigure-v0.6.15.html)** and save it to your Desktop or Downloads folder.
-
-This is the complete tool, about 380 KB. The interface, styles and image-processing code are all inside the same file.
-
-If you arrive at the [GitHub release page](https://github.com/poplarity/GelFigure/releases/latest):
-
-1. Find **Assets** and expand it if needed.
-2. Click **GelFigure-vVERSION.html**.
-3. Wait for the download to finish, then find it in your computer's Downloads folder.
-
-**Do not choose `Source code (zip)`, `Source code (tar.gz)` or the repository's `index.html`.** Those are source files, rather than the complete single-file version.
-
-## 2. Open in your browser
-
-- **Windows:** double-click the downloaded file. If it opens in a text or code editor, right-click → **Open with** → Edge, Chrome or Firefox.
-- **Mac:** double-click the downloaded file. If a browser does not open, right-click → **Open With** → Safari, Chrome or Firefox.
-
-Click **Try the example** to explore the tool. For future sessions, open the same file again; no further download or internet connection is required.
-
-## 3. Import and export
-
-1. Click **Choose file** and select your `.tif`, `.tiff`, `.png` or `.jpg` gel image, or drag it into the window.
-2. Check the **DNA/protein mode, crop, lanes and marker ladder**. You can correct automatic detection by hand.
-3. Click the lane names on the figure to edit them. Add groups, arrows or region boxes if needed.
-4. Click **Export PNG**, review any warnings, and save the image. Other formats are in the menu beside the export button.
-
-## Save, update and share
-
-**Lane and marker editing:** drag the red frame to crop; lane count and **Re-detect lanes + markers in crop** are on the left (Settings on phones). Re-detection runs both steps while keeping confirmed marker choices and manual anchors. Drag the ↔ end guides for even spacing, or a middle guide to shift the grid. Naming, bulk paste and Fonts & sizes are above the figure. Choose a marker lane and ladder, then **Detect bands here**. **Calibrate / reference** opens a small card beside the original image: select a size and click its real band, or click the band first to choose its size. Model browsing is a preview until applied; schematic spacing is not calibration. Click a figure marker number to change font, show/hide or delete a mark. Hiding preserves calibration; deleting removes the anchor. You can undo either action.
-
-**Recent projects.** Use the top bar or **File → Recent projects**; on a phone, use **⋯ → Recent projects**. Images and edits are cached automatically without replacing the previous project when you import another gel. Rename, delete or restore a project, including its other exposures. This is browser-local storage, not a permanent backup: clearing site data removes it. If caching fails, save a project file. A `.gelfig` contains the selected exposure and annotations; keep other exposure files separately.
-
-**Save progress:** before closing, choose **File → Save project**. The `.gelfig` file contains your original image and annotations. Next time choose **File → Open project**. Your browser's “Save page” command does not save your figure-editing session.
-
-**Update:** download the new HTML from Releases. Save your project in the old version first, then open it in the new version. Offline HTML files do not update themselves.
-
-**Share:** send the `GelFigure-vVERSION.html` file to a colleague with “Save this to your computer and open it in your browser.” A messaging app's attachment preview may not run the tool.
-
-**Phones and tablets:** use the [online version](https://poplarity.github.io/GelFigure/) in your browser. Opening local HTML files varies between mobile operating systems, file managers and messaging apps.
-
-## If something looks wrong
-
-| What you see | What to do |
-|---|---|
-| Plain text and buttons without the normal layout | Styles have not applied. Check that you downloaded `GelFigure-vVERSION.html`; for the online version, hard-refresh first. The single-file version needs no separate CSS or JS folders. |
-| `index.html` inside a ZIP does not work | Download the single HTML instead. To use the ZIP, **extract everything first**; do not open it inside the archive or extract only `index.html`. |
-| A text editor, source code or attachment preview opens | Save the file to your computer, then right-click → Open with → choose your browser. |
-| You cannot find the downloaded file | Check your browser's download list and your computer's Downloads folder. Make sure the download has finished. |
-| The website or download is slow | Once downloaded, the HTML works offline on every subsequent use. A colleague can also send you their downloaded HTML file. |
-| Your last figure is not restored after a reload | Drafts depend on browser storage permissions. Save a `.gelfig` project explicitly and reopen it. |
-
-Hard-refresh the website with **Ctrl+Shift+R** on Windows or **Command+Shift+R** on Mac. For a bug report, include your browser version, whether you opened a URL or a local file, the file name, and a screenshot. You do not need to publish your experimental image.
+For optional AI, follow the [complete README API setup guide](../README.md#api-setup): obtain an HTTPS compatible base, a vision model ID and key from one provider, enter them in top-right Settings, test with an image you are allowed to upload, review the result and explicitly apply it.
