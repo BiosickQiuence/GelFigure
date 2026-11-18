@@ -53,7 +53,7 @@ AI 建议需要人工复核，尤其是弱带、空道、型号、缺失条带�
 
 1. 打开 [OpenAI API Platform](https://platform.openai.com/)，登录，选择或建立自己的 API 项目。
 2. 在 API Keys 页面创建项目 Key，并在 API 计费/额度页面确认能发起模型请求。不要把聊天会员登录信息当成 API Key。
-3. 接口填 `https://api.openai.com/v1`，模型可先填 `gpt-5.4-mini`，Key 填刚创建的值。若账号没有该模型权限，在控制台确认权限后再使用下表其他型号。
+3. 接口填 `https://api.openai.com/v1`，质量优先时模型填 `gpt-6.2-astra`，日常兼顾费用时填 `gpt-6.2-sol`，Key 填刚创建的值。[下方 OpenAI 选型表](#openai-models)列出截至 GPT-6.2 的全部当前兼容通用看图型号、旧型号与接口限制；实际权限以自己的 API 项目为准。
 4. 参考[官方 API 入门](https://developers.openai.com/api/docs/quickstart)。本工具已经完成调用代码，**你不需要执行教程里的编程命令**。
 
 **方式 C：Google Gemini API。**
@@ -80,22 +80,91 @@ AI 建议需要人工复核，尤其是弱带、空道、型号、缺失条带�
 
 ## 可以填写哪些看图模型？
 
-**本工具需要“看图片并返回文字/JSON”的视觉理解模型，不是用来生成新图片的文生图模型。** 以下为截至 **2026-11-17** 官方资料确认支持图像输入，并提供本工具所需接口形式的明确 ID。先选一行即可，不需要注册全部平台。
+本工具使用能接收图片并返回文字/JSON 的视觉理解模型。**OpenAI 清单已核对到 GPT-6.2 Astra / Sol，核对日期为 2026-11-18**；百炼与 Gemini 保留 2026-11-17 已核对的示例。先选一家服务商即可。
 
 | 服务商 | “接口地址”示例 | 可直接填写的模型 ID | 使用提示 / 官方出处 |
 |---|---|---|---|
 | 阿里云百炼（北京） | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen3-vl-plus` | [官方 Vision 兼容示例](https://help.aliyun.com/zh/model-studio/qwen-vl-compatible-with-openai)直接使用此 ID；Key 和地域要一致。 |
 | 阿里云百炼（北京） | 同上，或控制台提供的同地域业务空间基址 | `qwen4-max` | [官方视觉理解示例](https://help.aliyun.com/zh/model-studio/vision)使用的图像输入模型；先确认账号权限。 |
-| OpenAI | `https://api.openai.com/v1` | `gpt-5.4-mini` | [官方模型卡](https://developers.openai.com/api/docs/models/gpt-5.4-mini)列有 Image 输入与 Chat Completions。 |
-| OpenAI | `https://api.openai.com/v1` | `gpt-5.4` | [官方模型卡](https://developers.openai.com/api/docs/models/gpt-5.4)列有相同所需能力。 |
+| OpenAI | `https://api.openai.com/v1` | `gpt-6.2-astra` | 质量优先；[官方模型卡](https://developers.openai.com/api/docs/models/gpt-6.2-astra)。完整选型顺序见下方。 |
+| OpenAI | `https://api.openai.com/v1` | `gpt-6.2-sol` | 日常使用、兼顾费用；[官方模型卡](https://developers.openai.com/api/docs/models/gpt-6.2-sol)。 |
 | Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | `gemini-4-hydrogen` | [官方兼容接口的图像示例](https://aistudio.google.com/docs/openai#image-understanding)使用此 ID。 |
 | Google Gemini | 同上 | `gemini-3.5-flash-lite` | [官方模型卡](https://aistudio.google.com/docs/models/gemini-3.5-flash-lite)确认 Image 输入、Text 输出；走上述兼容接口。 |
 
-基址结尾的 `/` 可有可无，工具会补上 `/chat/completions`；也可以粘贴包含该路径的完整接口地址。模型 ID 随服务商更新，表中没有把已弃用的旧型号当作新手默认选择。
+基址结尾的 `/` 可有可无，工具会补上 `/chat/completions`；也可以填写以该路径结尾的完整地址。下面所有可用于本版的 OpenAI 型号共用基址 `https://api.openai.com/v1` 和你自己的 OpenAI API Key，只需修改“视觉模型名称”。
 
-**兼容验证的含义：** 已核对官方模型/接口资料，并对上述三家示例接口做了不带 Key、无图像的浏览器跨域预检，允许本项目网页版来源。这里不等于用付费 Key 逐一实测了胶图准确率；实际调用仍依赖账户权限、额度、地区、服务商策略以及合法 JSON 输出。不要把任何兼容模型的结果当成实验事实。
+<a id="openai-models"></a>
+### OpenAI：按任务选择，优先 Astra → Sol → Terra → Luna
 
-第三方中转或实验室自建服务也可配置，但请向管理员一次索取：完整 HTTPS 基址、能接收 Base64 图片的模型 ID、Key，以及允许浏览器访问的说明。只写“支持 OpenAI”不一定够，还需支持图像 `image_url`、非流式 Chat Completions、标准 `choices[].message.content` 和 JSON 回复。不要把原生 Claude `/messages`、DashScope 原生接口、Gemini 原生接口或图片生成端点直接填进本工具。
+**质量优先选 `gpt-6.2-astra`；日常兼顾费用选 `gpt-6.2-sol`；轻量视觉整理选 `gpt-6.1-terra`；最低费用的简单初筛选 `gpt-6-luna`。** 这四档顺序依据[官方模型定位](https://developers.openai.com/api/docs/models)给出，是人工选型建议，尚未做胶图专用准确率排名。泳道、弱带、型号和坐标仍需人工复核。
+
+| 使用顺序 | 完整模型 ID / 官方模型卡 | 适合的任务 | 取舍 |
+|---|---|---|---|
+| 1 · 质量优先 | [`gpt-6.2-astra`](https://developers.openai.com/api/docs/models/gpt-6.2-astra) | 复杂或难判断的胶图、重要结果的第二次复核；预算与等待时间允许时优先。 | 综合能力最高档，费用较高；不能保证解决原图模糊或缺失的信息。 |
+| 2 · 日常首选 | [`gpt-6.2-sol`](https://developers.openai.com/api/docs/models/gpt-6.2-sol) | 日常泳道与 Marker 识别，兼顾能力、费用和响应时间。 | 相较 Astra 更经济；时间或预算有限时可直接从这里开始。 |
+| 3 · 轻量视觉任务 | [`gpt-6.1-terra`](https://developers.openai.com/api/docs/models/gpt-6.1-terra) | 清晰胶图中的位置、泳道和标签初步整理。 | 官方定位为视觉推理与高效任务；复杂结果可手动交给更高档型号复核。 |
+| 4 · 费用优先 | [`gpt-6-luna`](https://developers.openai.com/api/docs/models/gpt-6-luna) | 清晰、简单、边界明确的图片初筛，或先验证接口配置。 | 费用最低档；弱带、密集条带和模糊结果需要更仔细的人工核对。 |
+
+实际操作：打开右上角“设置”，接口填 `https://api.openai.com/v1`，模型先填 `gpt-6.2-astra`，密钥填自己的 OpenAI API Key，点击“保存接口配置”。需要降低费用或缩短等待时，可自己把模型改为 `gpt-6.2-sol` 后重新发送。模型名称只填表中的完整 ID。工具仅在你点击发送时调用所选型号，不会按表中顺序自动降级、重试或补发请求。
+
+GPT-6.2 Astra / Sol 不接受 `reasoning_effort: none`。GelFigure v1.0.0 的识别请求省略该参数，也不发送 `temperature`、`top_p` 或 `logprobs`，可沿用现有设置界面。如果中转服务擅自补入这些参数而报 400，请让服务管理员按[官方迁移说明](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart)修正。耗时仍受本工具 90 秒超时限制；超时后需自己决定是否重试。
+
+#### 其余仍在官方当前目录中的可用型号
+
+加上上表四个型号，下面共列出 **14 个未弃用、支持图片输入与 Chat Completions 的通用型号**。旧配置需要继续使用时，可填写对应 ID；新配置优先选择上面的当前主力型号。同系列优先新版：Astra 6.2 → 6；Sol 6.2 → 6.1 → 6 → 5.6；Terra 6.1 → 5.6；Luna 6 → 5.6。
+
+| 完整模型 ID / 官方模型卡 | 定位 | 本版接口 |
+|---|---|---|
+| [`gpt-6-astra`](https://developers.openai.com/api/docs/models/gpt-6-astra) | 旧代 Astra | 支持图片 + Chat Completions |
+| [`gpt-6.1-sol`](https://developers.openai.com/api/docs/models/gpt-6.1-sol) | 旧代 Sol | 支持图片 + Chat Completions |
+| [`gpt-6-sol`](https://developers.openai.com/api/docs/models/gpt-6-sol) | 旧代 Sol | 支持图片 + Chat Completions |
+| [`gpt-5.6-sol`](https://developers.openai.com/api/docs/models/gpt-5.6-sol) | 旧代 Sol | 支持图片 + Chat Completions |
+| [`gpt-5.6-terra`](https://developers.openai.com/api/docs/models/gpt-5.6-terra) | 旧代 Terra | 支持图片 + Chat Completions |
+| [`gpt-5.6-luna`](https://developers.openai.com/api/docs/models/gpt-5.6-luna) | 旧代 Luna | 支持图片 + Chat Completions |
+| [`gpt-5.5`](https://developers.openai.com/api/docs/models/gpt-5.5) | 旧代通用模型 | 支持图片 + Chat Completions |
+| [`gpt-5.4`](https://developers.openai.com/api/docs/models/gpt-5.4) | 旧代通用模型 | 支持图片 + Chat Completions |
+| [`gpt-5.4-mini`](https://developers.openai.com/api/docs/models/gpt-5.4-mini) | 旧代轻量模型 | 支持图片 + Chat Completions |
+| [`gpt-5.2`](https://developers.openai.com/api/docs/models/gpt-5.2) | 旧代通用模型 | 支持图片 + Chat Completions |
+
+#### 支持看图，但本版接口不能直接使用的型号
+
+下面三种仍在官方目录中，均为 **Responses API 专用**。GelFigure v1.0.0 使用 Chat Completions，不能仅修改模型名称或把地址改为 `/responses` 来调用它们。
+
+| 型号 / 官方模型卡 | 本版能否直接填写 |
+|---|---|
+| [`gpt-5.5-pro`](https://developers.openai.com/api/docs/models/gpt-5.5-pro) | 不能；仅支持 Responses API |
+| [`gpt-5.4-pro`](https://developers.openai.com/api/docs/models/gpt-5.4-pro) | 不能；仅支持 Responses API |
+| [`gpt-5.2-pro`](https://developers.openai.com/api/docs/models/gpt-5.2-pro) | 不能；仅支持 Responses API |
+
+<details>
+<summary>旧配置附录：已弃用但尚未到停用日期的视觉型号</summary>
+
+按 2026-11-18 的[官方停用计划](https://developers.openai.com/api/docs/deprecations)，以下旧型号仍处于过渡期；可用性依赖账户权限和具体快照，不作为学生新配置的推荐。4o / 4.1 系列按停用表列出明确快照，不重复列别名。
+
+| 旧型号 / 官方模型卡 | 本版接口 | 官方计划停用日 |
+|---|---|---|
+| [`gpt-5.4-nano`](https://developers.openai.com/api/docs/models/gpt-5.4-nano) | 支持图片 + Chat Completions | 2027-04-01 |
+| [`gpt-5.1`](https://developers.openai.com/api/docs/models/gpt-5.1) | 支持图片 + Chat Completions | 2027-04-01 |
+| [`gpt-5`](https://developers.openai.com/api/docs/models/gpt-5) | 支持图片 + Chat Completions | 2026-12-11 |
+| [`gpt-5-mini`](https://developers.openai.com/api/docs/models/gpt-5-mini) | 支持图片 + Chat Completions | 2026-12-11 |
+| [`gpt-5-nano`](https://developers.openai.com/api/docs/models/gpt-5-nano) | 支持图片 + Chat Completions | 2026-12-11 |
+| [`o3`](https://developers.openai.com/api/docs/models/o3) | 支持图片 + Chat Completions | 2026-12-11 |
+| [`gpt-4o-2024-08-06`](https://developers.openai.com/api/docs/models/gpt-4o) | 支持图片 + Chat Completions | 2027-01-14 |
+| [`gpt-4o-2024-11-20`](https://developers.openai.com/api/docs/models/gpt-4o) | 支持图片 + Chat Completions | 2027-01-14 |
+| [`gpt-4o-mini-2024-07-18`](https://developers.openai.com/api/docs/models/gpt-4o-mini) | 支持图片 + Chat Completions | 2027-01-14 |
+| [`gpt-4.1-2025-04-14`](https://developers.openai.com/api/docs/models/gpt-4.1) | 支持图片 + Chat Completions | 2027-01-14 |
+| [`gpt-4.1-mini-2025-04-14`](https://developers.openai.com/api/docs/models/gpt-4.1-mini) | 支持图片 + Chat Completions | 2027-01-14 |
+| [`gpt-5-pro`](https://developers.openai.com/api/docs/models/gpt-5-pro) | 不能；仅支持 Responses API | 2026-12-11 |
+| [`o3-pro`](https://developers.openai.com/api/docs/models/o3-pro) | 不能；仅支持 Responses API | 2026-12-11 |
+| [`gpt-5.3-codex`](https://developers.openai.com/api/docs/models/gpt-5.3-codex) | 不能；仅支持 Responses API | 2027-04-01 |
+
+停用计划可能调整，应以服务商当前页面为准。已停用的型号未列入可用清单。
+
+</details>
+
+**兼容验证范围：** 已逐项核对 OpenAI 模型卡的图片输入和接口支持情况，并参考[完整模型目录](https://developers.openai.com/api/docs/models/all)。上述三家示例基址在 2026-11-17 做过不带 Key、无图像的浏览器跨域预检，允许本项目网页版来源。尚未用付费 Key 逐一实测这些型号的胶图准确率；实际调用还取决于账号权限、额度、地区、服务商策略和有效 JSON 输出。
+
+第三方中转或实验室自建服务也可配置，请向管理员索取完整 HTTPS 基址、支持 Base64 `image_url` 的模型 ID、Key，以及允许浏览器访问的说明。还需支持非流式 Chat Completions 和标准 `choices[].message.content` 文字/JSON 回复；原生 Claude、DashScope、Gemini 或文生图接口应由服务管理员提供兼容接口后再使用。
 
 ## 配置失败时，先按这个表排查
 

@@ -37,13 +37,13 @@ An API lets GelFigure ask your chosen service to inspect an image. Choose **one 
 | Vision model name | The exact API ID, for example `qwen3-vl-plus` | A marketing label, translated display name or text-only model |
 | API key | The complete key created in that provider’s API console | A login password, verification code, project ID or another provider’s key |
 
-![English API settings example: the three fields](docs/api-settings-en.png)
+![English API settings example using gpt-6.2-astra: the three fields](docs/api-settings-en.png)
 
 ### Step 1: obtain a provider key
 
 **Option A — Alibaba Cloud Model Studio.** Sign in to the [console](https://bailian.console.aliyun.com/), enable the model service and select a region. The simple example below uses **China North 2 (Beijing)**. Create a key with access to the chosen model/workspace using the [official key guide](https://help.aliyun.com/zh/model-studio/get-api-key). A new key may be fully visible only once, so save it securely yourself. Check quota/billing and that `qwen3-vl-plus` is available to your account. Keys, models and endpoints must belong to the same region. If your console supplies a workspace-specific base URL, use that complete value; do not paste a literal `{WorkspaceId}` placeholder. The official compatibility guide states that the existing DashScope host remains usable.
 
-**Option B — OpenAI API.** Sign in to [API Platform](https://platform.openai.com/), choose/create an API project, create a project key under API Keys and check the API quota/billing page. Use `https://api.openai.com/v1` with `gpt-5.4-mini`, or another model from the table if your account has access. The [official quickstart](https://developers.openai.com/api/docs/quickstart) explains key creation; GelFigure already contains the calling code, so you do **not** need to run its programming commands.
+**Option B — OpenAI API.** Sign in to [API Platform](https://platform.openai.com/), choose/create an API project, create a project key under API Keys and check the API quota/billing page. Use `https://api.openai.com/v1` with `gpt-6.2-astra` for quality first, or `gpt-6.2-sol` for everyday balance. The [OpenAI selection guide below](#openai-models) lists every current compatible general vision model through GPT-6.2, older options and interface restrictions. The [official quickstart](https://developers.openai.com/api/docs/quickstart) explains key creation; GelFigure already contains the calling code, so you do **not** need to run its programming commands.
 
 **Option C — Google Gemini API.** Open [Google AI Studio API Keys](https://aistudio.google.com/apikey), choose/create a project and follow the [official key guide](https://aistudio.google.com/docs/api-key). Confirm model access and quota/billing. School/organization accounts may require project administrator permissions. Use the **OpenAI-compatible base** below, not the Gemini chat site or a native `:generateContent` URL. `gemini-4-hydrogen` is one explicit model choice.
 
@@ -65,22 +65,91 @@ An API lets GelFigure ask your chosen service to inspect an image. Choose **one 
 
 ## Explicit vision-model IDs
 
-Choose an image-understanding model that returns text/JSON, **not an image-generation model**. The following exact IDs have official documentation for image input and the interface form needed here, checked on **2026-11-17**. You only need one row/provider.
+Use an image-understanding model that accepts images and returns text/JSON. **The OpenAI inventory is checked through GPT-6.2 Astra / Sol as of 2026-11-18**; the Alibaba/Gemini examples retain their 2026-11-17 verification date. Choose one provider to start.
 
 | Provider | API address example | Exact model ID | Official evidence / note |
 |---|---|---|---|
 | Alibaba Model Studio, Beijing | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen3-vl-plus` | Used in the [official OpenAI Vision compatibility example](https://help.aliyun.com/zh/model-studio/qwen-vl-compatible-with-openai). Match the key’s region. |
 | Alibaba Model Studio, Beijing | Same, or the console’s same-region workspace base | `qwen4-max` | Used by the [official vision-understanding example](https://help.aliyun.com/zh/model-studio/vision). Check account access. |
-| OpenAI | `https://api.openai.com/v1` | `gpt-5.4-mini` | [Model card](https://developers.openai.com/api/docs/models/gpt-5.4-mini): image input and Chat Completions. |
-| OpenAI | `https://api.openai.com/v1` | `gpt-5.4` | [Model card](https://developers.openai.com/api/docs/models/gpt-5.4): the required input/interface capabilities. |
+| OpenAI | `https://api.openai.com/v1` | `gpt-6.2-astra` | Quality-first choice; [official model card](https://developers.openai.com/api/docs/models/gpt-6.2-astra). See the full OpenAI selection below. |
+| OpenAI | `https://api.openai.com/v1` | `gpt-6.2-sol` | Everyday balance; [official model card](https://developers.openai.com/api/docs/models/gpt-6.2-sol). |
 | Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | `gemini-4-hydrogen` | Used by the [official compatible image-understanding example](https://aistudio.google.com/docs/openai#image-understanding). |
 | Google Gemini | Same | `gemini-3.5-flash-lite` | [Model card](https://aistudio.google.com/docs/models/gemini-3.5-flash-lite): image input, text output; use the compatible endpoint above. |
 
-A trailing `/` is optional. GelFigure adds `/chat/completions`; you may also enter the complete URL already ending in that path. Deprecated legacy IDs are not presented as defaults for new users.
+A trailing `/` is optional. GelFigure adds `/chat/completions`; a complete URL ending in that path also works. Every OpenAI model compatible with this version uses `https://api.openai.com/v1` and your own OpenAI API key; change the Vision model name field to select a model.
 
-**What compatibility verification means:** official model/interface capabilities were checked, and unauthenticated, image-free browser CORS preflights to the three example endpoints allowed this web app’s origin. This is not a paid-key, model-by-model gel-accuracy benchmark. Actual calls still require account access, quota, supported region, provider policy and valid JSON output. Compatibility does not establish scientific correctness.
+<a id="openai-models"></a>
+### OpenAI: choose by task, Astra → Sol → Terra → Luna
 
-For a lab gateway or third-party service, ask its administrator for the complete HTTPS base, an image-capable model ID, a key and browser-origin support. “OpenAI compatible” alone is insufficient: it must accept Base64 `image_url`, non-streaming Chat Completions and standard `choices[].message.content` text/JSON responses. Native Claude `/messages`, native DashScope/Gemini and image-generation endpoints cannot be pasted directly into this app.
+**Choose `gpt-6.2-astra` for quality first, `gpt-6.2-sol` for everyday balance, `gpt-6.1-terra` for lighter visual work, or `gpt-6-luna` for cost-sensitive simple triage.** This manual selection order follows the [official model positioning](https://developers.openai.com/api/docs/models). Gel-specific accuracy has not been ranked; check lanes, weak bands, model choices and coordinates yourself.
+
+| Selection order | Exact ID / official model card | Task fit | Trade-off |
+|---|---|---|---|
+| 1 · quality first | [`gpt-6.2-astra`](https://developers.openai.com/api/docs/models/gpt-6.2-astra) | Demanding or ambiguous gels and a second review of important results; choose when quality is the priority. | Highest capability tier, with higher cost; source blur or missing information still needs human review. |
+| 2 · everyday balance | [`gpt-6.2-sol`](https://developers.openai.com/api/docs/models/gpt-6.2-sol) | Routine lane/Marker review with a balance of capability, cost and latency. | More economical than Astra; a practical starting point for routine work. |
+| 3 · lighter visual work | [`gpt-6.1-terra`](https://developers.openai.com/api/docs/models/gpt-6.1-terra) | Initial position/lane/label review in clear images. | Positioned for efficient visual reasoning; manually choose a higher tier for demanding reviews. |
+| 4 · cost first | [`gpt-6-luna`](https://developers.openai.com/api/docs/models/gpt-6-luna) | Simple, clearly bounded image triage or checking an API setup. | Lowest-cost tier; inspect weak, crowded or ambiguous bands carefully. |
+
+In practice: open Settings, enter `https://api.openai.com/v1`, enter `gpt-6.2-astra` as the model, add your OpenAI API key and save. For a more economical everyday choice, manually change the model to `gpt-6.2-sol` before sending again. Enter only the exact ID in the model field. The app calls the model you select only on an explicit Send; it never walks this list, downgrades, retries or sends additional requests automatically.
+
+GPT-6.2 Astra / Sol reject `reasoning_effort: none`. GelFigure v1.0.0 omits this parameter and sends no `temperature`, `top_p` or `logprobs`, so the existing settings UI can be used. If a gateway inserts incompatible parameters and returns HTTP 400, ask its administrator to follow the [official migration guide](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart). The app’s 90-second timeout still applies; decide yourself whether to retry after a timeout.
+
+#### Other compatible models in the current official catalog
+
+Together with the four choices above, this lists **14 non-deprecated general models with image input and Chat Completions support**. Retain an older ID when an existing configuration needs it; prefer the current models above for new setups. Within each family, prefer the newer generation: Astra 6.2 → 6; Sol 6.2 → 6.1 → 6 → 5.6; Terra 6.1 → 5.6; Luna 6 → 5.6.
+
+| Exact ID / official model card | Position | This app’s interface |
+|---|---|---|
+| [`gpt-6-astra`](https://developers.openai.com/api/docs/models/gpt-6-astra) | Earlier Astra | Image input + Chat Completions |
+| [`gpt-6.1-sol`](https://developers.openai.com/api/docs/models/gpt-6.1-sol) | Earlier Sol | Image input + Chat Completions |
+| [`gpt-6-sol`](https://developers.openai.com/api/docs/models/gpt-6-sol) | Earlier Sol | Image input + Chat Completions |
+| [`gpt-5.6-sol`](https://developers.openai.com/api/docs/models/gpt-5.6-sol) | Earlier Sol | Image input + Chat Completions |
+| [`gpt-5.6-terra`](https://developers.openai.com/api/docs/models/gpt-5.6-terra) | Earlier Terra | Image input + Chat Completions |
+| [`gpt-5.6-luna`](https://developers.openai.com/api/docs/models/gpt-5.6-luna) | Earlier Luna | Image input + Chat Completions |
+| [`gpt-5.5`](https://developers.openai.com/api/docs/models/gpt-5.5) | Earlier general model | Image input + Chat Completions |
+| [`gpt-5.4`](https://developers.openai.com/api/docs/models/gpt-5.4) | Earlier general model | Image input + Chat Completions |
+| [`gpt-5.4-mini`](https://developers.openai.com/api/docs/models/gpt-5.4-mini) | Earlier smaller model | Image input + Chat Completions |
+| [`gpt-5.2`](https://developers.openai.com/api/docs/models/gpt-5.2) | Earlier general model | Image input + Chat Completions |
+
+#### Vision models that cannot be used directly by this version
+
+These three models remain in the official catalog but are **Responses-only**. GelFigure v1.0.0 uses Chat Completions; changing only the model name or entering a `/responses` URL does not make them work.
+
+| Model / official model card | Direct use in this version |
+|---|---|
+| [`gpt-5.5-pro`](https://developers.openai.com/api/docs/models/gpt-5.5-pro) | Unavailable; Responses API only |
+| [`gpt-5.4-pro`](https://developers.openai.com/api/docs/models/gpt-5.4-pro) | Unavailable; Responses API only |
+| [`gpt-5.2-pro`](https://developers.openai.com/api/docs/models/gpt-5.2-pro) | Unavailable; Responses API only |
+
+<details>
+<summary>Older configurations: deprecated vision models before their shutdown dates</summary>
+
+The [official retirement schedule](https://developers.openai.com/api/docs/deprecations), checked on 2026-11-18, lists these models in transition. Access depends on the account and exact snapshot; they are not recommended for new student setups. For 4o / 4.1, the explicit snapshots from the schedule are listed without duplicating their aliases.
+
+| Older ID / official model card | This app’s interface | Scheduled shutdown |
+|---|---|---|
+| [`gpt-5.4-nano`](https://developers.openai.com/api/docs/models/gpt-5.4-nano) | Image input + Chat Completions | 2027-04-01 |
+| [`gpt-5.1`](https://developers.openai.com/api/docs/models/gpt-5.1) | Image input + Chat Completions | 2027-04-01 |
+| [`gpt-5`](https://developers.openai.com/api/docs/models/gpt-5) | Image input + Chat Completions | 2026-12-11 |
+| [`gpt-5-mini`](https://developers.openai.com/api/docs/models/gpt-5-mini) | Image input + Chat Completions | 2026-12-11 |
+| [`gpt-5-nano`](https://developers.openai.com/api/docs/models/gpt-5-nano) | Image input + Chat Completions | 2026-12-11 |
+| [`o3`](https://developers.openai.com/api/docs/models/o3) | Image input + Chat Completions | 2026-12-11 |
+| [`gpt-4o-2024-08-06`](https://developers.openai.com/api/docs/models/gpt-4o) | Image input + Chat Completions | 2027-01-14 |
+| [`gpt-4o-2024-11-20`](https://developers.openai.com/api/docs/models/gpt-4o) | Image input + Chat Completions | 2027-01-14 |
+| [`gpt-4o-mini-2024-07-18`](https://developers.openai.com/api/docs/models/gpt-4o-mini) | Image input + Chat Completions | 2027-01-14 |
+| [`gpt-4.1-2025-04-14`](https://developers.openai.com/api/docs/models/gpt-4.1) | Image input + Chat Completions | 2027-01-14 |
+| [`gpt-4.1-mini-2025-04-14`](https://developers.openai.com/api/docs/models/gpt-4.1-mini) | Image input + Chat Completions | 2027-01-14 |
+| [`gpt-5-pro`](https://developers.openai.com/api/docs/models/gpt-5-pro) | Unavailable; Responses API only | 2026-12-11 |
+| [`o3-pro`](https://developers.openai.com/api/docs/models/o3-pro) | Unavailable; Responses API only | 2026-12-11 |
+| [`gpt-5.3-codex`](https://developers.openai.com/api/docs/models/gpt-5.3-codex) | Unavailable; Responses API only | 2027-04-01 |
+
+Retirement dates can change; the provider’s current notice takes precedence. Models already shut down are omitted from this usable-model inventory.
+
+</details>
+
+**Compatibility verification:** each OpenAI model card’s image-input and endpoint support was checked against the [full catalog](https://developers.openai.com/api/docs/models/all). The three provider bases above passed unauthenticated, image-free CORS preflights for this web app’s origin on 2026-11-17. No paid-key, model-by-model gel-accuracy benchmark was performed. Actual calls still require account access, quota, supported region, provider policy and valid JSON output.
+
+For a lab gateway or third-party service, ask its administrator for the complete HTTPS base, a Base64 `image_url` model ID, a key and browser-origin support. It must accept non-streaming Chat Completions and standard `choices[].message.content` text/JSON responses. Native Claude, DashScope, Gemini or image-generation endpoints require a compatible gateway before use here.
 
 ## Troubleshooting
 

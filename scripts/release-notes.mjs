@@ -30,7 +30,7 @@ ZIP 和 “Source code” 是可选的源码下载，普通使用只需要上面
 
 ## Optional AI setup / 可选 AI 配置
 
-For step-by-step API setup, screenshots, supported vision-model IDs and troubleshooting, read the [English guide](https://github.com/BiosickQiuence/GelFigure/blob/v1.0.0/README.md#api-setup) or [中文教程](https://github.com/BiosickQiuence/GelFigure/blob/v1.0.0/README.zh-CN.md#api-setup). Ordinary editing and exports need no API. AI recognition requires your own supported provider account and key.
+For step-by-step API setup, screenshots, supported vision-model IDs and troubleshooting, read the [English guide](https://github.com/BiosickQiuence/GelFigure/blob/main/README.md#api-setup) or [中文教程](https://github.com/BiosickQiuence/GelFigure/blob/main/README.zh-CN.md#api-setup). Ordinary editing and exports need no API. AI recognition requires your own supported provider account and key.
 
 API 配置、设置截图、可填写的看图模型 ID 和故障排查请看上面的中英文教程。普通整理和导出不需要 API；只有 AI 识别需要自己的服务商账号与 Key。
 
