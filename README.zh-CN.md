@@ -1,14 +1,14 @@
-# GelFigure v1.2.0
+# GelFigure v1.3.0
 
 **把 DNA 胶、蛋白胶整理成可编辑、可导出的实验图。支持本地编辑、AI 复核，以及从泳道校正到 Marker 标记的全自动处理。**
 
-[English](README.md) · [打开网页版](https://biosickqiuence.github.io/GelFigure/) · [下载完整离线 HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v1.2.0/GelFigure-v1.2.0.html) · [全部下载](https://github.com/BiosickQiuence/GelFigure/releases/tag/v1.2.0)
+[English](README.md) · [打开网页版](https://biosickqiuence.github.io/GelFigure/) · [下载完整离线 HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v1.3.0/GelFigure-v1.3.0.html) · [全部下载](https://github.com/BiosickQiuence/GelFigure/releases/tag/v1.3.0)
 
 > 不会编程也能用。普通整理、手动校正和导出不需要 API，也不需要安装 Python、Node.js 或其他软件。只有使用 AI 看图时，才需要准备自己的视觉 API。
 
 ## 先打开，再导入胶图
 
-1. 直接打开上面的网页版；或者在 Release 中下载 **GelFigure-v1.2.0.html**，双击，用 Chrome、Edge、Firefox 或 Safari 打开。不要只另存仓库中的 `index.html`，它依赖旁边的其他文件。
+1. 直接打开上面的网页版；或者在 Release 中下载 **GelFigure-v1.3.0.html**，双击，用 Chrome、Edge、Firefox 或 Safari 打开。不要只另存仓库中的 `index.html`，它依赖旁边的其他文件。
 2. 将胶图拖进窗口，或点“打开图片”。支持常见图片及 TIFF；多张曝光可一起导入再比较。
 3. 核对左侧“胶的类型”。本版按颜色规则判断：检测到可靠蓝色时按蛋白胶，黑白图按 DNA 胶；仍可手动切换。黑白蛋白胶应自行选择“蛋白胶”。
 4. 新图默认保留原色和原始明暗。需要灰度调整时再主动切换。已有项目恢复其保存的显示选择。

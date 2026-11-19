@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## [1.3.0] - 2026-11-20
+
+### 中文
+
+- 欢迎页（W2）与离线 AI 示例（A2）：无图时展示全屏欢迎页（拖放区、AI 就绪态、默认 Marker 快捷切换、三条备选入口、带缩略图的最近项目与隐私说明）；点击“体验示例”可完全离线体验预录 AI 全自动（进度 → 清单 → 成图）。
+- 4 步 API 配置向导（A1）与首次隐私同意（A3）：分步引导选择服务商、拿 Key、自动清洗粘贴并 16×16 测试连接、确认发送目标与隐私（按域名记录，设置内可随时撤回）。
+- 拖图即开始 AI（A4）与三步进度浮层（A5）：已配置且已同意时拖图直接启动 AI 全自动（无默认型号时内联弹出选择），展示每步耗时、发送域名，支持“改用本地处理 / 取消 / 后台运行先看原图”。
+- 右侧常驻待核对清单（A6）：集中展示低置信度/空道、贴边泳道、未配对 Marker、型号确认与导出就绪度，画布上以紫色编号（`#8B6CF0`）定位，支持一键处理与“全部确认并导出”。
+- AI 可靠性增强（A7–A9）与设置中心（W6）：新增按 `SHA-256 + 型号 + 模型 + 提示词版本` 索引的 IndexedDB 结果缓存、超时/429/网络错误自动重试 1 次、带可点击修复动作的结构化报错卡片，以及 5 标签设置中心。
+
+### English
+
+- Welcome Page (W2) & Offline AI Demo (A2): full-screen empty state with dropzone, AI readiness pill, default Marker chip, 3 action cards, recent project thumbnails, and privacy footer; Try AI Demo runs the full progress → checklist → editor workflow offline with zero API calls.
+- 4-Step API Wizard (A1) & Per-Browser Consent (A3): guided provider selection, key walkthrough, sanitized paste + 16×16 connectivity test, and revocable per-host privacy consent.
+- Drop-to-Start AI (A4) & Progress Overlay (A5): configured + consented drops launch AI Auto-Flow immediately (with inline Marker picker if no default is set), showing per-step timers, target host, and Use local / Cancel / Run in background controls.
+- Persistent Review Checklist (A6): right-hand review panel surfacing empty/low-confidence lanes, edge lanes, marker mismatches, model confirmation, and pre-flight checks with `#8B6CF0` canvas pins and “Confirm all & export”.
+- AI Reliability (A7–A9) & Settings Center (W6): IndexedDB caching keyed by `SHA-256 + ladderId + model + promptVersion`, 1× backoff auto-retry for transient timeout/429/network errors, structured error repair cards, and a 5-tab Settings Center.
+
 ## [1.2.0] - 2026-11-20
 
 ### 中文

@@ -44,6 +44,7 @@ import { proteinFeedbackChecks } from './protein-feedback.mjs';
 import { devAuditChecks } from './dev-audit.mjs';
 import { uxOptimizationChecks } from './ux-optimizations.mjs';
 import { v12VisualChecks } from './v12-visual.mjs';
+import { v13AiPrimaryChecks } from './v13-ai-primary.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = name => (process.argv.find(a => a.startsWith(`--${name}=`)) || '').split('=')[1];
@@ -176,6 +177,7 @@ async function runIn(name, base) {
     const devAudit=await devAuditChecks(browser,base,ROOT,name);out.results.push(...devAudit);if(devAudit.some(r=>r[0]==='FAIL'))out.ok=false;
     const uxOpt=await uxOptimizationChecks(browser,base,ROOT,name);out.results.push(...uxOpt);if(uxOpt.some(r=>r[0]==='FAIL'))out.ok=false;
     const v12=await v12VisualChecks(browser,base,ROOT,name);out.results.push(...v12);if(v12.some(r=>r[0]==='FAIL'))out.ok=false;
+    const v13=await v13AiPrimaryChecks(browser,base,ROOT,name);out.results.push(...v13);if(v13.some(r=>r[0]==='FAIL'))out.ok=false;
     const ctx = await browser.newContext({ viewport: { width: 1600, height: 960 } });
     const watch = page => {
       const errs = [];

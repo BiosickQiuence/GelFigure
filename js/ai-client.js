@@ -245,7 +245,11 @@
       cache: 'no-store',
       referrerPolicy: 'no-referrer'
     });
-    if (!res.ok) throw new Error(describeHttpError(res.status));
+    if (!res.ok) {
+      const err = new Error(describeHttpError(res.status));
+      err.httpStatus = res.status;
+      throw err;
+    }
     const data = await responseJSON(res), choice = data?.choices?.[0];
     if (choice?.finish_reason !== 'stop' || choice?.message?.refusal || typeof choice?.message?.content !== 'string') {
       throw new Error(L('接口拒绝、截断或未返回完整文本结果', 'API refused, truncated or did not return a complete text result'));
@@ -429,26 +433,108 @@
     G.dispatchEvent(new Event('gelfigure-ai-settings-changed'));
   }
 
+  let activeSettingsTab = 'ai';
+
   function buildSettings() {
     if (autoEntry && $('autoFlowHome')) $('autoFlowHome').appendChild(autoEntry);
     const matched = matchPreset(settings.endpoint);
-    settingsPanel.innerHTML = `<div class="dlg-head"><h2 id="aiSettingsTitle">${L('设置 · AI 接口', 'Settings · AI API')}</h2><button class="btn" id="aiSettingsClose">${L('收起', 'Close')}</button></div>
-      <div class="ai-config">
-        <label>${L('服务商预设', 'Provider preset')}<select id="aiProvider">${PRESETS.map(p => `<option value="${p.id}"${p.id === matched ? ' selected' : ''}>${esc(L(p.zh, p.en))}</option>`).join('')}</select></label>
-        <label>${L('接口地址（HTTPS 基址或完整 /chat/completions）', 'API address (HTTPS base or full /chat/completions)')}<input id="aiEndpoint" type="text" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1" autocomplete="off" spellcheck="false"></label>
-        <label>${L('视觉模型名称', 'Vision model name')}<input id="aiModel" type="text" placeholder="qwen3-vl-plus" autocomplete="off" spellcheck="false"></label>
-        <div id="aiModelPresets" class="ai-model-chips hidden"></div>
-        <label>${L('API 密钥', 'API key')}<div class="ai-key-wrap"><input id="aiKey" type="${keyVisible ? 'text' : 'password'}" autocomplete="off" spellcheck="false"><button type="button" id="aiKeyToggle" class="btn sm ghost" aria-pressed="${keyVisible}" title="${L('显示或隐藏密钥', 'Show or hide key')}">${keyVisible ? L('隐藏', 'Hide') : L('显示', 'Show')}</button></div></label>
+    const consentRec = G.AIConsent?.info;
+    const consentedForEp = G.AIConsent?.isConsented(settings.endpoint);
+    const curDefaultLadder = A.prefs().autoFlowLadder || '';
+    const hasLabTpl = !!A.prefs().labDefaultAppearance;
+    settingsPanel.classList.add('settings-center');
+    settingsPanel.innerHTML = `<div class="dlg-head" style="padding:14px 18px;margin:0;border-bottom:1px solid var(--line);">
+        <h2 id="aiSettingsTitle" style="margin:0;font-size:16px;">${L('设置中心', 'Settings Center')}</h2>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button type="button" class="btn sm ghost" id="btnOpenWizardFromSettings">${L('打开 4 步配置向导', 'Open 4-step wizard')}</button>
+          <button class="btn sm" id="aiSettingsClose">${L('收起', 'Close')}</button>
+        </div>
       </div>
-      <div class="actions">
-        <label><input type="checkbox" id="aiRemember">${L('在当前浏览器记住密钥（本地明文存储）', 'Remember key in this browser (local plaintext storage)')}</label>
-        <button id="aiSaveSettings" class="btn sm primary">${L('保存接口配置', 'Save API settings')}</button>
-        <button id="aiTestSettings" class="btn sm">${L('测试连接', 'Test connection')}</button>
-        <button id="aiClearKey" class="btn sm">${L('清除密钥', 'Clear key')}</button>
+      <div class="settings-tabs" role="tablist">
+        <button type="button" class="settings-tab${activeSettingsTab === 'ai' ? ' on' : ''}" data-stab="ai" role="tab">${L('AI 接口与隐私', 'AI API & Privacy')}</button>
+        <button type="button" class="settings-tab${activeSettingsTab === 'marker' ? ' on' : ''}" data-stab="marker" role="tab">${L('默认 Marker', 'Default Marker')}</button>
+        <button type="button" class="settings-tab${activeSettingsTab === 'layout' ? ' on' : ''}" data-stab="layout" role="tab">${L('实验室默认版式', 'Lab Layout')}</button>
+        <button type="button" class="settings-tab${activeSettingsTab === 'lang' ? ' on' : ''}" data-stab="lang" role="tab">${L('语言', 'Language')}</button>
+        <button type="button" class="settings-tab${activeSettingsTab === 'data' ? ' on' : ''}" data-stab="data" role="tab">${L('数据与缓存', 'Data & Cache')}</button>
       </div>
-      <p class="hint">${L('仅在你点击“测试连接”、复核发送或启动全自动处理时才联网；大图分析副本会自动等比缩放到长边 ≤ 1600 px 以提速，本地出图仍保持 100% 原始分辨率。', 'Network calls happen only on explicit Test, Review Send, or Auto Flow. Large images are scaled to ≤ 1600 px long edge for API speed while local crops and exports remain full resolution.')}</p>
-      <p id="aiSettingsStatus" role="status"></p>
-      <div id="aiAutoSlot"></div>`;
+      <div class="settings-body">
+        <div class="settings-pane${activeSettingsTab === 'ai' ? '' : ' hidden'}" data-spane="ai">
+          <div class="ai-config">
+            <label>${L('服务商预设', 'Provider preset')}<select id="aiProvider">${PRESETS.map(p => `<option value="${p.id}"${p.id === matched ? ' selected' : ''}>${esc(L(p.zh, p.en))}</option>`).join('')}</select></label>
+            <label>${L('接口地址（HTTPS 基址或完整 /chat/completions）', 'API address (HTTPS base or full /chat/completions)')}<input id="aiEndpoint" type="text" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1" autocomplete="off" spellcheck="false"></label>
+            <label>${L('视觉模型名称', 'Vision model name')}<input id="aiModel" type="text" placeholder="qwen3-vl-plus" autocomplete="off" spellcheck="false"></label>
+            <div id="aiModelPresets" class="ai-model-chips hidden"></div>
+            <label>${L('API 密钥', 'API key')}<div class="ai-key-wrap"><input id="aiKey" type="${keyVisible ? 'text' : 'password'}" autocomplete="off" spellcheck="false"><button type="button" id="aiKeyToggle" class="btn sm ghost" aria-pressed="${keyVisible}" title="${L('显示或隐藏密钥', 'Show or hide key')}">${keyVisible ? L('隐藏', 'Hide') : L('显示', 'Show')}</button></div></label>
+          </div>
+          <div class="actions">
+            <label><input type="checkbox" id="aiRemember">${L('在当前浏览器记住密钥（本地明文存储）', 'Remember key in this browser (local plaintext storage)')}</label>
+            <button id="aiSaveSettings" class="btn sm primary">${L('保存接口配置', 'Save API settings')}</button>
+            <button id="aiTestSettings" class="btn sm">${L('测试连接', 'Test connection')}</button>
+            <button id="aiClearKey" class="btn sm">${L('清除密钥', 'Clear key')}</button>
+          </div>
+          <div class="settings-consent-box" id="settingsConsentBox">
+            <div>
+              <strong>${L('拖图自动 AI 隐私同意', 'Drop-to-start AI privacy consent')}</strong>
+              <div style="color:var(--muted);margin-top:2px;">
+                ${consentedForEp
+                  ? L(`已同意向 ${consentRec.host} 发送 ≤1600 px 分析图（${consentRec.acceptedAt.slice(0, 10)}）`, `Consented to send ≤1600 px analysis PNG to ${consentRec.host} (${consentRec.acceptedAt.slice(0, 10)})`)
+                  : L('尚未同意自动上传；拖入胶图时将默认使用本地识别。', 'Not consented; dropped images use offline local detection.')}
+              </div>
+            </div>
+            <button type="button" class="btn sm${consentedForEp ? '' : ' primary'}" id="btnToggleAIConsent">
+              ${consentedForEp ? L('撤回同意', 'Revoke') : L('同意并启用', 'Consent & enable')}
+            </button>
+          </div>
+          <p class="hint">${L('仅在你点击“测试连接”、复核发送或同意启用拖图 AI 时才联网；大图分析副本会自动等比缩放到长边 ≤ 1600 px 以提速，本地出图仍保持 100% 原始分辨率。', 'Network calls happen only on explicit Test, Review Send, or consented Auto Flow. Large images scale to ≤ 1600 px for API speed while local exports remain full resolution.')}</p>
+          <p id="aiSettingsStatus" role="status"></p>
+          <div id="aiAutoSlot"></div>
+        </div>
+
+        <div class="settings-pane${activeSettingsTab === 'marker' ? '' : ' hidden'}" data-spane="marker">
+          <label style="display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;">${L('默认 AI Marker 型号（拖图即用）', 'Default AI Marker model (used on drop)')}</label>
+          <select id="settingsDefaultLadder" style="width:100%;margin-bottom:10px;">
+            <option value="">${L('每次拖图时询问', 'Ask on drop')}</option>
+            ${['dna', 'protein'].map(kind => {
+              const list = G.Ladders?.ordered ? G.Ladders.ordered(kind) : [];
+              return `<optgroup label="${kind === 'dna' ? 'DNA (bp)' : L('蛋白 (kDa)', 'Protein (kDa)')}">${list.map(l => `<option value="${esc(l.id)}"${l.id === curDefaultLadder ? ' selected' : ''}>${G.Ladders.isFavorite(l.id) ? '★ ' : ''}${esc(l.name)}</option>`).join('')}</optgroup>`;
+            }).join('')}
+          </select>
+          <p class="hint">${L('设置默认型号后，拖入胶图可直接启动 AI 全自动；也可以在欢迎页随时点击「更改」切换。', 'With a default model set, dropping a gel starts AI auto-flow immediately.')}</p>
+        </div>
+
+        <div class="settings-pane${activeSettingsTab === 'layout' ? '' : ' hidden'}" data-spane="layout">
+          <p style="font-size:13px;margin:0 0 10px;">${hasLabTpl ? L('已保存本实验室默认版式模板（新导入的胶图会自动套用字号、字体与栏宽）。', 'A lab default appearance template is active for new imports.') : L('尚未设置实验室默认版式。编辑好一张图后可点击下方按钮保存当前版式。', 'No lab default appearance saved yet.')}</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="btn sm primary" id="btnSettingsSaveLabTpl" ${A.S ? '' : 'disabled'}>${L('将当前图版式设为实验室默认', 'Save current appearance as lab default')}</button>
+            <button type="button" class="btn sm" id="btnSettingsClearLabTpl" ${hasLabTpl ? '' : 'disabled'}>${L('清除默认版式', 'Clear lab default')}</button>
+          </div>
+        </div>
+
+        <div class="settings-pane${activeSettingsTab === 'lang' ? '' : ' hidden'}" data-spane="lang">
+          <p style="font-size:13px;margin:0 0 10px;">${L('界面语言 / Interface language', 'Interface language / 界面语言')}</p>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn sm${G.I18N.lang === 'zh' ? ' primary' : ''}" id="btnSetLangZh">简体中文</button>
+            <button type="button" class="btn sm${G.I18N.lang === 'en' ? ' primary' : ''}" id="btnSetLangEn">English</button>
+          </div>
+        </div>
+
+        <div class="settings-pane${activeSettingsTab === 'data' ? '' : ' hidden'}" data-spane="data">
+          <div class="settings-consent-box" style="margin-top:0;">
+            <div>
+              <strong>${L('AI 识别结果缓存 (IndexedDB)', 'AI Result Cache (IndexedDB)')}</strong>
+              <div id="settingsCacheInfo" style="color:var(--muted);margin-top:2px;">${L('正在读取缓存统计…', 'Checking cache…')}</div>
+            </div>
+            <button type="button" class="btn sm" id="btnClearAICache">${L('清空 AI 缓存', 'Clear AI cache')}</button>
+          </div>
+          <div class="settings-consent-box">
+            <div>
+              <strong>${L('本机历史项目', 'Local Project History')}</strong>
+              <div style="color:var(--muted);margin-top:2px;">${L('按原图 SHA-256 自动合并；示例图不写入历史。', 'Merged by original SHA-256; demo gels excluded.')}</div>
+            </div>
+            <button type="button" class="btn sm" id="btnSettingsOpenHistory">${L('管理历史项目', 'Manage history')}</button>
+          </div>
+        </div>
+      </div>`;
     $('aiEndpoint').value = settings.endpoint;
     $('aiModel').value = settings.model;
     $('aiKey').value = settings.key;
@@ -456,6 +542,55 @@
     renderModelChips();
     placeAutoEntry();
     updateAutoEntryState();
+
+    // Tab switching
+    settingsPanel.querySelectorAll('[data-stab]').forEach(tab => {
+      tab.onclick = () => {
+        activeSettingsTab = tab.dataset.stab;
+        settingsPanel.querySelectorAll('[data-stab]').forEach(t => t.classList.toggle('on', t.dataset.stab === activeSettingsTab));
+        settingsPanel.querySelectorAll('[data-spane]').forEach(p => p.classList.toggle('hidden', p.dataset.spane !== activeSettingsTab));
+        if (activeSettingsTab === 'data' && G.AICache) {
+          G.AICache.count().then(n => {
+            const info = $('settingsCacheInfo');
+            if (info) info.textContent = L(`当前缓存 ${n} 条 AI 结果（按原图 SHA-256 + 型号 + 模型 + 提示词版本索引）`, `${n} cached AI result(s) (indexed by SHA-256 + ladder + model + prompt version)`);
+          });
+        }
+      };
+    });
+
+    $('btnOpenWizardFromSettings').onclick = () => { closeSettings(); G.AIWizard?.open(1); };
+    $('btnToggleAIConsent').onclick = () => {
+      if (G.AIConsent?.isConsented($('aiEndpoint').value.trim())) {
+        G.AIConsent.revoke();
+      } else {
+        saveSettings();
+        const ep = $('aiEndpoint').value.trim();
+        if (!ep) { settingsStatus(L('请先填写 HTTPS 接口地址', 'Enter an HTTPS endpoint first'), true); return; }
+        G.AIConsent?.grant(ep);
+      }
+      buildSettings();
+    };
+    const defLadSel = $('settingsDefaultLadder');
+    if (defLadSel) defLadSel.onchange = () => {
+      A.setPref('autoFlowLadder', defLadSel.value);
+      G.WelcomeAI?.render?.();
+    };
+    const saveLabBtn = $('btnSettingsSaveLabTpl');
+    if (saveLabBtn) saveLabBtn.onclick = () => { $('btnLabDefault')?.click(); buildSettings(); };
+    const clrLabBtn = $('btnSettingsClearLabTpl');
+    if (clrLabBtn) clrLabBtn.onclick = () => { $('btnClearLabDefault')?.click(); buildSettings(); };
+    if ($('btnSetLangZh')) $('btnSetLangZh').onclick = () => G.I18N.set('zh');
+    if ($('btnSetLangEn')) $('btnSetLangEn').onclick = () => G.I18N.set('en');
+    if ($('btnClearAICache')) $('btnClearAICache').onclick = async () => {
+      if (G.AICache) await G.AICache.clear();
+      const info = $('settingsCacheInfo');
+      if (info) info.textContent = L('已清空全部 AI 缓存（0 条）', 'AI cache cleared (0 entries)');
+      G.UI?.toast?.(L('已清空 AI 结果缓存', 'AI result cache cleared'));
+    };
+    if ($('btnSettingsOpenHistory')) $('btnSettingsOpenHistory').onclick = () => {
+      closeSettings();
+      ($('btnHistory') || $('cacheStatus'))?.click();
+    };
 
     $('aiProvider').onchange = () => {
       const preset = presetById($('aiProvider').value);
@@ -501,11 +636,14 @@
     $('btnSettings').focus();
   }
 
-  function openSettings() {
+  function openSettings(tab) {
+    if (tab) activeSettingsTab = tab;
+    else activeSettingsTab = 'ai';
+    buildSettings();
     settingsPanel.classList.remove('hidden');
     placeAutoEntry();
     $('btnSettings').setAttribute('aria-expanded', 'true');
-    $('aiEndpoint').focus();
+    if (activeSettingsTab === 'ai') $('aiEndpoint')?.focus();
   }
 
   buildSettings();

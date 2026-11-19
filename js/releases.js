@@ -1,6 +1,15 @@
 /* Short bilingual release summaries, newest first. Keep the first version equal to App.VERSION.
  * Detailed history lives in CHANGELOG.md; this small local catalogue also works in offline HTML. */
 window.GelFigureReleases = Object.freeze([
+  {version:'1.3.0',date:'2026-11-20',zh:[
+    '新增全屏欢迎页、4 步 API 配置向导与离线预录 AI 示例体验，无 Key 也可体验完整流程。',
+    '支持每浏览器首次隐私同意、拖图即开始 AI 全自动与三步进度浮层，可随时切换本地处理或后台运行。',
+    '新增右侧常驻待核对清单与画布紫色编号定位，以及 IndexedDB 结果缓存、自动重试 1 次、结构化报错修复卡片与 5 标签设置中心。'
+  ],en:[
+    'Add full-screen Welcome Page, 4-step API Setup Wizard, and offline pre-recorded AI Demo without needing a key.',
+    'Add per-browser privacy consent, drop-to-start AI Auto-Flow with 3-step progress overlay, local fallback, and background mode.',
+    'Add persistent Review Checklist with purple canvas badges, IndexedDB AI caching, 1x transient auto-retry, structured error repair cards, and tabbed Settings Center.'
+  ]},
   {version:'1.2.0',date:'2026-11-20',zh:[
     '启用方案 C 牛津蓝与暗胶片画布视觉体系、3 杠金带品牌标志与全套 1.8px 矢量图标。',
     '精简顶栏并引入统一通知通道、交互式 5 步上手引导、可搜索帮助与 ? 快捷键面板。',

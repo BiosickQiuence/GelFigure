@@ -68,12 +68,13 @@
 
   /* ---------- loading ---------- */
   // files: FileList / array. A .gelfig opens a project; several images = several exposures
-  async function load(files) {
+  async function load(files, opts) {
     files = [...(files.length != null ? files : [files])];
     if (!files.length) return;
     if (G.AutoFlow?.active) { G.AutoFlow.selectFiles(files); return; }
     const proj = files.find(f => /\.gelfig$/i.test(f.name));
     if (proj) return openProject(proj);
+    if (!opts?.localOnly && files.length === 1 && G.WelcomeAI?.maybeInterceptDrop?.(files[0])) return;
     if (!await archiveCurrent()) return;
     // phones: very large camera photos are scaled to what a phone browser can draw (mobile.js)
     if (G.Mobile && G.Mobile.fitPhotos) files = await G.Mobile.fitPhotos(files);

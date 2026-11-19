@@ -1,6 +1,6 @@
 {
   "name": "gelfigure",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "Turn a raw DNA or protein gel image into a publication-ready figure in the browser. The app itself has no dependencies; this file only installs dev/build/test tooling.",
   "license": "MIT",

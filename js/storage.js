@@ -28,5 +28,12 @@
       catch (e) { unavailable(); }
     }
   }
-  G.PrefStorage = { getItem, setItem, get persistent() { return persistent; } };
+  function removeItem(key) {
+    memory.delete(key);
+    if (persistent) {
+      try { G.localStorage.removeItem(key); }
+      catch (e) { unavailable(); }
+    }
+  }
+  G.PrefStorage = { getItem, setItem, removeItem, get persistent() { return persistent; } };
 })(window);
