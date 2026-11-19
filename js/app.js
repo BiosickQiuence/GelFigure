@@ -140,22 +140,16 @@
     App.expIdx = App.exposures ? App.exposures.findIndex(e => e.sha256 === state.file.sha256 && e.name === state.file.name) : null;
     App.ensureRot(); busy(false);
   }
-  function startFrom(input, orient) {
+  function newImageState(input, source, orient, p) {
     const img = input.img;
-    installSource(input, orient);
-    App.rot = null; App.satCanvas = null; App._display = null; App._clipKey = null;
-    const p = prefs();
-    // provisional state so ensureSrc() can derive the oriented buffer before detection runs
-    App.S = { orient: App._orientOnInstall };
-    App.ensureSrc();
-    App.S = {
+    return {
       file: { name: input.name, bits: img.bits, dpi: img.dpi, actualMax: img.actualMax, sha256: input.sha256, size: input.buffer.byteLength },
-      bright: E.detectBright(App.src),
+      bright: E.detectBright(source),
       displayMode: 'colour',
       rotation: 0,
-      orient: App._orientOnInstall,
+      orient,
       levels: { black: 0, white: 1, gamma: 1, invert: p.invert != null ? p.invert : false },
-      crop: { x: 0, y: 0, w: App.src.w, h: App.src.h },
+      crop: { x: 0, y: 0, w: source.w, h: source.h },
       lanes: [], laneHalfW: 10, laneLinked: true,
       gelType: null,          // 'dna' | 'protein'; decided from the image below, the user can override
       markers: [],
@@ -164,6 +158,16 @@
       style: normalStyle(p.stylePreset ? p.stylePreset.style : p.style),
       saturatedInCrop: 0
     };
+  }
+  function startFrom(input, orient) {
+    const img = input.img;
+    installSource(input, orient);
+    App.rot = null; App.satCanvas = null; App._display = null; App._clipKey = null;
+    const p = prefs();
+    // provisional state so ensureSrc() can derive the oriented buffer before detection runs
+    App.S = { orient: App._orientOnInstall };
+    App.ensureSrc();
+    App.S = newImageState(input, App.src, App._orientOnInstall, p);
     App.invertInherited = p.invert != null;
     App.prefLadder = G.Ladders.get(p.ladderId) ? p.ladderId : 'gr1kbplus';
     App.prefUnit = p.unit || 'bp';
@@ -1767,7 +1771,7 @@
     }catch(error){if(generation!==App.sourceGeneration)return false;throw error;}
     finally{if(generation===App.sourceGeneration)busy(false);}
   };
-  function restore(input, state, initial, autoRotation, exposures = null, expIdx = null, generation) {
+  function restore(input, state, initial, autoRotation, exposures = null, expIdx = null, generation, undoSnapshot) {
     if(generation===undefined)generation=++App.sourceGeneration;
     if(generation!==App.sourceGeneration)return false;
     // the saved orientation belongs to the stored coordinates: apply it before the state is installed.
@@ -1798,13 +1802,50 @@
     App.loadWarnings = input.img.warnings || [];
     App.initial = initial || App.snapshot();
     App.autoRotation = autoRotation != null ? autoRotation : state.autoRotation ?? state.rotation;
-    App.hist = [App.snapshot()]; App.future = [];
+    App.hist = undoSnapshot ? [undoSnapshot, App.snapshot()] : [App.snapshot()]; App.future = [];
     App.ensureRot();
     App.emit('loaded');
     App.emit('change');
     if(generation===App.sourceGeneration)busy(false);
     return true;
   }
+
+  // Install a completed, validated run as a new project. The input bytes are also
+  // the undo source; neither an API request nor its draft ever touches the active project.
+  App.adoptAutomatic = function (input, layout, corrected, markers, kind) {
+    const img = input.img, p = prefs();
+    const raw = {w:img.width, h:img.height, data:img.data};
+    const state = newImageState(input, raw, '', p);
+    state.gelType = kind;
+    state.autoRotation = 0;
+    state.saturatedInCrop = E.saturation(raw, SAT);
+    const original = JSON.stringify(state);
+
+    state.perspective = layout.spec;
+    state.crop = {x:0, y:0, w:corrected.w, h:corrected.h};
+    G.Perspective.setLayout(state, layout);
+    state.gelAIBeta.workflow = 'automatic';
+    state.gelAIBeta.reviewedLanes = 0;
+    state.markers = markers;
+    markers.forEach(m => {
+      state.lanes[m.lane].name = 'M';
+      if (p.stylePreset?.unitMode === 'inline') m.unit += '-inline';
+      if (p.stylePreset?.unitMode === 'none') m.unit = 'none';
+    });
+    const levels = E.autoLevels(corrected);
+    state.levels.black = levels.black; state.levels.white = levels.white;
+    state.saturatedInCrop = E.saturation(corrected, SAT);
+    state.currentSources = {lanes:'ai-automatic', markers:'ai-automatic'};
+    state.markerRecognition = {method:'ai', workflow:'automatic', protocol:1, at:new Date().toISOString()};
+    state.resetBaseline = JSON.stringify(state);
+
+    App.prefLadder = markers[0].ladderId;
+    App.prefUnit = G.Ladders.unitOfKind(kind);
+    App.invertInherited = p.invert != null;
+    dropSelection();
+    App.newCachedProject();
+    restore(input, state, state.resetBaseline, 0, null, null, ++App.sourceGeneration, original);
+  };
 
   // History and project files share the same restoration path.
   App.restoreSnapshot = restore;

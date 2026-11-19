@@ -12,6 +12,9 @@
     settings.model=typeof saved.model==='string'?saved.model:'';
     settings.key=localStorage.getItem(KEY)||''; settings.remember=!!settings.key;
   } catch (_) { /* Credentials stay in memory when browser storage is unavailable. */ }
+  const autoEntry=$('btnAutoFlow');
+  let configured=false;
+  function setAutoAvailable(available) { configured=available;autoEntry.classList.toggle('hidden', !available); }
   const dlg=document.createElement('div'); dlg.id='aiMarkerDlg'; dlg.className='ai-task hidden';
   dlg.setAttribute('role','region'); dlg.setAttribute('aria-labelledby','aiMarkerTitle');
   G.AIWorkspace.host.appendChild(dlg);
@@ -29,6 +32,9 @@
   function saveSettings() {
     const v={endpoint:$('aiEndpoint').value.trim(),model:$('aiModel').value.trim(),key:$('aiKey').value.trim(),remember:$('aiRemember').checked};
     settings=v;
+    let invalid;
+    try { validateSettings(v); } catch (e) { invalid=e.message; }
+    setAutoAvailable(!invalid);
     try {
       // Remove the old secret first: unchecking Remember must never retain an old value.
       localStorage.removeItem(KEY);
@@ -38,22 +44,27 @@
     } catch (_) {
       settingsStatus(L('浏览器未能保存配置或密钥；请检查浏览器存储设置。当前页面仍可使用。','Browser could not persist configuration or key; check storage settings. This page can still use it.'),true);
     }
+    if(invalid)settingsStatus(invalid,true);
   }
   function clearKey() {
+    setAutoAvailable(false);
     cancel();G.dispatchEvent(new Event('gelfigure-ai-settings-changed')); settings.key='';settings.remember=false;$('aiKey').value='';$('aiRemember').checked=false;
     try {localStorage.removeItem(KEY);if(localStorage.getItem(KEY)!==null)throw new Error('storage');settingsStatus(L('已清除当前页面和此浏览器保存的密钥','Key cleared from this page and browser'));}
     catch(_){settingsStatus(L('当前页面密钥已清除；无法确认浏览器存储已清除，请在浏览器设置中清除此页面的数据','Page key cleared; browser storage removal could not be verified. Clear this page’s data in browser settings.'),true);}
   }
   function analysisImage() {
     if(!A.S)throw new Error(L('请先导入胶图','Import a gel first'));
-    const rot=A.ensureRot(),c=document.createElement('canvas');c.width=rot.w;c.height=rot.h;
+    return encodeImage(A.ensureRot(),A.sourceRGB,A.S.rotation);
+  }
+  function encodeImage(rot,rgb,rotation=0) {
+    const c=document.createElement('canvas');c.width=rot.w;c.height=rot.h;
     if(rot.w<2||rot.h<2)throw new Error(L('图像尺寸过小','Image is too small'));
-    const pixels=A.sourceRGB?G.Colour.toImageData(A.sourceRGB,rot.w,rot.h,A.S.rotation):G.Engine.toImageData(rot,{black:0,white:1,gamma:1,invert:false});
+    const pixels=rgb?G.Colour.toImageData(rgb,rot.w,rot.h,rotation):G.Engine.toImageData(rot,{black:0,white:1,gamma:1,invert:false});
     c.getContext('2d').putImageData(pixels,0,0);
     const url=c.toDataURL('image/png');
     if(!url.startsWith('data:image/png;base64,')||Math.floor((url.length-url.indexOf(',')-1)*3/4)>32*1024*1024)
       throw new Error(L('完整分析图无法编码或超过 32 MB；请使用尺寸较小的输入图后重试','Full analysis image could not be encoded or exceeds 32 MB; use a smaller input image'));
-    return {width:c.width,height:c.height,url,colour:!!A.sourceRGB};
+    return {width:c.width,height:c.height,url,colour:!!rgb};
   }
   function protectedMarker(m) {return !!(m.userAssigned||m.ladderLocked||m.bands.some(b=>b.manual));}
   function freshSession() {
@@ -69,9 +80,9 @@
     if(pending)cancel(L('项目已变化，旧请求已取消。请重新识别。','Project changed; old request cancelled. Run recognition again.'));
     renderResults();
   }
-  function autoTarget(x,used=new Set()) {
-    let best=null,d=Math.max(2,(A.S.lanePitch||40)*0.42);
-    A.S.lanes.forEach((l,i)=>{const dx=Math.abs(l.x-x);if(!used.has(i)&&dx<d){d=dx;best=i;}});
+  function autoTarget(x,used=new Set(),geometry=A.S) {
+    let best=null,d=Math.max(2,(geometry.lanePitch||40)*0.42);
+    geometry.lanes.forEach((l,i)=>{const dx=Math.abs(l.x-x);if(!used.has(i)&&dx<d){d=dx;best=i;}});
     if(best!==null)used.add(best); return best;
   }
   function localResult(s) {
@@ -87,7 +98,7 @@
     return session.local;
   }
   // Validate the complete response before making any result available for application.
-  function validate(value,img,kind,catalog=G.Ladders.all(kind)) {
+  function validate(value,img,kind,catalog=G.Ladders.all(kind),geometry=A.S) {
     const bad=()=>{throw new Error(L('AI 结果格式、坐标或型号不符合约定，未应用任何结果','AI result has invalid format, coordinates or model IDs; nothing was applied'));};
     const unit=v=>finite(v)&&v>=0&&v<=1;
     if(!value||value.schema_version!==1||!['dna','protein','unknown'].includes(value.gel_type)||value.image?.width!==img.width||value.image?.height!==img.height||!Array.isArray(value.markers)||value.markers.length>100)bad();
@@ -108,7 +119,7 @@
       });
       const known=bands.filter(b=>b.y!==null&&b.size!==null).sort((a,b)=>b.size-a.size);
       if(known.some((b,i)=>i&&b.y<=known[i-1].y))bad();
-      return {x,target:autoTarget(x,used),ladderId:m.ladder_id,candidates,bands,selected:true,edited:false};
+      return {x,target:autoTarget(x,used,geometry),ladderId:m.ladder_id,candidates,bands,selected:true,edited:false};
     })};
   }
   function requestBody(img,catalog,kind,model) {
@@ -129,10 +140,14 @@
     serial++;if(pending){pending.controller.abort();clearTimeout(pending.timer);pending=null;}busy();
     if(message)status(message,true);
   }
+  function validateSettings(value) {
+    const url=endpoint(value.endpoint);
+    if(!value.model||value.model.length>200||/[\r\n]/.test(value.model)||!value.key||/[\r\n]/.test(value.key))throw new Error(L('请填写模型名称和有效密钥','Enter a model name and valid key'));
+    return {url,model:value.model,key:value.key};
+  }
   function checkedAPISettings() {
-    saveSettings();const url=endpoint(settings.endpoint);
-    if(!settings.model||settings.model.length>200||/[\r\n]/.test(settings.model)||!settings.key||/[\r\n]/.test(settings.key))throw new Error(L('请填写模型名称和有效密钥','Enter a model name and valid key'));
-    return {url,model:settings.model,key:settings.key};
+    saveSettings();
+    return validateSettings(settings);
   }
   async function callVision(body,signal,cfg) {
     const res=await fetch(cfg.url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+cfg.key},body:JSON.stringify({...body,model:cfg.model}),signal,credentials:'omit',redirect:'error',cache:'no-store',referrerPolicy:'no-referrer'});
@@ -201,6 +216,40 @@
     const known=row.bands.filter(b=>b.y!==null&&b.size!==null).sort((a,b)=>b.size-a.size);
     if(known.some((b,i)=>i&&b.y<=known[i-1].y))bad();
   }
+  function markerFromRow(r,lane,method,kind,prev) {
+    const lad=G.Ladders.get(r.ladderId);
+    const known=r.bands.filter(b=>b.y!==null&&b.size!==null);
+    const marker={lane,ladderId:r.ladderId||'',unit:prev?.unit||(kind==='protein'?'kDa':'bp'),side:prev?.side||'auto',
+      ...(prev?.color?{color:prev.color}:{}),...(prev?.weight?{weight:prev.weight}:{}),
+      bandMode:'fixed',recognition:{method,at:new Date().toISOString(),protocol:1,...(r.edited?{edited:true}:{})},
+      userAssigned:!!r.edited,ladderLocked:!!r.edited,
+      bands:known.map(b=>({bp:b.size,y:b.y,matched:true,manual:!!r.edited,show:b.show!==false,ref:(lad?.ref||[]).includes(b.size),...(prev?.ladderId===r.ladderId&&prev.bands.some(p=>p.bp===b.size&&p.color==='red')?{color:'red'}:{})})),
+      unassignedBands:r.bands.filter(b=>b.y===null||b.size===null).map(b=>({y:b.y,size:b.size,show:b.show!==false}))};
+    if(method==='ai'&&lad&&Array.isArray(r.selectedSizes)){marker.orderPairing={ladderId:lad.id,selectedSizes:r.selectedSizes.slice(),...orderStats(r),manual:!!r.orderManual};marker.recognition.sizeAssignment=r.orderManual?'manual':'selected-order';}
+    if(method==='local'&&!r.edited&&r.original){marker.bands=clone(r.original.bands);delete marker.bandMode;delete marker.unassignedBands;marker.score=r.original.score;}
+    return marker;
+  }
+
+  // The selected catalogue model sets the sizes. Positions belong to the rectified image.
+  async function detectAutomaticMarkers(image,ladder,layout,signal) {
+    const kind=G.Ladders.kindOf(ladder),catalog=[ladder],cfg=checkedAPISettings();
+    const value=await callVision(requestBody(image,catalog,kind,cfg.model),signal,cfg);
+    const geometry={lanes:layout.lanes,lanePitch:layout.pitch};
+    const {rows}=validate(value,image,kind,catalog,geometry);
+    if(!rows.length)throw new Error(L('校正图中未找到 Marker 泳道','No marker lane found in the corrected image'));
+    return rows.map(row=>{
+      if(row.target===null||layout.lanes[row.target].hidden)
+        throw new Error(L('Marker 位置与保留的泳道不一致，请检查图片和所选型号','Marker position does not match a retained lane. Check the image and selected model'));
+      if(!row.bands.some(b=>finite(b.y)))
+        throw new Error(L('未找到可标记的条带位置，请检查图片和所选型号','No band positions were detected. Check the image and selected model'));
+      row.ladderId=ladder.id;
+      ensureOrderSelection(row);
+      const marker=markerFromRow(row,row.target,'ai',kind);
+      marker.ladderLocked=true;
+      marker.recognition.workflow='automatic';
+      return marker;
+    }).sort((a,b)=>a.lane-b.lane);
+  }
   function apply(method,overwrite=false) {
     G.UI.flushPending();
     if(!isCurrent())throw new Error(L('项目已变化，请重新识别后应用','Project changed; run recognition again before applying'));
@@ -228,16 +277,7 @@
       } else next.lanes[lane].x=r.x;
       newTargets.set(r,lane);delete next.lanes[lane].markerExcluded;
       if(!next.lanes[lane].name)next.lanes[lane].name='M';
-      const lad=G.Ladders.get(r.ladderId),prev=oldMarkers.find(m=>m.lane===lane);
-      const known=r.bands.filter(b=>b.y!==null&&b.size!==null);
-      const marker={lane,ladderId:r.ladderId||'',unit:prev?.unit||(s.kind==='protein'?'kDa':'bp'),side:prev?.side||'auto',
-        ...(prev?.color?{color:prev.color}:{}),...(prev?.weight?{weight:prev.weight}:{}),
-        bandMode:'fixed',recognition:{method,at:new Date().toISOString(),protocol:1,...(r.edited?{edited:true}:{})},
-        userAssigned:!!r.edited,ladderLocked:!!r.edited,
-        bands:known.map(b=>({bp:b.size,y:b.y,matched:true,manual:!!r.edited,show:b.show!==false,ref:(lad?.ref||[]).includes(b.size),...(prev?.ladderId===r.ladderId&&prev.bands.some(p=>p.bp===b.size&&p.color==='red')?{color:'red'}:{})})),
-        unassignedBands:r.bands.filter(b=>b.y===null||b.size===null).map(b=>({y:b.y,size:b.size,show:b.show!==false}))};
-      if(method==='ai'&&lad&&Array.isArray(r.selectedSizes)){marker.orderPairing={ladderId:lad.id,selectedSizes:r.selectedSizes.slice(),...orderStats(r),manual:!!r.orderManual};marker.recognition.sizeAssignment=r.orderManual?'manual':'selected-order';}
-      if(method==='local'&&!r.edited&&r.original){marker.bands=clone(r.original.bands);delete marker.bandMode;delete marker.unassignedBands;marker.score=r.original.score;}
+      const marker=markerFromRow(r,lane,method,s.kind,oldMarkers.find(m=>m.lane===lane));
       next.markers=next.markers.filter(m=>m.lane!==lane);next.markers.push(marker);
     }
     next.markerRecognition={method,at:new Date().toISOString(),protocol:1};
@@ -420,22 +460,35 @@
   }
   const settingsPanel=document.createElement('aside');settingsPanel.id='aiSettingsPanel';settingsPanel.className='ai-settings hidden';settingsPanel.setAttribute('role','region');settingsPanel.setAttribute('aria-labelledby','aiSettingsTitle');document.body.appendChild(settingsPanel);
   function settingsStatus(text,error=false){$('aiSettingsStatus').textContent=text;$('aiSettingsStatus').classList.toggle('error',error);}
+  function placeAutoEntry(){
+    const home=settingsPanel.classList.contains('hidden')?$('autoFlowHome'):$('aiAutoSlot');
+    home.appendChild(autoEntry);
+  }
   function buildSettings(){
+    $('autoFlowHome').appendChild(autoEntry);
     settingsPanel.innerHTML=`<div class="dlg-head"><h2 id="aiSettingsTitle">${L('设置 · AI 接口','Settings · AI API')}</h2><button class="btn" id="aiSettingsClose">${L('收起','Close')}</button></div>
       <div class="ai-config"><label>${L('接口地址（HTTPS 基址或完整 /chat/completions）','API address (HTTPS base or full /chat/completions)')}<input id="aiEndpoint" type="text" placeholder="https://example.com/v1" autocomplete="off" spellcheck="false"></label><label>${L('视觉模型名称','Vision model name')}<input id="aiModel" type="text" autocomplete="off" spellcheck="false"></label><label>${L('API 密钥','API key')}<input id="aiKey" type="password" autocomplete="off" spellcheck="false"></label></div>
       <div class="actions"><label><input type="checkbox" id="aiRemember">${L('在当前浏览器记住密钥（本地明文存储）','Remember key in this browser (local plaintext storage)')}</label><button id="aiSaveSettings" class="btn sm">${L('保存接口配置','Save API settings')}</button><button id="aiClearKey" class="btn sm">${L('清除密钥','Clear key')}</button></div>
 
-      <p class="hint">${L('校正与 Marker 共用此配置。只在识别工作区主动点击发送时上传分析图；密钥不进入项目、日志或成图。','Correction and Marker share this configuration. The analysis image is sent only when you click Send in the review workspace; keys never enter projects, logs or figures.')}</p><p id="aiSettingsStatus" role="status"></p>`;
+      <p class="hint">${L('复核工作区由你点击发送。全自动处理在选好图片和 Marker 后依次发送两张分析图。','In review, click Send to upload. Automatic processing sends two analysis images after you choose an image and a marker.')}</p><p id="aiSettingsStatus" role="status"></p><div id="aiAutoSlot"></div>`;
     $('aiEndpoint').value=settings.endpoint;$('aiModel').value=settings.model;$('aiKey').value=settings.key;$('aiRemember').checked=settings.remember;
-$('aiSaveSettings').onclick=saveSettings;$('aiClearKey').onclick=clearKey;
+    placeAutoEntry();
+    $('aiSaveSettings').onclick=saveSettings;$('aiClearKey').onclick=clearKey;
     $('aiRemember').onchange=saveSettings;
-    for(const id of ['aiEndpoint','aiModel','aiKey'])$(id).addEventListener('input',()=>{G.dispatchEvent(new Event('gelfigure-ai-settings-changed'));if(pending)cancel(L('接口配置已变化，请重新点击识别','API settings changed; click recognition again'));});
+    for(const id of ['aiEndpoint','aiModel','aiKey'])$(id).addEventListener('input',()=>{setAutoAvailable(false);G.dispatchEvent(new Event('gelfigure-ai-settings-changed'));if(pending)cancel(L('接口配置已变化，请重新点击识别','API settings changed; click recognition again'));});
 
     $('aiSettingsClose').onclick=closeSettings;
   }
-  function closeSettings(){settingsPanel.classList.add('hidden');$('btnSettings').setAttribute('aria-expanded','false');$('btnSettings').focus();}
-  function openSettings(){settingsPanel.classList.remove('hidden');$('btnSettings').setAttribute('aria-expanded','true');$('aiEndpoint').focus();}
-  buildSettings();$('btnSettings').onclick=()=>settingsPanel.classList.contains('hidden')?openSettings():closeSettings();$('btnSettings').setAttribute('aria-expanded','false');
+  function closeSettings(){settingsPanel.classList.add('hidden');placeAutoEntry();$('btnSettings').setAttribute('aria-expanded','false');$('btnSettings').focus();}
+  function openSettings(){settingsPanel.classList.remove('hidden');placeAutoEntry();$('btnSettings').setAttribute('aria-expanded','true');$('aiEndpoint').focus();}
+  buildSettings();
+  try { validateSettings(settings);setAutoAvailable(true); } catch (_) { setAutoAvailable(false); }
+  autoEntry.onclick=()=>{
+    if(autoEntry.classList.contains('hidden'))return;
+    if(!settingsPanel.classList.contains('hidden'))closeSettings();
+    G.AutoFlow.open();
+  };
+  $('btnSettings').onclick=()=>settingsPanel.classList.contains('hidden')?openSettings():closeSettings();$('btnSettings').setAttribute('aria-expanded','false');
   settingsPanel.addEventListener('keydown',e=>e.stopPropagation());
   G.addEventListener('keydown',e=>{if(e.key==='Escape'&&!e.isComposing&&!settingsPanel.classList.contains('hidden')){e.preventDefault();e.stopImmediatePropagation();closeSettings();}},true);
   G.addEventListener('gelfigure-ai-task-close',e=>{if(e.detail!==dlg.id)cancel();});
@@ -448,5 +501,5 @@ $('aiSaveSettings').onclick=saveSettings;$('aiClearKey').onclick=clearKey;
     buildSettings();const overwrite=$('aiOverwrite').checked;buildUI();$('aiOverwrite').checked=overwrite;renderResults();busy();
     if(pending)status(L('识别请求仍在进行…','Recognition request is still pending…'));
   });
-  G.MarkerAI={open,openSettings,editMarker,analysisImage,requestVision,validate,captureLocal,recognize,apply,cancel,protectedMarker,get session(){return session;},get pending(){return !!pending;}};
+  G.MarkerAI={get configured(){return configured;},open,openSettings,editMarker,analysisImage,encodeImage,requestVision,detectAutomaticMarkers,validate,captureLocal,recognize,apply,cancel,protectedMarker,get session(){return session;},get pending(){return !!pending;}};
 })(window);

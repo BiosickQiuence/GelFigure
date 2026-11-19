@@ -73,6 +73,7 @@
   async function load(files) {
     files = [...(files.length != null ? files : [files])];
     if (!files.length) return;
+    if (G.AutoFlow?.active) { G.AutoFlow.selectFiles(files); return; }
     const proj = files.find(f => /\.gelfig$/i.test(f.name));
     if (proj) return openProject(proj);
     if (!await archiveCurrent()) return;

@@ -75,6 +75,7 @@
 
 <div id="app">
   <aside id="panel">
+    <div id="autoFlowHome"><button type="button" class="btn hidden" id="btnAutoFlow" data-en="AI automatic processing">AI 全自动处理</button></div>
     <div class="empty" id="emptyState">
       <div class="empty-icon">▣</div>
       <h2 class="d-only" data-en="Drop a gel image here">把胶图拖进来</h2>
@@ -92,7 +93,7 @@
       </div>
       <p class="hint d-only" data-en="You can drop several exposures of the same gel at once; the best one is picked automatically.">可以一次拖入同一块胶的多张不同曝光，自动挑出最合适的一张。</p>
       <p class="hint m-only" data-en="You can pick several exposures of the same gel at once; the best one is chosen automatically.">可以一次选择同一块胶的多张不同曝光，自动挑出最合适的一张。</p>
-      <p class="privacy" data-en="Local detection stays in your browser. Optional AI Marker sends a full analysis-image copy to your configured HTTPS API only when you click recognition.">本地识别在浏览器内完成。可选 AI Marker 仅在主动点击识别时，向你填写的 HTTPS 接口发送完整分析图副本。</p>
+      <p class="privacy" data-en="Local processing stays in your browser. AI review and AI automatic processing send analysis images to the HTTPS API you configure.">本地识别在浏览器内完成。AI 复核和 AI 全自动处理会将分析图发送至你配置的 HTTPS 接口。</p>
       <p class="hint storage-note hidden" data-en="Preference storage is unavailable; editing and export still work. Check the separate marker-library cache status. Save a project before closing.">偏好存储不可用，仍可编辑和导出；Marker 库是否保存成功请看其缓存状态。关闭前请保存项目。</p>
     </div>
 
@@ -599,6 +600,26 @@
   </div>
 </div></div>
 
+<section id="autoFlowPage" class="ai-task hidden" aria-labelledby="autoFlowTitle">
+  <div class="auto-flow-card">
+    <header>
+      <h1 id="autoFlowTitle" data-en="AI automatic processing">AI 全自动处理</h1>
+      <button class="btn sm" id="autoFlowBack" data-en="Back to editor">返回主界面</button>
+    </header>
+    <p class="auto-flow-note" data-en="Once both inputs are ready, the configured API receives the input image for lane correction, then the corrected image and selected marker model for labelling.">选好图片和型号后自动开始。程序先将原图副本发给你的 API 定位泳道，再发送校正图和所选型号来标记条带。</p>
+    <button type="button" id="autoFlowDrop" aria-describedby="autoFlowFileName">
+      <img id="autoFlowThumb" class="hidden" alt="">
+      <strong data-en="Drop a gel image or choose a file">拖入胶图，或点击选择图片</strong>
+      <span id="autoFlowFileName">TIFF · PNG · JPEG · BMP</span>
+    </button>
+    <input type="file" id="autoFlowFile" accept=".tif,.tiff,.png,.jpg,.jpeg,.bmp,image/*" hidden>
+    <label for="autoFlowLadder" data-en="Marker model">Marker 型号</label>
+    <select id="autoFlowLadder"><option value="" data-en="Select a marker model">选择 Marker 型号</option></select>
+    <p id="autoFlowStatus" role="status" aria-live="polite"></p>
+    <button id="autoFlowRetry" class="btn hidden" data-en="Retry with these inputs">用当前图片和型号重试</button>
+  </div>
+</section>
+
 <div id="busy" class="hidden"><div class="spinner"></div><div class="busy-text" id="busyText"></div></div>
 
 <script src="js/storage.js"></script>
@@ -624,6 +645,7 @@
 <script src="js/ai-workspace.js"></script>
 <script src="js/marker-ai.js"></script>
 <script src="js/gel-ai-beta.js"></script>
+<script src="js/auto-flow.js"></script>
 <script src="js/history-ui.js"></script>
 <script src="js/support-config.js"></script>
 <script src="js/feedback.js"></script>

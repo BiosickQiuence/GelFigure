@@ -60,14 +60,26 @@
     const p = { x: (rx - o.x) * (ex.x - o.x) + (ry - o.y) * (ex.y - o.y), y: (rx - o.x) * (ey.x - o.x) + (ry - o.y) * (ey.y - o.y) };
     return S.perspective ? mapping(S.perspective.points)(p.x / (w - 1), p.y / (h - 1)) : p;
   }
-  function specification(points) {
-    const r = App.ensureRot();
+  function specification(points, rawImage) {
+    const r = rawImage || App.ensureRot();
     if (!valid(points, r.w, r.h)) throw new Error(L('四点不能交叉、重合或凹陷，请按左上、右上、右下、左下调整。', 'Keep a convex quadrilateral in top-left, top-right, bottom-right, bottom-left order.'));
     const w = Math.round(Math.max(distance(points[0], points[1]), distance(points[3], points[2]))) + 1;
     const h = Math.round(Math.max(distance(points[0], points[3]), distance(points[1], points[2]))) + 1;
-    const spec = { points: points.map(p => sourcePoint(p.x, p.y)), w, h };
-    validate(spec, App.rawSrc.w, App.rawSrc.h);
+    const spec = { points: rawImage ? points : points.map(p => sourcePoint(p.x, p.y)), w, h };
+    const source = rawImage || App.rawSrc;
+    validate(spec, source.w, source.h);
     return spec;
+  }
+  function setLayout(state, layout) {
+    state.lanes = JSON.parse(JSON.stringify(layout.lanes));
+    state.lanePitch = layout.pitch;
+    state.laneHalfW = layout.halfWidth;
+    state.laneLinked = false;
+    state.gelAIBeta = JSON.parse(JSON.stringify(layout.meta));
+    if (layout.meta.removedInternalLanes) {
+      state.style.spliceStyle = state.style.spliceStyle === 'line' ? 'line' : 'gap';
+      state.style.spliceGapPt = Math.max(1.5, state.style.spliceGapPt || 0);
+    }
   }
   function apply(points, layout = null) {
     const spec = specification(points), S = App.S;
@@ -85,8 +97,7 @@
     App.ensureSrc(); App.ensureRot();
     if(layout){
       if(candidate.gelAIBeta)candidate.layoutHistory=(candidate.layoutHistory||[]).concat(candidate.gelAIBeta);
-      candidate.lanes=JSON.parse(JSON.stringify(layout.lanes));candidate.lanePitch=layout.pitch;candidate.laneHalfW=layout.halfWidth;candidate.laneLinked=false;candidate.gelAIBeta=JSON.parse(JSON.stringify(layout.meta));
-      if(layout.meta.removedInternalLanes){candidate.style.spliceStyle=candidate.style.spliceStyle==='line'?'line':'gap';candidate.style.spliceGapPt=Math.max(1.5,candidate.style.spliceGapPt||0);}
+      setLayout(candidate, layout);
     }else{
       if(candidate.gelAIBeta)candidate.layoutHistory=(candidate.layoutHistory||[]).concat(candidate.gelAIBeta);
       delete candidate.gelAIBeta;App.autoLanes();App.autoMarkers();
@@ -138,7 +149,7 @@
     P.points.forEach((p, i) => { const s = toScr(p.x, p.y), d = Math.hypot(sx - s.x, sy - s.y); if (d < best) { best = d; index = i; } });
     return index;
   }
-  G.Perspective = Object.assign(P, { valid, mapping, validate, warp, sourcePoint, specification, apply, start, stop, draw, hit });
+  G.Perspective = Object.assign(P, { valid, mapping, validate, warp, sourcePoint, specification, setLayout, apply, start, stop, draw, hit });
   $('btnPerspective').onclick = start;
   $('cancelPerspective').onclick = stop;
   $('applyPerspective').onclick = () => {

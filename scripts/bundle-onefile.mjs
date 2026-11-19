@@ -28,7 +28,7 @@ html = html.replace(/<link rel="stylesheet" href="css\/[^"]+"\s*\/?>/g, () => {i
 
 // inline scripts in the same order as index.html
 // script order must match index.html exactly
-for (const f of ['storage', 'i18n', 'tiff', 'colour', 'ladder-cache', 'ladders', 'engine', 'name-text', 'render', 'export', 'pptx', 'demo', 'app', 'library', 'editor', 'ui', 'figedit', 'mobile', 'perspective', 'marker-ui', 'ai-workspace', 'marker-ai', 'gel-ai-beta', 'history-ui', 'support-config', 'feedback', 'export-support']) {
+for (const f of ['storage', 'i18n', 'tiff', 'colour', 'ladder-cache', 'ladders', 'engine', 'name-text', 'render', 'export', 'pptx', 'demo', 'app', 'library', 'editor', 'ui', 'figedit', 'mobile', 'perspective', 'marker-ui', 'ai-workspace', 'marker-ai', 'gel-ai-beta', 'auto-flow', 'history-ui', 'support-config', 'feedback', 'export-support']) {
   const code = read(path.join(root, 'js', f + '.js'));
   const tag = new RegExp(`<script src="js/${f}\\.js"><\\/script>`, 'g');
   html = html.replace(tag, `<script>/* js/${f}.js */\n${code}\n</script>`);

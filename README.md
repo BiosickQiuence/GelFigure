@@ -55,7 +55,11 @@ An API lets GelFigure ask your chosen service to inspect an image. Choose **one 
 4. Leave Remember key unchecked initially. The key then stays in page memory and must be re-entered after closing the page; address/model settings can be saved.
 5. Remember key is optional **local plaintext browser storage**. Use it only on a private computer, not shared lab machines. Clear key removes the stored key. Keys are not included in projects or figures.
 
-### Step 3: try one non-confidential gel
+### Automatic processing in the local build
+
+After saving a valid HTTPS address, vision model and key, open **AI automatic processing** in Settings or the main sidebar. Drop one gel image (or use the file picker) and select the DNA or protein marker used. Either input can come first. Once both are present, the app sends the input analysis PNG for lane geometry and then the rectified PNG with that single marker model for band labelling. The completed figure opens in the editor. If a stage fails, its message appears on the automatic page and the current project stays open.
+
+### Step 3: try the review workspace with one non-confidential gel
 
 1. Import a gel you are allowed to upload and check type/orientation.
 2. Open AI Marker, select the Marker model **at the top**, then click **Send image and recognize**. Opening settings, selecting a model and generating a local comparison do not upload an image.
@@ -90,7 +94,7 @@ A trailing `/` is optional. GelFigure adds `/chat/completions`; a complete URL e
 | 3 · lighter visual work | [`gpt-6.1-terra`](https://developers.openai.com/api/docs/models/gpt-6.1-terra) | Initial position/lane/label review in clear images. | Positioned for efficient visual reasoning; manually choose a higher tier for demanding reviews. |
 | 4 · cost first | [`gpt-6-luna`](https://developers.openai.com/api/docs/models/gpt-6-luna) | Simple, clearly bounded image triage or checking an API setup. | Lowest-cost tier; inspect weak, crowded or ambiguous bands carefully. |
 
-In practice: open Settings, enter `https://api.openai.com/v1`, enter `gpt-6.2-astra` as the model, add your OpenAI API key and save. For a more economical everyday choice, manually change the model to `gpt-6.2-sol` before sending again. Enter only the exact ID in the model field. The app calls the model you select only on an explicit Send; it never walks this list, downgrades, retries or sends additional requests automatically.
+In practice: open Settings, enter `https://api.openai.com/v1`, enter `gpt-6.2-astra` as the model, add your OpenAI API key and save. For a more economical everyday choice, manually change the model to `gpt-6.2-sol` before sending again. Enter only the exact ID in the model field. Review sends one request per click. Automatic processing uses the configured model for both steps. A failed request can be retried explicitly.
 
 GPT-6.2 Astra / Sol reject `reasoning_effort: none`. GelFigure v1.0.0 omits this parameter and sends no `temperature`, `top_p` or `logprobs`, so the existing settings UI can be used. If a gateway inserts incompatible parameters and returns HTTP 400, ask its administrator to follow the [official migration guide](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart). The app’s 90-second timeout still applies; decide yourself whether to retry after a timeout.
 
@@ -170,7 +174,7 @@ Use the app’s GitHub feedback entry or [this repository’s Issues](https://gi
 
 ## Images, privacy and exports
 
-- Editing, traditional local detection, project restoration and exports run in the browser. An explicit AI request sends the complete analysis PNG and the selected model entry, or the current gel-type catalogue if unspecified, to the endpoint you entered.
+- Editing, traditional local detection, project restoration and exports run in the browser. Marker review sends a complete analysis PNG with the selected model entry or the current catalogue. Automatic processing sends the two images described above to the same configured endpoint.
 - The analysis image follows perspective/orientation/rotation, but **is not limited to the red figure crop**. It excludes UI, lane names, text annotations and project files. Check the entire input before uploading.
 - Keys never enter projects, processing records or image exports. Provider retention policies govern uploaded images.
 - Original file bytes are retained. Geometry and lane removals are disclosed in processing records. Export-file DPI and the gel’s effective DPI are different: check effective DPI when assessing source resolution.
