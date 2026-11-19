@@ -1,6 +1,13 @@
 /* Short bilingual release summaries, newest first. Keep the first version equal to App.VERSION.
  * Detailed history lives in CHANGELOG.md; this small local catalogue also works in offline HTML. */
 window.GelFigureReleases = Object.freeze([
+  {version:'1.1.0',date:'2026-11-19',zh:[
+    '新增 AI 全自动处理，拖入胶图并选择 Marker 后即可完成泳道校正和条带标记。',
+    '自动扩大偏小的四角，在原图内保留有带及不确定泳道，随后打开可编辑的成图。'
+  ],en:[
+    'Drop a gel and choose its marker model to run automatic lane correction and band labelling.',
+    'Tight correction corners expand within the image to retain active and uncertain lanes before the figure opens for editing.'
+  ]},
   {version:'1.0.0',date:'2026-11-17',zh:[
     '发布 AI 复核工作台、原色与胶类型规则、统一 Marker 型号选择及预览适配修正。',
     '提供中英双语 API 入门教程；移除网页更新历史和原赞助/反馈转发入口。',

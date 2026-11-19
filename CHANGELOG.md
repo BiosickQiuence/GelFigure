@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## [1.1.0] - 2026-11-19
+
+### 中文
+
+- 新增 **AI 全自动处理**。保存 API 配置后，拖入一张胶图并选择 DNA 或蛋白 Marker 型号，程序会依次完成透视校正、泳道定位和 Marker 条带标记，随后打开可编辑的成图。
+- 修复四角偏小导致流程中断的问题。程序会在原图边界内扩大校正区域，覆盖有带和不确定的泳道，包括贴边泳道。扩框在本地完成。
+- 全自动模式向配置的接口依次发送输入图和校正图。已有的手动编辑和 AI 复核界面仍可使用。全自动结果支持撤销和保存为项目。
+
+### English
+
+- Add **AI automatic processing**. After saving your API configuration, drop a gel and choose its DNA or protein marker model. GelFigure corrects the perspective, locates lanes, labels marker bands and opens the editable figure.
+- Fix a pipeline interruption when the proposed corners are too tight. The app expands the correction area locally within the image bounds to retain active and uncertain lanes, including lanes at the edge.
+- Automatic processing sends the input and rectified analysis images to the configured endpoint in sequence. Manual editing and AI review remain available. Automatic results support undo and project saving.
+
 ## [1.0.0] - 2026-11-17
 
 - 修正窄桌面窗口顶栏溢出，保留设置图标和导出入口。 / Keep Settings and export accessible without header overflow in narrow desktop windows.

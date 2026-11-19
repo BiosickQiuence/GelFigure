@@ -1,14 +1,14 @@
-# GelFigure v1.0.0
+# GelFigure v1.1.0
 
-**把 DNA 胶、蛋白胶整理成可编辑、可导出的实验图。支持本地处理，以及可选的 AI 泳道和 Marker 复核。**
+**把 DNA 胶、蛋白胶整理成可编辑、可导出的实验图。支持本地编辑、AI 复核，以及从泳道校正到 Marker 标记的全自动处理。**
 
-[English](README.md) · [打开网页版](https://biosickqiuence.github.io/GelFigure/) · [下载完整离线 HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v1.0.0/GelFigure-v1.0.0.html) · [全部下载](https://github.com/BiosickQiuence/GelFigure/releases/tag/v1.0.0)
+[English](README.md) · [打开网页版](https://biosickqiuence.github.io/GelFigure/) · [下载完整离线 HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v1.1.0/GelFigure-v1.1.0.html) · [全部下载](https://github.com/BiosickQiuence/GelFigure/releases/tag/v1.1.0)
 
 > 不会编程也能用。普通整理、手动校正和导出不需要 API，也不需要安装 Python、Node.js 或其他软件。只有使用 AI 看图时，才需要准备自己的视觉 API。
 
 ## 先打开，再导入胶图
 
-1. 直接打开上面的网页版；或者在 Release 中下载 **GelFigure-v1.0.0.html**，双击，用 Chrome、Edge、Firefox 或 Safari 打开。不要只另存仓库中的 `index.html`，它依赖旁边的其他文件。
+1. 直接打开上面的网页版；或者在 Release 中下载 **GelFigure-v1.1.0.html**，双击，用 Chrome、Edge、Firefox 或 Safari 打开。不要只另存仓库中的 `index.html`，它依赖旁边的其他文件。
 2. 将胶图拖进窗口，或点“打开图片”。支持常见图片及 TIFF；多张曝光可一起导入再比较。
 3. 核对左侧“胶的类型”。本版按用户选定的颜色规则处理：检测到可靠蓝色时按蛋白胶，黑白图按 DNA 胶；仍可手动切换。黑白蛋白胶应自行选择“蛋白胶”。
 4. 新图默认保留原色和原始明暗。需要灰度调整时再主动切换。已有项目恢复其保存的显示选择。
@@ -70,9 +70,9 @@ AI 建议需要人工复核，尤其是弱带、空道、型号、缺失条带�
 4. 初次使用建议不勾选“在当前浏览器记住密钥”。此时 Key 只保存在当前页面内存，关页后需重填；接口地址和模型名称可以保存。
 5. 在自己的私人电脑上可主动选择记住，但这是浏览器本地明文存储。共享电脑不要勾选；需要时点“清除密钥”。项目和成图不会携带 Key。
 
-### 本地版的全自动处理
+### AI 全自动处理
 
-保存格式有效的 HTTPS 地址、视觉模型名称和密钥后，在设置或主界面侧栏点击**“AI 全自动处理”**。拖入一张胶图（也可点击选图），选择实验使用的 DNA 或蛋白 Marker。两项先后顺序均可。两项齐全后，程序先发送输入图的分析副本以定位胶面和泳道，再发送校正图及所选的单一型号以标记条带。完成后直接打开可编辑的成图。任一步失败时，自动页面会说明原因，原项目仍保留。
+保存格式有效的 HTTPS 地址、视觉模型名称和密钥后，在设置或主界面侧栏点击**“AI 全自动处理”**。拖入一张胶图（也可点击选图），选择实验使用的 DNA 或蛋白 Marker。两项先后顺序均可。两项齐全后，程序先发送输入图的分析副本以定位胶面和泳道，再发送校正图及所选的单一型号以标记条带。如果四角漏掉有带或不确定的泳道，程序会在原图边界内自动扩大校正范围，再继续标记。扩框在本地完成。处理完成后直接打开可编辑的成图。任一步失败时，自动页面会说明原因，原项目仍保留。
 
 ### 第三步：用一张不保密的胶图试用复核工作区
 
@@ -111,7 +111,7 @@ AI 建议需要人工复核，尤其是弱带、空道、型号、缺失条带�
 
 实际操作：打开右上角“设置”，接口填 `https://api.openai.com/v1`，模型先填 `gpt-6.2-astra`，密钥填自己的 OpenAI API Key，点击“保存接口配置”。需要降低费用或缩短等待时，可自己把模型改为 `gpt-6.2-sol` 后重新发送。模型名称只填表中的完整 ID。复核模式每次点击发送一条请求。全自动处理的两步均使用你配置的模型。请求失败后可以手动重试。
 
-GPT-6.2 Astra / Sol 不接受 `reasoning_effort: none`。GelFigure v1.0.0 的识别请求省略该参数，也不发送 `temperature`、`top_p` 或 `logprobs`，可沿用现有设置界面。如果中转服务擅自补入这些参数而报 400，请让服务管理员按[官方迁移说明](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart)修正。耗时仍受本工具 90 秒超时限制；超时后需自己决定是否重试。
+GPT-6.2 Astra / Sol 不接受 `reasoning_effort: none`。GelFigure v1.1.0 的识别请求省略该参数，也不发送 `temperature`、`top_p` 或 `logprobs`，可沿用现有设置界面。如果中转服务擅自补入这些参数而报 400，请让服务管理员按[官方迁移说明](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart)修正。耗时仍受本工具 90 秒超时限制；超时后需自己决定是否重试。
 
 #### 其余仍在官方当前目录中的可用型号
 
@@ -132,7 +132,7 @@ GPT-6.2 Astra / Sol 不接受 `reasoning_effort: none`。GelFigure v1.0.0 的识
 
 #### 支持看图，但本版接口不能直接使用的型号
 
-下面三种仍在官方目录中，均为 **Responses API 专用**。GelFigure v1.0.0 使用 Chat Completions，不能仅修改模型名称或把地址改为 `/responses` 来调用它们。
+下面三种仍在官方目录中，均为 **Responses API 专用**。GelFigure v1.1.0 使用 Chat Completions，不能仅修改模型名称或把地址改为 `/responses` 来调用它们。
 
 | 型号 / 官方模型卡 | 本版能否直接填写 |
 |---|---|
@@ -206,8 +206,8 @@ npm test
 node scripts/bundle-onefile.mjs
 ```
 
-`dist/GelFigure.html` 是构建后的单文件。v1.0.0 包括颜色/显示、AI 协议、人工保护、撤销、项目、预览适配、导出和手机模拟回归；测试使用合成图与拦截响应，不宣称真实胶图或每家视觉 API 的实测准确率。详细发布记录见 [CHANGELOG](CHANGELOG.md)，安全说明见 [SECURITY](SECURITY.md)。
+`dist/GelFigure.html` 是构建后的单文件。v1.1.0 包括四角偏小与贴边泳道的自动校正、颜色/显示、AI 协议、人工保护、撤销、项目、预览适配、导出和手机模拟回归；测试使用合成图与拦截响应，不宣称真实胶图或每家视觉 API 的实测准确率。详细发布记录见 [CHANGELOG](CHANGELOG.md)，安全说明见 [SECURITY](SECURITY.md)。
 
 ## 致谢
 
-本项目基于 [poplarity/GelFigure](https://github.com/poplarity/GelFigure) 改进，感谢原项目提供的胶图处理、标注和导出基础。本仓库由 BiosickQiuence 维护 v1.0.0 的改造与发布，原始版权声明和 MIT 许可保留在 [LICENSE](LICENSE)。
+本项目基于 [poplarity/GelFigure](https://github.com/poplarity/GelFigure) 改进，感谢原项目提供的胶图处理、标注和导出基础。本仓库由 BiosickQiuence 维护 v1.1.0 的改造与发布，原始版权声明和 MIT 许可保留在 [LICENSE](LICENSE)。

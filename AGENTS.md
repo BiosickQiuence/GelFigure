@@ -1,10 +1,10 @@
-# GelFigure v1.0.0 — developer handover
+# GelFigure v1.1.0 — developer handover
 
 ## Repository and release scope
 
 - Current repository: `https://github.com/BiosickQiuence/GelFigure`; Pages: `https://biosickqiuence.github.io/GelFigure/`. Never push changes to the original project's repository as part of this fork's work.
-- Current version/build is `1.0.0` / `v1.0.0`. New commits and annotated tags use `BiosickQiuence <114460892+BiosickQiuence@users.noreply.github.com>`. Preserve inherited history and MIT copyright notices.
-- The user has explicitly authorized publishing this v1.0 release and website on 2026-11-17. Future releases still require an actual user release request. Prepare/test/review before pushing. Do not overwrite existing tags or force-push branches. Preserve the old main tip under a release backup branch first.
+- Current version/build is `1.1.0` / `v1.1.0`. New commits and annotated tags use `BiosickQiuence <114460892+BiosickQiuence@users.noreply.github.com>`. Preserve inherited history and MIT copyright notices.
+- Each public release and website update requires an explicit user release request. Prepare/test/review before pushing. Do not overwrite existing tags or force-push branches. Preserve the old main tip under a release backup branch first.
 - README.md and README.zh-CN.md are complete parallel English/Chinese guides. Provider model IDs and API instructions require current official sources. README attribution to the original project appears only in the final acknowledgements; LICENSE retains mandatory notices.
 
 ## File and data safety
@@ -13,7 +13,7 @@ Follow the parent/user AGENTS rules: never delete files, keep unique verified pr
 
 ## Runtime
 
-The app is dependency-free `index.html`, CSS and ordered plain scripts. It runs from file:// and a bundled HTML. `scripts/bundle-onefile.mjs` must match HTML script order. No automatic external requests occur. Only explicit AI recognition uploads an analysis PNG to the configured HTTPS endpoint; feedback and Star are explicit links to this repository. There are no donation/forwarded-feedback destinations or release-history UI. `js/releases.js` remains build-time metadata and is not loaded in the app; `js/updates.js` is a retained legacy source, not a runtime script.
+The app is dependency-free `index.html`, CSS and ordered plain scripts. It runs from file:// and a bundled HTML. `scripts/bundle-onefile.mjs` must match HTML script order. In the review workspace the user explicitly sends each analysis image. In automatic processing, supplying both inputs sends the source and rectified analysis images to the configured HTTPS endpoint; feedback and Star are explicit links to this repository. There are no donation/forwarded-feedback destinations or release-history UI. `js/releases.js` remains build-time metadata and is not loaded in the app; `js/updates.js` is a retained legacy source, not a runtime script.
 
 - `app.js`: serializable `App.S`, processing, history, source bytes/pixels, templates and project persistence. Pixel buffers and API configuration never enter state snapshots.
 - `tiff.js`, `engine.js`, `colour.js`: decoding, grayscale analysis, geometry/peaks and genuine RGB display. Colour evidence is decisive: sampled blue ≥0.5% selects protein; monochrome selects DNA. Other colour cases retain geometry rules; users can override manually.
@@ -36,4 +36,4 @@ Use Node.js 22+ and Playwright. `npm test` is the full three-engine suite; `--br
 
 Keep `App.VERSION`, package/lock versions, CITATION, index/help/download links, `js/releases.js` first entry and CHANGELOG release section aligned. `scripts/check-updates.mjs` validates release metadata; it no longer implies a visible release-history feature. Build and inspect the actual offline artifact, review for correctness/simplicity/security/performance, and ensure no secrets or private data are staged.
 
-Publish to the user's `dev`/`main` with a fast-forward, wait for CI and Pages on the actual new commit, then create an immutable annotated `v1.0.0` tag and verify the release workflow/assets. The existing generic workflows build CI, Pages and release downloads. Never claim a stale or still-running workflow passed. Verify live VERSION, language/help, removed history/payment UI, current download links and source-matched release HTML after publication.
+Publish to the user's `dev`/`main` with a fast-forward, wait for CI and Pages on the actual new commit, then create an immutable annotated tag matching the release version and verify the release workflow/assets. The existing generic workflows build CI, Pages and release downloads. Never claim a stale or still-running workflow passed. Verify live VERSION, language/help, removed history/payment UI, current download links and source-matched release HTML after publication.

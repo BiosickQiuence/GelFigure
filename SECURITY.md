@@ -1,6 +1,6 @@
 # Security and privacy
 
-GelFigure v1.0.0 processes local images and exports in the browser. Only an explicit AI-recognition action sends the complete geometrically processed analysis image and selected model/catalogue to the user-configured HTTPS endpoint. The analysis image is not limited to the red figure crop. API requests omit cookies, reject redirects, and include only the protocol payload; API keys are sent only as authorization to that endpoint.
+GelFigure v1.1.0 processes local images and exports in the browser. In the AI review workspace, clicking Send uploads the analysis image for the selected task to the configured HTTPS endpoint. In AI automatic processing, choosing both an image and a marker starts two requests to that endpoint. The first sends the input analysis PNG for lane geometry. The second sends the rectified PNG and the selected marker model for band labelling. Expanding the correction area runs in the browser. The analysis image is not limited to the red figure crop. API requests omit cookies, reject redirects, and include only the protocol payload; API keys are sent only as authorization to that endpoint.
 
 Keys stay in page memory by default. Optional browser persistence is plaintext local storage on that computer/origin; never use it on a shared machine. Keys, endpoints and raw AI responses are not placed in projects, processing records or image exports. The service provider controls retention of images uploaded to it.
 

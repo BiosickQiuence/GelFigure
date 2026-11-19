@@ -1,14 +1,14 @@
-# GelFigure v1.0.0
+# GelFigure v1.1.0
 
-**Prepare editable DNA/protein gel figures in your browser, with local processing and optional AI lane/Marker review.**
+**Prepare editable DNA/protein gel figures in your browser, with local editing, AI-assisted review and automatic lane correction and marker labelling.**
 
-[简体中文完整教程](README.zh-CN.md) · [Open the web app](https://biosickqiuence.github.io/GelFigure/) · [Download the complete offline HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v1.0.0/GelFigure-v1.0.0.html) · [Release downloads](https://github.com/BiosickQiuence/GelFigure/releases/tag/v1.0.0)
+[简体中文完整教程](README.zh-CN.md) · [Open the web app](https://biosickqiuence.github.io/GelFigure/) · [Download the complete offline HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v1.1.0/GelFigure-v1.1.0.html) · [Release downloads](https://github.com/BiosickQiuence/GelFigure/releases/tag/v1.1.0)
 
 > No programming is required. Local editing, manual correction and exports need no API account, Python or Node.js. A vision API is needed only if you choose AI recognition.
 
 ## Open a gel and prepare a figure
 
-1. Open the web app, or download **GelFigure-v1.0.0.html** from Releases and double-click it in Chrome, Edge, Firefox or Safari. Do not download only the repository’s `index.html`: that file depends on neighbouring folders.
+1. Open the web app, or download **GelFigure-v1.1.0.html** from Releases and double-click it in Chrome, Edge, Firefox or Safari. Do not download only the repository’s `index.html`: that file depends on neighbouring folders.
 2. Drop a gel image into the window or select Open image. Common images and TIFF are supported; multiple exposures can be imported together.
 3. Check Gel type. This release follows a colour rule: sufficient blue selects protein; monochrome selects DNA. Manual selection remains available, so choose protein yourself for a monochrome protein gel.
 4. New imports retain original colours and tones. Select Grayscale explicitly if adjustments are needed; saved projects retain their saved appearance.
@@ -55,9 +55,9 @@ An API lets GelFigure ask your chosen service to inspect an image. Choose **one 
 4. Leave Remember key unchecked initially. The key then stays in page memory and must be re-entered after closing the page; address/model settings can be saved.
 5. Remember key is optional **local plaintext browser storage**. Use it only on a private computer, not shared lab machines. Clear key removes the stored key. Keys are not included in projects or figures.
 
-### Automatic processing in the local build
+### AI automatic processing
 
-After saving a valid HTTPS address, vision model and key, open **AI automatic processing** in Settings or the main sidebar. Drop one gel image (or use the file picker) and select the DNA or protein marker used. Either input can come first. Once both are present, the app sends the input analysis PNG for lane geometry and then the rectified PNG with that single marker model for band labelling. The completed figure opens in the editor. If a stage fails, its message appears on the automatic page and the current project stays open.
+After saving a valid HTTPS address, vision model and key, open **AI automatic processing** in Settings or the main sidebar. Drop one gel image (or use the file picker) and select the DNA or protein marker used. Either input can come first. Once both are present, the app sends the input analysis PNG for lane geometry and then the rectified PNG with that single marker model for band labelling. If the proposed corners leave out an active or uncertain lane, the app expands the correction area within the image before labelling. This adjustment runs locally. The completed figure opens in the editor. If a stage fails, its message appears on the automatic page and the current project stays open.
 
 ### Step 3: try the review workspace with one non-confidential gel
 
@@ -96,7 +96,7 @@ A trailing `/` is optional. GelFigure adds `/chat/completions`; a complete URL e
 
 In practice: open Settings, enter `https://api.openai.com/v1`, enter `gpt-6.2-astra` as the model, add your OpenAI API key and save. For a more economical everyday choice, manually change the model to `gpt-6.2-sol` before sending again. Enter only the exact ID in the model field. Review sends one request per click. Automatic processing uses the configured model for both steps. A failed request can be retried explicitly.
 
-GPT-6.2 Astra / Sol reject `reasoning_effort: none`. GelFigure v1.0.0 omits this parameter and sends no `temperature`, `top_p` or `logprobs`, so the existing settings UI can be used. If a gateway inserts incompatible parameters and returns HTTP 400, ask its administrator to follow the [official migration guide](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart). The app’s 90-second timeout still applies; decide yourself whether to retry after a timeout.
+GPT-6.2 Astra / Sol reject `reasoning_effort: none`. GelFigure v1.1.0 omits this parameter and sends no `temperature`, `top_p` or `logprobs`, so the existing settings UI can be used. If a gateway inserts incompatible parameters and returns HTTP 400, ask its administrator to follow the [official migration guide](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart). The app’s 90-second timeout still applies; decide yourself whether to retry after a timeout.
 
 #### Other compatible models in the current official catalog
 
@@ -117,7 +117,7 @@ Together with the four choices above, this lists **14 non-deprecated general mod
 
 #### Vision models that cannot be used directly by this version
 
-These three models remain in the official catalog but are **Responses-only**. GelFigure v1.0.0 uses Chat Completions; changing only the model name or entering a `/responses` URL does not make them work.
+These three models remain in the official catalog but are **Responses-only**. GelFigure v1.1.0 uses Chat Completions; changing only the model name or entering a `/responses` URL does not make them work.
 
 | Model / official model card | Direct use in this version |
 |---|---|
@@ -191,8 +191,8 @@ npm test
 node scripts/bundle-onefile.mjs
 ```
 
-The standalone build is `dist/GelFigure.html`. Regression coverage includes colour/type rules, AI protocol, manual protections, undo/projects, preview fit, exports and simulated phones. Tests use synthetic gels and intercepted responses; they do not claim measured accuracy on real gels or every provider. See [CHANGELOG](CHANGELOG.md) and [SECURITY](SECURITY.md).
+The standalone build is `dist/GelFigure.html`. Regression coverage includes automatic correction of undersized corners and edge lanes, colour/type rules, the AI protocol, manual protections, undo/projects, preview fit, exports and simulated phones. Tests use synthetic gels and intercepted responses; they do not claim measured accuracy on real gels or every provider. See [CHANGELOG](CHANGELOG.md) and [SECURITY](SECURITY.md).
 
 ## Acknowledgements
 
-This project builds on [poplarity/GelFigure](https://github.com/poplarity/GelFigure). Thank you for its gel-processing, annotation and export foundation. BiosickQiuence maintains the v1.0.0 adaptations and release in this repository; original copyright notices and the MIT terms are retained in [LICENSE](LICENSE).
+This project builds on [poplarity/GelFigure](https://github.com/poplarity/GelFigure). Thank you for its gel-processing, annotation and export foundation. BiosickQiuence maintains the v1.1.0 adaptations and release in this repository; original copyright notices and the MIT terms are retained in [LICENSE](LICENSE).

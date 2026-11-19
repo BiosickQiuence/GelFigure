@@ -60,7 +60,7 @@
   App.defaultStyle = defaultStyle;
   App.onDropFile = null;   // set by the UI layer
 
-  App.VERSION = '1.0.0';
+  App.VERSION = '1.1.0';
   App.prefs = prefs;
   App.setPref = function (k, v) { const p = prefs(); p[k] = v; G.PrefStorage.setItem(PREF_KEY, JSON.stringify(p)); };
 
@@ -1538,7 +1538,7 @@
     raf = requestAnimationFrame(() => { raf = 0; App.emit('refresh'); });
   };
 
-  App.BUILD = 'v1.0.0';
+  App.BUILD = 'v1.1.0';
   App.snapshot = function () { return JSON.stringify(App.S); };
   App.commit = function () {
     if (!App.S) return;

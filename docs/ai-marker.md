@@ -2,9 +2,9 @@
 
 > **Current local build (2026-11-17):** API configuration is in top-right Settings and Marker review is an inline task. Reset baselines are explicitly bound to the adopted state/source; historical provenance is retained separately from current results. The protocol and protection rules below remain applicable. See [current workflow](refactor-20261117.md).
 
-# AI Marker v1.0.0
+# AI Marker v1.1.0
 
-本说明对应 BiosickQiuence/GelFigure v1.0.0。首次使用请先按 README 的 API 教程配置；网页与离线单文件使用同一套识别协议。
+本说明介绍 BiosickQiuence/GelFigure v1.1.0 的 Marker 复核界面。使用全自动页面时，拖入图片并选择型号即可依次进行泳道校正和 Marker 标记。首次使用请先按 README 的 API 教程配置；网页与离线单文件使用同一套识别协议。
 
 ## 按型号大小顺序配对（本轮更新）
 
