@@ -276,7 +276,7 @@
       pin.textContent = String(badgeNum);
       pin.title = item.title;
       pin.style.left = Math.round(cx) + 'px';
-      pin.style.top = Math.round(top) + 'px';
+      pin.style.top = Math.round(top + 14) + 'px';
       pin.onclick = () => {
         activeId = item.id;
         render();

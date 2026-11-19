@@ -18,13 +18,18 @@
   window.addEventListener('pointerdown', e => { lastTouch = e.pointerType === 'touch'; }, true);
 
   /* ---------- views ---------- */
-  const VIEWS = ['raw', 'fig', 'panel'];
+  const VIEWS = ['raw', 'fig', 'panel', 'names'];
   const view = () => VIEWS.find(v => body.classList.contains('view-' + v)) || null;
   function setView(v) {
     if (!phone()) return;
     VIEWS.forEach(k => body.classList.toggle('view-' + k, k === v));
     $('mNav').querySelectorAll('button[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
-    if (S()) requestAnimationFrame(() => { if (v === 'raw') G.Editor.resize(); else if (v === 'fig') UI.updatePreview(); placeBannerTop(); });
+    if (S()) requestAnimationFrame(() => {
+      if (v === 'raw') G.Editor.resize();
+      else if (v === 'fig') UI.updatePreview();
+      else if (v === 'names') G.MobileLite?.renderNamesView?.();
+      placeBannerTop();
+    });
     selSync();
   }
   // the tool instructions live in the figure pane on a computer; on a phone they must show on every tab
@@ -42,10 +47,11 @@
       if (!ph) { closeSheets(); VIEWS.forEach(k => body.classList.remove('view-' + k)); }
     }
     if (ph) {
-      if (!has) setView('panel');            // the start screen lives in the settings pane
-      else if (!view()) setView('fig');
+      if (!has) setView('panel');            // the start screen lives in the settings pane / welcome view
+      else if (!view() || view() === 'panel') setView('fig');
     }
     mirror(); selSync();
+    G.MobileLite?.renderReviewBar?.();
   }
 
   /* ---------- coach line and bottom bar ---------- */
@@ -57,7 +63,9 @@
   }
   $('mNav').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.id === 'mExport') openExport(); else setView(b.dataset.view);
+    if (b.id === 'mExport') openExport();
+    else if (b.dataset.view === 'ai-new') $('fileInput').click();
+    else setView(b.dataset.view);
   });
   // tools that need the image or the figure take you there
   const TOOL_VIEW = { btnAddArrow: 'raw', btnAddBox: 'raw', btnAddBracket: 'raw', btnAddGroup: 'fig', btnAddCond: 'fig', btnAddLabel: 'fig',
@@ -121,6 +129,8 @@
     open: () => $('fileInput').click(),
     openProj: () => $('projInput').click(),
     history: () => G.HistoryUI.open(),
+    raw: () => setView('raw'),
+    panel: () => setView('panel'),
     saveProj: () => $('btnSaveProj').click(),
     saveTpl: () => $('btnSaveTpl').click(),
     saveAppearance:()=> $('btnSaveAppearance').click(),
@@ -134,7 +144,7 @@
   };
   $('btnMore').onclick = () => {
     const has = !!S();
-    $('moreSheet').querySelectorAll('[data-m="saveProj"],[data-m="saveTpl"],[data-m="loadTpl"],[data-m="saveAppearance"],[data-m="labDefault"],[data-m="clearLabDefault"],[data-m="reset"]').forEach(b => b.classList.toggle('hidden', !has));
+    $('moreSheet').querySelectorAll('[data-m="raw"],[data-m="panel"],[data-m="saveProj"],[data-m="saveTpl"],[data-m="loadTpl"],[data-m="saveAppearance"],[data-m="labDefault"],[data-m="clearLabDefault"],[data-m="reset"]').forEach(b => b.classList.toggle('hidden', !has));
     openSheet('moreSheet');
   };
   $('moreSheet').addEventListener('click', e => {

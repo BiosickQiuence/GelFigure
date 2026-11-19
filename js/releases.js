@@ -1,6 +1,15 @@
 /* Short bilingual release summaries, newest first. Keep the first version equal to App.VERSION.
  * Detailed history lives in CHANGELOG.md; this small local catalogue also works in offline HTML. */
 window.GelFigureReleases = Object.freeze([
+  {version:'1.4.0',date:'2026-11-20',zh:[
+    '成图为主画布与顶部视图切换：默认展示大图成图并支持一键切换「成图 / 原图（调泳道·裁切）」，进入校正步骤自动切回原图。',
+    '左侧重构为 4 步手风琴面板（① 校正 ② Marker ③ 命名与标注 ④ 版式与导出）与底部「高级」折叠区，非当前步自动折叠为一行摘要。',
+    '整合顶栏「AI 助手」与可搜索 Marker 组合框，重命名离线对比为「本地识别（离线）」；手机精简版上线 4 标签底栏与顶部待核对摘要条。'
+  ],en:[
+    'Figure-first main stage with top segmented switcher (Figure / Raw image) that auto-switches to Raw during Step 1 correction.',
+    'Left panel refactored into a 4-step mutually exclusive accordion (Correct / Marker / Names & Labels / Layout & Export) plus collapsible Advanced drawer.',
+    'Unified AI Assistant modal with searchable Marker combobox, renamed local fallback to “Local detection (offline)”, and launched 4-tab Mobile Lite.'
+  ]},
   {version:'1.3.0',date:'2026-11-20',zh:[
     '新增全屏欢迎页、4 步 API 配置向导与离线预录 AI 示例体验，无 Key 也可体验完整流程。',
     '支持每浏览器首次隐私同意、拖图即开始 AI 全自动与三步进度浮层，可随时切换本地处理或后台运行。',

@@ -40,9 +40,17 @@ export async function mobileChecks(browser, base, engine) {
       return { x: b.left + q.x, y: b.top + q.y };
     });
 
-    await check('phone: bottom bar, lands on the figure', async () => {
-      const r = await p.evaluate(() => ({ phone: UI.isPhone(), fig: document.body.classList.contains('view-fig') }));
-      return r.phone && r.fig && await p.isVisible('#mNav') && await p.isVisible('#mCoach') && !(await p.isVisible('#btnPNG')) ? true : r;
+    await check('phone: Mobile Lite 4-tab bottom bar, lands on figure with review bar & desktop hint', async () => {
+      const r = await p.evaluate(() => ({
+        phone: UI.isPhone(),
+        fig: document.body.classList.contains('view-fig'),
+        tabs: [...document.querySelectorAll('#mNav > button')].map(b => b.dataset.view || b.id)
+      }));
+      return r.phone && r.fig
+        && JSON.stringify(r.tabs) === JSON.stringify(['fig', 'names', 'ai-new', 'mExport'])
+        && await p.isVisible('#mNav')
+        && await p.isVisible('#mobileDesktopHint')
+        && !(await p.isVisible('#btnPNG')) ? true : r;
     });
     await check('phone: export sheet offers every format and the resolution', async () => {
       await p.locator('#mExport').tap();
@@ -63,8 +71,12 @@ export async function mobileChecks(browser, base, engine) {
       await p.locator('#resultSheet .rs-done').tap();
       return !downloaded && /_300dpi\.png$/.test(name) ? true : { downloaded, name };
     });
-    await p.locator('#mNav button[data-view="raw"]').tap();
-    await p.waitForTimeout(300);
+    const openMoreView = async mode => {
+      await p.locator('#btnMore').tap();
+      await p.locator(`#moreSheet [data-m="${mode}"]`).tap();
+      await p.waitForTimeout(250);
+    };
+    await openMoreView('raw');
     await check('phone: pinch zooms the image without editing it', async () => {
       const r = await p.evaluate(() => { const b = document.getElementById('editor').getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; });
       const z0 = await p.evaluate(() => Editor.zoom()), crop0 = await p.evaluate(() => JSON.stringify(App.S.crop));
@@ -123,7 +135,7 @@ export async function mobileChecks(browser, base, engine) {
       return sel === 2 && moved > 1 && cut && back && gone ? true : { sel, moved, cut, back, gone };
     });
     await check('phone: target-band tool goes to the image; a tap places the arrow', async () => {
-      await p.locator('#mNav button[data-view="panel"]').tap();
+      await openMoreView('panel');
       await p.locator('#btnAddArrow').tap();
       const onImage = await p.evaluate(() => document.body.classList.contains('view-raw') && App.mode === 'arrow');
       const t = await p.evaluate(() => { const S = App.S, m = S.markers[0], bd = m.bands[Math.floor(m.bands.length / 2)], b = document.getElementById('editor').getBoundingClientRect(), q = Editor.toScr(S.lanes[4].x, bd.y); return { x: b.left + q.x, y: b.top + q.y }; });
@@ -138,7 +150,7 @@ export async function mobileChecks(browser, base, engine) {
     });
     await check('phone: group line by tapping the first and last lane names', async () => {
       const g0 = await p.evaluate(() => App.S.groups.length);
-      await p.locator('#mNav button[data-view="panel"]').tap();
+      await openMoreView('panel');
       await p.locator('#btnAddGroup').tap();
       await p.locator('#preview g[data-edit="lane"]').nth(1).tap();
       const waits = await p.evaluate(g0 => App.S.groups.length === g0 && App.mode === 'group', g0);
@@ -147,14 +159,15 @@ export async function mobileChecks(browser, base, engine) {
       await p.keyboard.press('Escape');
       return waits && g && g.to - g.from === 2 ? true : { waits, g };
     });
-    await check('phone: figure zoom for small labels', async () => {
+    await check('phone: Names tab edits lane names and updates figure', async () => {
+      await p.locator('#mNav button[data-view="names"]').tap();
+      await p.waitForSelector('#mobileNamesView .m-names-input');
+      const inp = p.locator('#mobileNamesView .m-names-input').nth(1);
+      await inp.fill('WT-Phone');
+      await inp.dispatchEvent('change');
       await p.locator('#mNav button[data-view="fig"]').tap();
-      const w = () => p.evaluate(() => document.querySelector('#preview svg').getBoundingClientRect().width);
-      const w1 = await w();
-      await p.locator('#btnFigZoom').tap();
-      const w2 = await w();
-      await p.locator('#btnFigZoom').tap();
-      return Math.abs(w2 / w1 - 2) < 0.05 ? true : { w1, w2 };
+      const updated = await p.evaluate(() => App.S.lanes[UI.figLanes()[1]].name === 'WT-Phone');
+      return updated;
     });
     await check('phone: a large camera photo is scaled to 10 MP; a TIFF is left alone', async () => {
       const r = await p.evaluate(async () => {

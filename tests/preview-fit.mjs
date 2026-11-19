@@ -67,7 +67,7 @@ export async function previewFitChecks(browser,root,engine,entry=path.join(root,
       assert.equal(await p.evaluate(()=>UI.figZoom()),1.5);assert.equal(await p.evaluate(()=>App.S.style.dpi),300);await assertFitted('zoom-and-dpi');
     });
     await check('layout review also refits on return from its shared workspace',async()=>{
-      await setup();await p.locator('#btnGelAIBeta').click();await p.evaluate(()=>{App.S.lanes[1].name='Layout refresh';App.commit();});await p.keyboard.press('Escape');await assertFitted('layout-close');
+      await setup();await p.locator('#btnAutoFlowTop').click();await p.locator('#aiHubLayout').click();await p.evaluate(()=>{App.S.lanes[1].name='Layout refresh';App.commit();});await p.keyboard.press('Escape');await assertFitted('layout-close');
     });
     await check('no page errors or unmocked requests occur',async()=>{assert.deepEqual(errors,[]);assert(requests.every(url=>url===api));});
     fs.writeFileSync(path.join(dir,'report.json'),JSON.stringify({engine,results,observations,mockedRequests:requests.length},null,2));

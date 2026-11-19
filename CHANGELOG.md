@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## [1.4.0] - 2026-11-20
+
+### 中文
+
+- 成图为主视图与分段切换（W3）：主画布默认以暗底展示全幅成图，顶部提供 `成图 / 原图（调泳道 / 裁切）` 分段控件、缩放与适应按钮及物理尺寸/有效 DPI；进入步骤 ①「校正」或点击原图工具时自动切换至原图，离开后切回成图。
+- 左侧四步手风琴面板（W4）：重构为互斥展开的四步流程（① 校正 ② Marker ③ 命名与标注 ④ 版式与导出），折叠步骤实时展示一行摘要；新增内联泳道名快速编辑列表与底部「高级」折叠区（处理日志、审阅包、版式设置与定量扩展槽）。
+- 统一 AI 助手（W5）：合并顶栏「AI 助手」入口，整合可搜索的 Marker 型号组合框（常用置顶 ★）与三大 AI 任务（全自动、泳道透视校正、Marker 复核）；将“原代码本地算法”统一改名为“本地识别（离线）”。
+- 手机精简版（4.6）：顶部展示待核对摘要条（可点击展开复核抽屉），底部精简为四标签（`成图 / 泳道名 / AI 新图 / 导出`），画布底部提示精细编辑请在电脑端打开，同时保留原有微信/相册长按与系统分享逻辑及“更多”菜单中的高级视图入口。
+
+### English
+
+- Figure-First Main Stage & Switcher (W3): single dark canvas defaulting to Figure view with top `Figure / Raw image (lanes / crop)` segmented switcher, zoom/fit controls, and print mm + effective DPI; auto-switches to Raw when entering Step 1 or raw-image tools and back to Figure afterward.
+- Left 4-Step Accordion (W4): mutually exclusive 4-step workflow (`Correct` / `Marker` / `Names & Labels` / `Layout & Export`) with live 1-line collapsed summaries, Step 3 inline lane-name list, and collapsible `Advanced` drawer.
+- Unified AI Assistant (W5): consolidated topbar AI Assistant dialog with searchable Marker model combobox (favorites pinned ★) and unified links to Auto-Flow, Lane & Perspective Review, and Marker Review; renamed local comparison label to “Local detection (offline)”.
+- Mobile Lite (4.6): top pending-review summary bar + review sheet, bottom 4-tab nav (`Figure / Names / AI New / Export`), touch-friendly lane-name editor, desktop edit hint, while preserving WeChat/Photos/Share handover and More-menu raw/parameter fallbacks.
+
 ## [1.3.0] - 2026-11-20
 
 ### 中文

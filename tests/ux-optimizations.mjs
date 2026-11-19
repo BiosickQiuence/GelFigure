@@ -315,6 +315,7 @@ export async function uxOptimizationChecks(browser, base, root, engine = 'chromi
       await p.locator('#aiSaveSettings').click();
       await p.locator('#aiSettingsClose').click();
 
+      await p.locator('[data-step-toggle="2"]').click();
       await p.locator('#btnAIMarker').click();
       await p.locator('#aiMarkerModel').selectOption('dl2000');
       await p.locator('#aiRecognize').click();
@@ -388,6 +389,7 @@ export async function uxOptimizationChecks(browser, base, root, engine = 'chromi
       await p.locator('#aiSaveSettings').click();
       await p.locator('#aiSettingsClose').click();
 
+      await p.locator('[data-step-toggle="1"]').click();
       await p.locator('#btnGelAIBeta').click();
       await p.locator('#layoutSend').click();
       await p.waitForFunction(() => !document.getElementById('layoutAutoCover')?.classList.contains('hidden'));
@@ -426,6 +428,7 @@ export async function uxOptimizationChecks(browser, base, root, engine = 'chromi
     try {
       await p.goto(base + '/index.html?demo=1&lang=en');
       await p.waitForFunction(() => window.App?.S?.lanes?.length > 0);
+      await p.locator('[data-step-toggle="1"]').click();
 
       // Section 1 default collapsed state + displayModeSeg visible on monochrome demo
       const sec1 = await p.evaluate(() => ({
@@ -460,7 +463,8 @@ export async function uxOptimizationChecks(browser, base, root, engine = 'chromi
         return nonZero > 100;
       });
 
-      // Searchable #favSearch filters #favList
+      // Searchable #favSearch filters #favList (Step 2 Marker)
+      await p.locator('[data-step-toggle="2"]').click();
       await p.evaluate(() => { document.getElementById('favAdv').open = true; });
       const favTotal = await p.locator('#favList label').count();
       assert(favTotal > 3, `expected >3 favourite options, got ${favTotal}`);

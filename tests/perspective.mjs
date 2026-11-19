@@ -42,6 +42,7 @@ export async function perspectiveChecks(browser, base, root, engine) {
     });
     await check('four actual mouse drags, cancel, confirmation, undo/redo and processing disclosure', async () => {
       await p.evaluate(() => { App.setRotation(0); App.commit(); window.beforePerspective = App.snapshot(); });
+      await p.locator('[data-step-toggle="1"]').click();
       await p.locator('#btnPerspective').click(); await p.locator('#perspectiveTools').waitFor({ state: 'visible' });
       const old = await p.evaluate(() => Perspective.points.map(p => ({ ...p })));
       const rect = await p.locator('#editor').boundingBox();
@@ -118,7 +119,8 @@ export async function perspectiveChecks(browser, base, root, engine) {
         const q = await mobile.newPage(), external = []; q.on('request', r => { if (/^https?:/.test(r.url())) external.push(r.url()); });
         await q.route(/^https?:/, r => r.abort()); await q.goto(pathToFileURL(path.join(root, 'dist', 'GelFigure.html')).href + '?demo=1&lang=zh');
         await q.waitForFunction(() => document.title.startsWith('READY '), null, { timeout: 120000 });
-        await q.locator('#mNav [data-view="panel"]').tap(); await q.locator('#btnPerspective').tap();
+        await q.locator('#btnMore').tap(); await q.locator('#moreSheet [data-m="panel"]').tap();
+        await q.locator('[data-step-toggle="1"]').tap(); await q.locator('#btnPerspective').tap();
         assert.equal(await q.evaluate(() => Mobile.view()), 'raw');
         const moved = await q.evaluate(() => {
           const cv = document.getElementById('editor'), box = cv.getBoundingClientRect(), old = { ...Perspective.points[0] }, p = Editor.toScr(old.x, old.y);

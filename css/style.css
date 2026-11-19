@@ -44,7 +44,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .readiness-badge.block .readiness-dot { background:#f87171; }
 @media(max-width:1220px){.community-entry .community-label{display:none}.topbar-right .community-entry{width:30px;padding:0;justify-content:center}.readiness-badge{padding:0 7px;gap:5px;font-size:11px}}
 @media(max-width:1100px){.readiness-badge #exportReadinessText{display:none}.readiness-badge{width:30px;padding:0;justify-content:center}.star-btn span{display:none}.star-btn{padding:0 8px}}
-@media(max-width:1040px){.top-ai-btn span,.settings-entry span{display:none}.top-ai-btn{padding:0 8px}.topbar-right .settings-entry{width:30px;padding:0;justify-content:center}.topbar{gap:6px;padding:0 10px}.topbar-right{gap:4px}.chip{max-width:150px}}
+@media(max-width:1040px){.top-ai-btn span,.settings-entry span{display:none}.top-ai-btn{padding:0 8px}.topbar-right .settings-entry{width:30px;padding:0;justify-content:center}.topbar{gap:6px;padding:0 14px}.topbar-right{gap:4px}.chip{max-width:150px}}
 .divider { width: 1px; height: 20px; background: rgba(255,255,255,.18); }
 .icon-btn { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-sm); border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.07);
   color: #e8eef6; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
