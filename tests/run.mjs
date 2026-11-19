@@ -47,6 +47,7 @@ import { v12VisualChecks } from './v12-visual.mjs';
 import { v13AiPrimaryChecks } from './v13-ai-primary.mjs';
 import { v14LayoutMobileChecks } from './v14-layout-mobile.mjs';
 import { v15ProductivityChecks } from './v15-productivity.mjs';
+import { v16DensitometryPwaChecks } from './v16-densitometry-pwa.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = name => (process.argv.find(a => a.startsWith(`--${name}=`)) || '').split('=')[1];
@@ -54,7 +55,7 @@ const browsers = (arg('browser') || 'chromium,firefox,webkit').split(',').filter
 const channel = arg('channel');   // e.g. msedge to use an installed Edge instead of Playwright's Chromium
 const ENGINES = { chromium, firefox, webkit };
 
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.json': 'application/json' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.json': 'application/json', '.webmanifest': 'application/manifest+json; charset=utf-8', '.svg': 'image/svg+xml' };
 function serve() {
   const server = http.createServer((req, res) => {
     const rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
@@ -182,6 +183,7 @@ async function runIn(name, base) {
     const v13=await v13AiPrimaryChecks(browser,base,ROOT,name);out.results.push(...v13);if(v13.some(r=>r[0]==='FAIL'))out.ok=false;
     const v14=await v14LayoutMobileChecks(browser,base,ROOT,name);out.results.push(...v14);if(v14.some(r=>r[0]==='FAIL'))out.ok=false;
     const v15=await v15ProductivityChecks(browser,base,ROOT,name);out.results.push(...v15);if(v15.some(r=>r[0]==='FAIL'))out.ok=false;
+    const v16=await v16DensitometryPwaChecks(browser,base,ROOT,name);out.results.push(...v16);if(v16.some(r=>r[0]==='FAIL'))out.ok=false;
     const ctx = await browser.newContext({ viewport: { width: 1600, height: 960 } });
     const watch = page => {
       const errs = [];

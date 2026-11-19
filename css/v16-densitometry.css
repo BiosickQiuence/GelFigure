@@ -1,0 +1,152 @@
+/* v1.6.0 Basic Grayscale Densitometry (mounted inside Advanced -> #densitometrySlot) */
+.dens-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #FAF8F3;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dens-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.2px;
+  font-weight: 700;
+  color: var(--brand);
+  cursor: pointer;
+}
+.dens-toggle-row input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--primary);
+}
+.dens-notice {
+  font-size: 11.2px;
+  line-height: 1.45;
+  color: var(--muted);
+  background: #FFFFFF;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 7px 8px;
+}
+.dens-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.dens-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11.3px;
+  color: var(--muted);
+}
+.dens-field label {
+  font-weight: 600;
+  color: var(--brand);
+}
+.dens-field select,
+.dens-field input[type="number"] {
+  height: 28px;
+  font-size: 11.8px;
+}
+.dens-roi-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.dens-sat-alert {
+  padding: 7px 8px;
+  border-radius: 7px;
+  background: var(--danger-bg);
+  border: 1px solid #F3B8B2;
+  color: var(--danger);
+  font-size: 11.3px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.dens-table-wrap {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #FFFFFF;
+}
+.dens-tbl {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.dens-tbl th,
+.dens-tbl td {
+  padding: 5px 5px;
+  border-bottom: 1px solid #EFECE4;
+  text-align: left;
+  vertical-align: middle;
+}
+.dens-tbl th:first-child,
+.dens-tbl td:first-child {
+  width: 48%;
+  word-break: break-word;
+  line-height: 1.3;
+}
+.dens-tbl th:nth-child(2),
+.dens-tbl td:nth-child(2) {
+  width: 27%;
+  white-space: nowrap;
+}
+.dens-tbl th:nth-child(3),
+.dens-tbl td:nth-child(3) {
+  width: 25%;
+  white-space: nowrap;
+}
+.dens-tbl th {
+  position: sticky;
+  top: 0;
+  background: #F4F2EC;
+  color: var(--brand);
+  font-weight: 700;
+}
+.dens-tbl td.num {
+  font-family: var(--font-mono);
+  text-align: right;
+  font-size: 10.6px;
+}
+.dens-tbl tr.saturated {
+  background: #FEF2F2;
+  color: var(--danger);
+}
+.dens-tbl tr.saturated td {
+  color: var(--danger);
+  font-weight: 600;
+}
+.dens-badge-sat {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+.dens-badge-ref {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--primary-bg);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 700;
+}
+.dens-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.dens-actions .btn {
+  flex: 1 1 auto;
+}

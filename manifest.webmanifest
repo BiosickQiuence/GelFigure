@@ -1,0 +1,18 @@
+{
+  "name": "GelFigure",
+  "short_name": "GelFigure",
+  "description": "Turn raw DNA or protein gel images into publication-ready figures locally in your browser, with optional AI assistance.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F6F4EF",
+  "theme_color": "#002147",
+  "icons": [
+    {
+      "src": "./icons/icon-l1.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

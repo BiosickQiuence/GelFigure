@@ -296,6 +296,7 @@
       }),
       sideText: (S.labels || []).map(t => ({ text: t.text, position: t.pos, color:t.color==='red'?'red':'default' })),
       conditions: S.conditions, style: S.style,
+      densitometry: G.DensitometryV16?.logEntry?.() || undefined,
       legendHints: legendHints(S)
     };
   }

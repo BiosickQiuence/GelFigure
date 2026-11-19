@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## [1.6.0] - 2026-11-20
+
+### 中文
+
+- 基础相对灰度定量（高级面板，默认关闭）：直接读取未拉伸的线性灰度像素（`App.rot`），按泳道与可调纵向窗口计算积分强度；提供 `滚球法 (Rolling ball)` / `泳道边缘背景` / `无` 三种背景扣除与参考泳道归一化；**过曝/饱和条带自动标红并严格禁止定量及选作参考泳道**；支持导出 UTF-8 CSV，并在开启时完整记录算法、参数与免责说明至处理日志（`processing-log.json`）及图注草稿。
+- 同步更新中英文 README 定量说明为「提供基础相对灰度定量（默认关闭，需自行验证线性范围，过曝条带禁止定量）」。
+- 网页版 PWA（仅限 GitHub Pages / HTTPS 网页部署）：新增 `manifest.webmanifest`、`icons/icon-l1.svg`（L1 标志）与版本化 `sw.js`（仅缓存同源静态 GET 资源，绝不拦截外部 AI 接口请求）；离线单文件 `dist/GelFigure.html` 自动剥离 manifest 且不注册 Service Worker，保持完全零依赖双击运行。
+
+### English
+
+- Basic Grayscale Densitometry (Advanced drawer, disabled by default): integrates unclipped linear grayscale pixels (`App.rot`, pre-contrast/pre-gamma) across visible lanes and configurable vertical ROI; supports `Rolling ball` / `Lane edge` / `None` background subtraction and relative normalization against a chosen reference lane; **overexposed/saturated lanes are flagged red and strictly blocked from quantification and reference selection**; exports UTF-8 CSV and records algorithm, parameters, and disclaimer in `processing-log.json` and figure legend drafts.
+- Updated English and Chinese README quantification notices to reflect opt-in basic relative densitometry with independent linear-range verification.
+- Web / GitHub Pages PWA: added `manifest.webmanifest`, L1 `icons/icon-l1.svg`, and versioned `sw.js` (same-origin GET caching only; external HTTPS AI endpoints are never intercepted); single-file `dist/GelFigure.html` strips the manifest link and never registers a Service Worker.
+
 ## [1.5.0] - 2026-11-20
 
 ### 中文

@@ -19,8 +19,11 @@ const expectedConnect="connect-src 'self' file: data: blob: https:;";
 const csp=html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"/);
 if(!csp||!csp[1].includes(expectedConnect))throw new Error('AI trial requires HTTPS connect-src for user-configured endpoints');
 
+// Strip web-only PWA manifest link from single-file offline HTML
+html = html.replace(/<link rel="manifest" href="[^"]+"\s*\/?>\s*/g, '');
+
 // inline css in explicit cascade order
-const cssOrder = ['tokens.css', 'heading-font.css', 'style.css', 'components.css', 'marker-ai.css', 'gel-ai-beta.css', 'workspace.css', 'v13-ai.css', 'v14-layout.css', 'v15-productivity.css'];
+const cssOrder = ['tokens.css', 'heading-font.css', 'style.css', 'components.css', 'marker-ai.css', 'gel-ai-beta.css', 'workspace.css', 'v13-ai.css', 'v14-layout.css', 'v15-productivity.css', 'v16-densitometry.css'];
 const allCss = fs.readdirSync(path.join(root, 'css')).filter(f => f.endsWith('.css'));
 const cssFiles = [
   ...cssOrder.filter(f => allCss.includes(f)),
@@ -34,11 +37,11 @@ html = html.replace(/<link rel="stylesheet" href="css\/[^"]+"\s*\/?>/g, () => {i
 // inline i18n JSON dictionaries so single-file offline mode has complete dictionary strings
 const i18nZh = JSON.parse(read(path.join(root, 'i18n', 'zh.json')));
 const i18nEn = JSON.parse(read(path.join(root, 'i18n', 'en.json')));
-const i18nBundle = `window.GelFigureI18N=${JSON.stringify({ zh: i18nZh, en: i18nEn })};`;
+const i18nBundle = `window.__GELFIGURE_SINGLEFILE__=true;window.GelFigureI18N=${JSON.stringify({ zh: i18nZh, en: i18nEn })};`;
 
 // inline scripts in the same order as index.html
 // script order must match index.html exactly
-for (const f of ['storage', 'i18n', 'notifications', 'tiff', 'colour', 'ladder-cache', 'ladders', 'engine', 'name-text', 'render', 'export', 'pptx', 'demo', 'app', 'library', 'editor', 'ui', 'figedit', 'mobile', 'perspective', 'marker-ui', 'ai-reliability', 'ai-client', 'ai-workspace', 'marker-ai', 'gel-ai-beta', 'auto-flow', 'ai-wizard', 'review-checklist', 'welcome-ai', 'layout-v14', 'productivity-v15', 'history-ui', 'support-config', 'feedback', 'export-support', 'onboarding', 'help-ui']) {
+for (const f of ['storage', 'i18n', 'notifications', 'tiff', 'colour', 'ladder-cache', 'ladders', 'engine', 'name-text', 'render', 'export', 'pptx', 'demo', 'app', 'library', 'editor', 'ui', 'figedit', 'mobile', 'perspective', 'marker-ui', 'ai-reliability', 'ai-client', 'ai-workspace', 'marker-ai', 'gel-ai-beta', 'auto-flow', 'ai-wizard', 'review-checklist', 'welcome-ai', 'layout-v14', 'productivity-v15', 'densitometry-v16', 'history-ui', 'support-config', 'feedback', 'export-support', 'onboarding', 'help-ui']) {
   const code = read(path.join(root, 'js', f + '.js'));
   const prefix = f === 'i18n' ? i18nBundle + '\n' : '';
   const tag = new RegExp(`<script src="js/${f}\\.js"><\\/script>`, 'g');

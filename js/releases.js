@@ -1,6 +1,15 @@
 /* Short bilingual release summaries, newest first. Keep the first version equal to App.VERSION.
  * Detailed history lives in CHANGELOG.md; this small local catalogue also works in offline HTML. */
 window.GelFigureReleases = Object.freeze([
+  {version:'1.6.0',date:'2026-11-20',zh:[
+    '新增基础相对灰度定量（默认关闭，位于左侧「高级」折叠区）：直接基于未拉伸线性灰度像素计算各泳道积分强度，支持滚球 / 泳道边缘 / 无三种背景扣除与指定参考泳道归一化。',
+    '内置严格的过曝条带保护：检测到饱和像素的泳道自动标红并禁止定量及作为参考泳道；支持导出含参数与免责说明的 CSV，并同步写入处理日志。',
+    'GitHub Pages 网页版升级为可安装离线 PWA（manifest.webmanifest + 版本化 Service Worker，仅缓存同源静态资源，不拦截外部 AI 接口；单文件离线 HTML 不受影响）。'
+  ],en:[
+    'Add Basic Grayscale Densitometry (disabled by default under Advanced): integrates unclipped linear pixels with Rolling-ball / Lane-edge / None background subtraction and reference-lane normalization.',
+    'Strict overexposed/saturated band protection: saturated lanes are flagged red and blocked from quantification and reference selection; exports CSV and logs all parameters in processing-log.json.',
+    'Enable installable offline PWA for the web/GitHub Pages build (manifest.webmanifest + versioned same-origin Service Worker; offline single-file HTML remains unaffected).'
+  ]},
   {version:'1.5.0',date:'2026-11-20',zh:[
     '新增样本表（支持直接从 Excel 复制 TSV 或上传 .csv，按列映射泳道名、分组横线与 +/- 条件行并实时预览）以及历史泳道名自动补全。',
     '右侧待核对清单底部新增「复制图注」，一键生成并复制中/英文投稿图注草稿。',
