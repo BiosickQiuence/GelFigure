@@ -123,8 +123,8 @@
   bindFile('fileInput'); bindFile('fileInput2'); bindFile('fileInput3');
   $('projInput').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) openProject(f); });
   $('imgChip').onclick = () => $('fileInput').click();
-  const demoFile = () => new File([G.Demo.encodeTiff16(G.Demo.makeGel())], 'demo_gel.tif', { type: 'image/tiff' });
-  const demoProteinFile = () => new File([G.Demo.encodeTiff16(G.Demo.makeProteinGel())], 'demo_protein_gel.tif', { type: 'image/tiff' });
+  const demoFile = () => { const f = new File([G.Demo.encodeTiff16(G.Demo.makeGel())], 'demo_gel.tif', { type: 'image/tiff' }); f._isDemo = true; return f; };
+  const demoProteinFile = () => { const f = new File([G.Demo.encodeTiff16(G.Demo.makeProteinGel())], 'demo_protein_gel.tif', { type: 'image/tiff' }); f._isDemo = true; return f; };
   $('btnDemo').onclick = () => load([demoFile()]);
   // drop anywhere in the window
   let dragDepth = 0;
@@ -242,20 +242,49 @@
   /* ---------- export (with pre-flight) ---------- */
   $('preflightOn').checked = App.prefs().preflight !== false;
   $('preflightOn').addEventListener('change', e => App.setPref('preflight', e.target.checked));
+  function updateExportReadiness(fig) {
+    const btn = $('exportReadiness'), txt = $('exportReadinessText');
+    if (!btn || !txt) return;
+    if (!S()) { btn.classList.add('hidden'); return; }
+    const items = App.preflight(fig || lastFig);
+    const blocks = items.filter(i => i.level === 'block').length;
+    const warns = items.filter(i => i.level === 'warn').length;
+    const issues = blocks + warns;
+    const state = blocks ? 'block' : warns ? 'warn' : 'ok';
+    btn.classList.remove('hidden', 'ok', 'warn', 'block');
+    btn.classList.add(state);
+    btn.dataset.state = state;
+    btn.dataset.issues = String(issues);
+    const label = blocks
+      ? L(`${issues} 项待处理`, `${issues} to fix`)
+      : warns
+        ? L(`${warns} 项注意`, `${warns} warning${warns > 1 ? 's' : ''}`)
+        : L('可导出', 'Ready');
+    txt.textContent = label;
+    btn.title = L('导出前检查：', 'Export readiness: ') + label + L('（点击查看详情）', ' (click for details)');
+  }
+  if ($('exportReadiness')) $('exportReadiness').onclick = () => { if (S()) preflight({ force: true, inspectOnly: true }); };
   // resolves true = go ahead, false = user went back to fix
-  function preflight() {
+  function preflight(opts) {
+    const force = !!(opts && opts.force), inspectOnly = !!(opts && opts.inspectOnly);
     return new Promise(resolve => {
-      if (App.prefs().preflight === false) return resolve(true);
+      if (!force && App.prefs().preflight === false) return resolve(true);
       const items = App.preflight(), serious = items.filter(i => i.level === 'block' || i.level === 'warn' || i.level === 'info');
-      if (!serious.length) return resolve(true);
-      const lab = { block: L('需处理', 'Fix'), warn: L('注意', 'Warning'), info: L('提示', 'Note') };
+      if (!force && !serious.length) return resolve(true);
+      const lab = { block: L('需处理', 'Fix'), warn: L('注意', 'Warning'), info: L('提示', 'Note'), ok: L('通过', 'OK') };
       const box = $('pfList');
-      const figure=App.buildFigure(false);
-      box.innerHTML = `<p class="export-dimensions">${L(`文件 ${S().style.dpi} dpi · 胶图有效 ${Math.round(App.effectiveDpi())} dpi · 胶图宽 ${App.gelWidthMm().toFixed(1)} mm · 成图 ${(figure.w/G.Render.MM).toFixed(1)} × ${(figure.h/G.Render.MM).toFixed(1)} mm`,`File ${S().style.dpi} dpi · effective gel ${Math.round(App.effectiveDpi())} dpi · gel width ${App.gelWidthMm().toFixed(1)} mm · figure ${(figure.w/G.Render.MM).toFixed(1)} × ${(figure.h/G.Render.MM).toFixed(1)} mm`)}</p>` + items.map((it, k) => `<div class="pf-item"><span class="lv ${it.level}">${lab[it.level]}</span><span class="tx">${esc(it.text)}</span>${it.fix ? `<button class="btn sm" data-fix="${k}">${esc(it.fix.label)}</button>` : ''}</div>`).join('');
+      const figure = App.buildFigure(false);
+      const rows = items.length
+        ? items.map((it, k) => `<div class="pf-item"><span class="lv ${it.level}">${lab[it.level]}</span><span class="tx">${esc(it.text)}</span>${it.fix ? `<button class="btn sm" data-fix="${k}">${esc(it.fix.label)}</button>` : ''}</div>`).join('')
+        : `<div class="pf-item"><span class="lv ok">${lab.ok}</span><span class="tx">${esc(L('所有导出规范检查均已通过，可直接导出。', 'All export checks passed. Ready to export.'))}</span></div>`;
+      box.innerHTML = `<p class="export-dimensions">${L(`文件 ${S().style.dpi} dpi · 胶图有效 ${Math.round(App.effectiveDpi())} dpi · 胶图宽 ${App.gelWidthMm().toFixed(1)} mm · 成图 ${(figure.w/G.Render.MM).toFixed(1)} × ${(figure.h/G.Render.MM).toFixed(1)} mm`,`File ${S().style.dpi} dpi · effective gel ${Math.round(App.effectiveDpi())} dpi · gel width ${App.gelWidthMm().toFixed(1)} mm · figure ${(figure.w/G.Render.MM).toFixed(1)} × ${(figure.h/G.Render.MM).toFixed(1)} mm`)}</p>` + rows;
       box.querySelectorAll('[data-fix]').forEach(b => b.onclick = () => { items[+b.dataset.fix].fix.run(); App.commit(); b.disabled = true; b.textContent = L('已修正', 'Fixed'); });
       $('pfOff').checked = false;
+      $('pfOff').closest('label').classList.toggle('hidden', inspectOnly);
+      $('pfGo').classList.toggle('hidden', inspectOnly);
+      $('pfBack').textContent = inspectOnly ? L('关闭', 'Close') : L('返回修改', 'Go back and fix');
       $('preflightDlg').classList.remove('hidden');
-      const close = ok => { $('preflightDlg').classList.add('hidden'); if ($('pfOff').checked) { App.setPref('preflight', false); $('preflightOn').checked = false; } resolve(ok); };
+      const close = ok => { $('preflightDlg').classList.add('hidden'); if (!inspectOnly && $('pfOff').checked) { App.setPref('preflight', false); $('preflightOn').checked = false; } resolve(ok); };
       $('pfBack').onclick = () => close(false);
       $('pfGo').onclick = () => close(true);
     });
@@ -1086,6 +1115,7 @@
     $('figSize').textContent = `${(f.w / G.Render.MM).toFixed(1)} × ${(f.h / G.Render.MM).toFixed(1)} mm`;
     angleControls();
     showWarnings(f.warnings);
+    updateExportReadiness(f);
     // legend suggestions are English: they go into the manuscript
     const hints = G.Export.legendHints(st);
     $('legendHints').innerHTML = hints.length ? `<b>${L('图注可参考', 'Legend notes')}</b>` + hints.map(esc).join('<br>') : '';

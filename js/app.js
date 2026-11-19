@@ -60,7 +60,8 @@
   App.defaultStyle = defaultStyle;
   App.onDropFile = null;   // set by the UI layer
 
-  App.VERSION = '1.1.0';
+  App.VERSION = '1.1.1';
+  App.isDemo = false;
   App.prefs = prefs;
   App.setPref = function (k, v) { const p = prefs(); p[k] = v; G.PrefStorage.setItem(PREF_KEY, JSON.stringify(p)); };
 
@@ -196,6 +197,7 @@
       await App.saveDraft();
       if(generation!==App.sourceGeneration)return false;
       App.newCachedProject();
+      App.isDemo = !!(file && file._isDemo);
       App.exposures = null; App.expIdx = null; sourceInputs = new Map();
       startFrom(input);
       App.emit('loaded');return true;
@@ -234,6 +236,7 @@
       await App.saveDraft();
       if(generation!==App.sourceGeneration)return false;
       App.newCachedProject();
+      App.isDemo = false;
       App.exposures = list;
       sourceInputs = new Map();
       App.expIdx = bestInput.k;
@@ -242,7 +245,7 @@
     } catch (e) {
       if(generation!==App.sourceGeneration)return false;
       console.error(e);
-      alert(L('读取失败：', 'Could not read the file: ') + e.message);
+      alert(L('读取失败：', 'Could not read the files: ') + e.message);
     } finally { if(generation===App.sourceGeneration)busy(false); }
   };
 
@@ -257,6 +260,10 @@
     c.getContext('2d').putImageData(E.toImageData(sm, { black: lv.black, white: lv.white, gamma: 1, invert: !bright ? false : true }), 0, 0);
     return c.toDataURL('image/jpeg', 0.8);
   }
+  App.projectThumb = function () {
+    if (!App.S || !App.src) return '';
+    return thumbnail(App.src, App.S.bright, App.isColour() ? App.sourceRGB : null);
+  };
 
   /* Switch to another exposure of the same gel. Same pixel size = same framing: everything typed is
    * kept, only the pixels and contrast change. Different size: re-detect, names carried in order. */
@@ -1481,7 +1488,7 @@
 
   /* Pre-flight before export: problems a reviewer or a journal check would catch.
    * level 'block' items are asked about before exporting; 'warn' items are listed. */
-  App.preflight = function () {
+  App.preflight = function (existingFig) {
     const S = App.S, st = S.style, out = [];
     const add = (level, text, fix) => out.push({ level, text, fix });
     const eff = App.effectiveDpi();
@@ -1495,7 +1502,7 @@
     if (!App.isColour() && k.sensorFrac > 0.0005) add('warn', L(`相机过曝：裁切区 ${sp}% 像素饱和。建议换一张较短曝光。`, `Camera saturation: ${sp}% of the pixels in the crop are saturated. Consider a shorter exposure.`));
     if (App.isColour()) add('info', L('保留原色：以 8 位 RGB 显示和导出，未应用灰度的色阶、反色或 Gamma。灰度过曝指标不代表各 RGB 通道的饱和情况。', 'Original colour: displayed/exported as 8-bit RGB, without grayscale levels, inversion or gamma. Grayscale saturation does not assess the individual RGB channels.'));
     if (bc > 0.001) add('block', L(`色阶削顶：${bp}% 像素被对比度压平。`, `Contrast clipping: ${bp}% of the pixels are flattened by the contrast setting.`), { label: L('重置对比度', 'Reset contrast'), run: () => App.resetLevels() });
-    const fig = App.buildFigure(false), wmm = fig.w / G.Render.MM;
+    const fig = existingFig || App.buildFigure(false), wmm = fig.w / G.Render.MM;
     // the smallest text actually printed: per-item sizes and shrunk group labels count, not just the base size
     const minPt = Math.round(fig.minPt * 10) / 10;
     if (minPt < 5) add('warn', L(`最小字号 ${minPt} pt 偏小（多数期刊要求 ≥ 5–6 pt）。`, `The smallest text is ${minPt} pt (most journals ask for ≥ 5–6 pt).`), { label: L('全部至少 6 pt', 'Make all text ≥ 6 pt'), run: () => {
@@ -1538,7 +1545,7 @@
     raf = requestAnimationFrame(() => { raf = 0; App.emit('refresh'); });
   };
 
-  App.BUILD = 'v1.1.0';
+  App.BUILD = 'v1.1.1';
   App.snapshot = function () { return JSON.stringify(App.S); };
   App.commit = function () {
     if (!App.S) return;
@@ -1774,6 +1781,7 @@
   function restore(input, state, initial, autoRotation, exposures = null, expIdx = null, generation, undoSnapshot) {
     if(generation===undefined)generation=++App.sourceGeneration;
     if(generation!==App.sourceGeneration)return false;
+    App.isDemo = false;
     // the saved orientation belongs to the stored coordinates: apply it before the state is installed.
     // Projects written before orientation existed carry no field and mean "as decoded".
     sourceInputs = new Map();

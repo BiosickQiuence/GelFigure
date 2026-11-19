@@ -84,14 +84,20 @@
     App.projectName = name || ''; App.cachedSnapshot = null;
     status('pending');
   };
+  const sourceSig = p => {
+    const list = Array.isArray(p?.sources) && p.sources.length ? p.sources.map(s => s.sha256).filter(Boolean).sort() : (p?.sha256 ? [p.sha256] : []);
+    return list.join(',');
+  };
   App.saveDraftSoon = function () {
     if (!App.S || !App.srcBuffer) return;
+    if (App.isDemo) { status('demo'); return; }
     clearTimeout(timer); status('pending');
     timer = setTimeout(() => App.saveDraft(), 800);
   };
   App.saveDraft = async function () {
     clearTimeout(timer);
     if (!App.S || !App.srcBuffer) return true;
+    if (App.isDemo) { status('demo'); return true; }
     requestPersistence();
     if (!App.projectId) App.newCachedProject();
     // Capture before awaiting. A queued save must never read the next project's pixels or settings.
@@ -100,12 +106,16 @@
     if (!records.some(r => r.sha256 === App.S.file.sha256)) records.push({ name: App.S.file.name, sha256: App.S.file.sha256, buffer: App.srcBuffer });
     const buffers = records.map(r => r.buffer);
     const sources = records.map(({ buffer, ...rec }) => clone(rec));
+    let thumb = '';
+    try { thumb = App.projectThumb ? App.projectThumb() : ''; } catch (_) { thumb = ''; }
     const meta = { projectId, projectName: App.projectName || App.S.file.name, name: App.S.file.name,
       sha256: App.S.file.sha256, state, initial: App.projectInitial(), autoRotation: App.autoRotation,
-      savedAt: Date.now(), app: 'GelFigure ' + App.VERSION,
+      savedAt: Date.now(), app: 'GelFigure ' + App.VERSION, thumb,
       ladders: clone(G.Ladders.defsFor(App.S.markers.map(m => m.ladderId))), sources,
       expIdx: App.exposures ? App.expIdx : null,
       summary: { images: sources.length, lanes: App.figureLanes().length, gelType: App.gelKind() } };
+    const sig = sourceSig(meta);
+    let targetId = projectId;
     status('pending');
     try {
       await enqueue(() => withMigration(st => {
@@ -113,14 +123,28 @@
           const key = 'img:' + s.sha256, rq = st.getKey(key);
           success(rq, () => { if (rq.result === undefined) st.put(buffers[i], key); });
         });
-        const existing = st.get('project:' + projectId);
-        success(existing, () => {
-          // A rename may have been queued while this snapshot was being captured.
-          const saved = { ...meta, projectName: existing.result?.projectName || meta.projectName };
-          st.put(saved, 'project:' + projectId); st.put(saved, 'meta');
+        const allRq = st.getAll(range('project:'));
+        success(allRq, () => {
+          const list = allRq.result || [];
+          const byId = list.find(p => p.projectId === projectId);
+          // Merge entries sharing the same original image SHA-256 signature into a single history card.
+          const sameSig = sig ? list.filter(p => sourceSig(p) === sig) : [];
+          let canonical = byId || null;
+          if (!canonical && sameSig.length) {
+            canonical = sameSig.slice().sort((a, b) => b.savedAt - a.savedAt)[0];
+            targetId = canonical.projectId;
+          }
+          for (const dup of sameSig) {
+            if (dup.projectId !== targetId) st.delete('project:' + dup.projectId);
+          }
+          const keepName = canonical?.projectName && canonical.projectName !== canonical.name
+            ? canonical.projectName : (byId?.projectName || meta.projectName);
+          const saved = { ...meta, projectId: targetId, projectName: keepName, thumb: meta.thumb || canonical?.thumb || '' };
+          st.put(saved, 'project:' + targetId); st.put(saved, 'meta');
         });
       }));
       if (gen === generation) {
+        App.projectId = targetId;
         App.cachedSnapshot = state;
         status(App.snapshot() === state ? 'saved' : 'pending');
       }

@@ -16,6 +16,7 @@
   }
   function status() {
     const text = !App.S ? L('历史项目', 'Recent projects')
+      : App.isDemo || App.cacheStatus === 'demo' ? L('示例 · 不写入历史', 'Example · not cached')
       : App.cacheStatus === 'error' ? L('缓存失败 · 保存项目', 'Cache failed · save file')
       : App.cacheStatus === 'pending' ? L('正在缓存…', 'Saving locally…') : L('已缓存 · 历史项目', 'Saved · recent projects');
     $('cacheStatus').textContent = text; $('mCacheStatus').textContent = text;
@@ -56,7 +57,9 @@
         details.push(count + L(' 张图', count === 1 ? ' image' : ' images'));
         if (summary.lanes != null) details.push(summary.lanes + L(' 条泳道', ' lanes'));
         const current = p.projectId === App.projectId;
+        const thumb = p.thumb ? `<img class="project-thumb" src="${esc(p.thumb)}" alt="">` : '<div class="project-thumb project-thumb-empty" aria-hidden="true"></div>';
         return `<div class="library-card${current ? ' current' : ''}" data-project="${esc(p.projectId)}">
+          ${thumb}
           <div class="project-info"><button class="open-project">${esc(p.projectName || p.name || L('未命名项目', 'Untitled project'))}</button>
           <small>${esc(details.join(' · '))}${current ? ' · ' + L('当前项目', 'Current project') : ''}</small></div>
           <div class="project-actions"><button class="btn sm rename-project">${L('改名', 'Rename')}</button>

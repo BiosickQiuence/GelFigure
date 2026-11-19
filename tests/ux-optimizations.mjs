@@ -518,6 +518,32 @@ export async function uxOptimizationChecks(browser, base, root, engine = 'chromi
       await p.locator('#btnCopyPNG').click();
       await p.waitForFunction(() => !!document.querySelector('#toasts .toast-action'));
       assert(await p.locator('#toasts .toast-action').last().isVisible());
+
+      // v1.1.1 checks: Export Readiness badge, AI Marker back button, non-overlapping lane toolbar
+      assert(await p.locator('#exportReadiness').isVisible());
+      await p.locator('#exportReadiness').click();
+      await p.waitForSelector('#preflightDlg:not(.hidden)');
+      assert(await p.locator('#pfList .pf-item').count() >= 1);
+      await p.locator('#pfBack').click();
+      await p.waitForFunction(() => document.getElementById('preflightDlg')?.classList.contains('hidden'));
+
+      await p.locator('#btnAIMarker').click();
+      await p.waitForSelector('#aiClose');
+      assert.match(await p.locator('#aiClose').textContent(), /Back to editor|返回编辑器/);
+      await p.locator('#aiClose').click();
+
+      const laneIdx = await p.evaluate(() => UI.figLanes()[1]);
+      await p.evaluate(i => FigEdit.openEd('lane', i), laneIdx);
+      await p.waitForSelector('#fedBar');
+      const overlap = await p.evaluate(() => {
+        const bar = document.getElementById('fedBar')?.getBoundingClientRect();
+        const ed = document.getElementById('floatEd')?.getBoundingClientRect();
+        if (!bar || !ed) return true;
+        return !(bar.right <= ed.left || bar.left >= ed.right || bar.bottom <= ed.top || bar.top >= ed.bottom);
+      });
+      assert.equal(overlap, false, 'floating format bar must not overlap active lane input');
+      await p.keyboard.press('Escape');
+
       assert.deepEqual(errs, []);
     } finally { await ctx.close(); }
   });

@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## [1.1.1] - 2026-11-20
+
+### 中文
+
+- 历史项目优化：点击“看看示例”不再写入历史列表；同一原图（相同 SHA-256）多次导入自动合并为同一项目卡片；列表展示胶图缩略图。
+- 顶栏新增“导出前检查”状态角标，无需点导出即可随时查看分辨率、过曝与字号检查并一键修正。
+- 改进细节交互：AI Marker 复核关闭按钮改为“← 返回编辑器”；成图内编辑泳道名时，浮动格式工具条自动避让泳道名、Marker 与胶面。
+- 文档与工程整理：完整视觉模型目录移至 `docs/models.md`，精简中英文 README；单文件构建备份移至仓库外目录。
+
+### English
+
+- Project history improvements: clicking “Try the example” no longer pollutes history; repeated imports of the same source image (identical SHA-256) merge into a single project card; cards display gel thumbnails.
+- Add an always-visible export readiness badge next to Export so resolution, saturation, and font-size checks can be inspected and fixed at any time.
+- UX polish: replace the small AI Marker close glyph with a clear “← Back to editor” button; position the inline lane-name toolbar to avoid covering lane names, markers, or the gel.
+- Docs & repo hygiene: move the full vision-model catalog to `docs/models.md`, slim READMEs, and store single-file bundle backups outside the repository.
+
 ## [1.1.0] - 2026-11-19
 
 ### 中文

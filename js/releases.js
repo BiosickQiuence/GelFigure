@@ -1,6 +1,15 @@
 /* Short bilingual release summaries, newest first. Keep the first version equal to App.VERSION.
  * Detailed history lives in CHANGELOG.md; this small local catalogue also works in offline HTML. */
 window.GelFigureReleases = Object.freeze([
+  {version:'1.1.1',date:'2026-11-20',zh:[
+    '历史项目不记录示例图、按原图 SHA-256 合并重复项并显示缩略图。',
+    '新增顶栏导出前检查状态角标；优化 AI 复核返回按钮与泳道名编辑条避让位置。',
+    '补充详细视觉模型目录 docs/models.md，并将离线构建备份移至仓库外。'
+  ],en:[
+    'Project history skips demo gels, merges duplicate imports by SHA-256 and shows thumbnails.',
+    'Add an always-visible export readiness badge, clearer AI review back button and non-overlapping lane name toolbar.',
+    'Move full vision-model inventory into docs/models.md and keep single-file build backups outside the repository.'
+  ]},
   {version:'1.1.0',date:'2026-11-19',zh:[
     '新增 AI 全自动处理，拖入胶图并选择 Marker 后即可完成泳道校正和条带标记。',
     '自动扩大偏小的四角，在原图内保留有带及不确定泳道，随后打开可编辑的成图。'

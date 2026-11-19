@@ -47,7 +47,13 @@ if (html.includes('js/uitest.js')) {
 html = html.replace(/(<meta http-equiv="Content-Security-Policy" content=")([^"]+)(">)/,(_,before,policy,after)=>before+policy.replace(/script-src ([^;]+);/,(_,sources)=>"script-src "+sources+" 'unsafe-inline';")+after);
 
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
-if(fs.existsSync(outPath)){const stamp=new Date().toISOString().replace(/[:.]/g,'-'),backup=outPath+'.'+stamp+'.backup';fs.copyFileSync(outPath,backup,fs.constants.COPYFILE_EXCL);
-  const hash=buf=>createHash('sha256').update(buf).digest('hex');if(hash(fs.readFileSync(backup))!==hash(fs.readFileSync(outPath)))throw new Error('Bundle backup mismatch');}
+if(fs.existsSync(outPath)){
+  const backupDir=path.resolve(root,'..','generated-backups');
+  fs.mkdirSync(backupDir,{recursive:true});
+  const stamp=new Date().toISOString().replace(/[:.]/g,'-'),backup=path.join(backupDir,'GelFigure.html.'+stamp+'.backup');
+  fs.copyFileSync(outPath,backup,fs.constants.COPYFILE_EXCL);
+  const hash=buf=>createHash('sha256').update(buf).digest('hex');
+  if(hash(fs.readFileSync(backup))!==hash(fs.readFileSync(outPath)))throw new Error('Bundle backup mismatch');
+}
 fs.writeFileSync(outPath, html);
 console.log(`${outPath}  ${(fs.statSync(outPath).size / 1024).toFixed(0)} KB`);

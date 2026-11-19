@@ -485,7 +485,7 @@
     if(select._refreshSearch)select._refreshSearch();
   }
   function buildUI() {
-    dlg.innerHTML=`<div class="ai-body"><div class="dlg-head"><h2 id="aiMarkerTitle">${L('Marker 识别与人工复核','Marker recognition and review')}</h2><button id="aiClose" class="btn ghost" aria-label="${L('关闭','Close')}">×</button></div>
+    dlg.innerHTML=`<div class="ai-body"><div class="dlg-head"><h2 id="aiMarkerTitle">${L('Marker 识别与人工复核','Marker recognition and review')}</h2><button id="aiClose" class="btn" aria-label="${L('返回编辑器','Back to editor')}">${L('← 返回编辑器','← Back to editor')}</button></div>
       <div class="ai-shared-model"><label for="aiMarkerModel">${L('Marker 型号（本地 / AI 共用）','Marker model (shared by local / AI)')}</label><select id="aiMarkerModel"></select><p class="hint">${L('在这里选择一次，两种识别共用；所选型号用于本图各 Marker 泳道。未指定时可先识别再确认。更改只更新比较草稿，不会自动发送图像。','Choose once for both methods and all marker lanes in this gel. You can recognize first if unspecified. Changes update drafts only and never send an image automatically.')}</p></div>
       <p>${L('原代码本地识别可离线运行。仅点击“发送图像并识别”才发送一次请求；失败会报错，不自动重试或切换。','Original local detection works offline. Only Send image and recognize sends one request; failures are reported without retry or switching.')}</p>
       <button id="aiSettingsLink" class="btn sm">${L('接口配置 · 右上角设置','API configuration · top-right Settings')}</button>

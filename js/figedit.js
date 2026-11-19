@@ -174,11 +174,51 @@
   function placeBar() {
     const r = fed.getBoundingClientRect();
     bar.classList.remove('hidden');
-    const v=window.visualViewport,bottom=(v?.offsetTop||0)+(v?.height||innerHeight);
-    bar.style.maxHeight=Math.max(70,bottom-r.bottom-12)+'px';
-    const below = r.bottom + 4 + bar.offsetHeight < bottom;
-    bar.style.left = clamp(r.left, 4, Math.max(4, innerWidth - bar.offsetWidth - 4)) + 'px';
-    bar.style.top = Math.max(4,below?r.bottom+4:r.top-bar.offsetHeight-4)+'px';
+    const v = window.visualViewport, topMin = (v?.offsetTop || 0) + 56, bottomMax = (v?.offsetTop || 0) + (v?.height || innerHeight) - 8;
+    const vw = v?.width || innerWidth;
+    bar.style.maxHeight = Math.max(70, bottomMax - topMin) + 'px';
+    const bw = bar.offsetWidth || 320, bh = bar.offsetHeight || 40;
+    // Avoid overlapping neighboring lane names and marker size labels whenever there is clear space above the names or below the gel.
+    let avoidTop = r.top, avoidBottom = r.bottom;
+    const svg = prev.querySelector('svg');
+    if (svg) {
+      const lanes = [...prev.querySelectorAll('g[data-edit="lane"], g[data-edit="group"], g[data-edit="condname"]')];
+      const markers = [...prev.querySelectorAll('g[data-edit="marker"]')];
+      const gel = prev.querySelector('image[data-edit="gel"]');
+      if (lanes.length) {
+        avoidTop = Math.min(avoidTop, ...lanes.map(n => n.getBoundingClientRect().top));
+        avoidBottom = Math.max(avoidBottom, ...lanes.map(n => n.getBoundingClientRect().bottom));
+      }
+      if (markers.length) {
+        avoidBottom = Math.max(avoidBottom, ...markers.map(n => n.getBoundingClientRect().bottom));
+      }
+      if (gel) {
+        const gr = gel.getBoundingClientRect();
+        avoidBottom = Math.max(avoidBottom, gr.bottom);
+      }
+    }
+    const candidates = [
+      // 1. Above the lane-name band (clears both neighboring names and marker labels)
+      avoidTop - bh - 10,
+      // 2. Below the gel / marker labels
+      avoidBottom + 10,
+      // 3. Fallback directly below or above the active input
+      r.bottom + 6,
+      r.top - bh - 6
+    ];
+    let top = candidates.find(y => y >= topMin && y + bh <= bottomMax && (y + bh <= r.top - 2 || y >= r.bottom + 2));
+    if (top == null) {
+      const below = r.bottom + 4 + bh < bottomMax;
+      top = Math.max(topMin, Math.min(bottomMax - bh, below ? r.bottom + 4 : r.top - bh - 4));
+    }
+    let left = r.left + r.width / 2 - bw / 2;
+    const figCol = $('figCol');
+    if (figCol) {
+      const fr = figCol.getBoundingClientRect();
+      if (fr.width >= bw + 16) left = clamp(left, fr.left + 8, fr.right - bw - 8);
+    }
+    bar.style.left = clamp(left, 6, Math.max(6, vw - bw - 6)) + 'px';
+    bar.style.top = Math.round(top) + 'px';
   }
   // the textarea grows with typed line breaks (group labels only)
   const autoRows = () => { fed.rows = Math.min(4, Math.max(1, fed.value.split('\n').length)); if (edit) placeBar(); };
@@ -198,7 +238,8 @@
     fed.placeholder = kind === 'lane' ? L(`孔 ${id + 1} 名称`, `Well ${id + 1} name`) : kind === 'group' ? L('分组文字', 'Group label') : L('条件名', 'Condition name');
     // the on-screen keyboard labels Enter "Next" while lane names are filled in one after another
     fed.setAttribute('enterkeyhint', kind === 'lane' ? 'next' : 'done');
-    const w = Math.max(120, Math.min(240, r.width + 50));
+    // Keep the floating input compact so adjacent lane names stay readable while typing.
+    const w = kind === 'lane' ? Math.max(92, Math.min(180, r.width + 28)) : Math.max(120, Math.min(240, r.width + 50));
     fed.style.width = w + 'px';
     fed.style.left = clamp(r.left + r.width / 2 - w / 2, 4, innerWidth - w - 4) + 'px';
     fed.style.top = clamp(r.top + r.height / 2 - 15, 56, innerHeight - 40) + 'px';

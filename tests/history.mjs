@@ -12,35 +12,64 @@ export async function historyChecks(browser, base, root, engine) {
     try { await fn(); results.push(['ok', 'history: ' + name]); }
     catch (e) { results.push(['FAIL', 'history: ' + name, e.stack]); }
   };
-  const ready = async () => { await page.goto(base + '/index.html?demo=1&lang=en'); await page.waitForFunction(() => document.title.startsWith('READY '), null, { timeout: 120000 }); };
+  const ready = async () => {
+    await page.goto(base + '/index.html?lang=en');
+    await page.waitForFunction(() => !!window.App && !!window.Demo && !!window.UI);
+  };
   let first, second, expected, multiple, legacy;
   try {
     await ready();
-    await check('switching images preserves inline edits and deduplicates original bytes', async () => {
+    await check('demo gel is excluded from history and shows demo status', async () => {
+      await page.locator('#btnDemo').click();
+      await page.waitForFunction(() => App.S && document.getElementById('busy').classList.contains('hidden'));
+      await page.evaluate(async () => { App.S.lanes[UI.figLanes()[1]].name = 'Demo edit'; App.commit(); await App.saveDraft(); });
+      assert.equal(await page.evaluate(() => App.isDemo), true);
+      assert.equal(await page.evaluate(() => App.cacheStatus), 'demo');
+      assert.equal(await page.evaluate(async () => (await App.listHistory()).length), 0);
+    });
+    await check('re-importing same SHA-256 merges into one card; distinct images create separate cards with thumbnails', async () => {
+      await page.evaluate(async () => {
+        App.forceJsHash = true;
+        const gelA = Demo.makeGel({ tilt: 0 });
+        await UI.load([{ name: 'experiment_A.tif', buffer: Demo.encodeTiff16(gelA) }]);
+        await App.saveDraft();
+      });
       first = await page.evaluate(() => App.projectId);
       const li = await page.evaluate(() => UI.figLanes()[1]);
       await page.evaluate(i => FigEdit.openEd('lane', i), li);
       await page.locator('#floatEd').fill('Experiment A');
-      await page.evaluate(async () => {
-        const file = { name: 'experiment_B.tif', buffer: App.srcBuffer };
-        await UI.load([file]); App.S.lanes[UI.figLanes()[1]].name = 'Experiment B'; App.commit(); await App.saveDraft();
+      // Re-importing the exact same SHA-256 merges into the existing entry instead of duplicating cards
+      const merged = await page.evaluate(async () => {
+        const same = { name: 'experiment_A_copy.tif', buffer: App.srcBuffer };
+        await UI.load([same]);
+        await App.saveDraft();
+        const hist = await App.listHistory();
+        return { count: hist.length, id: App.projectId, hasThumb: !!(hist[0] && hist[0].thumb && hist[0].thumb.startsWith('data:image/')) };
       });
+      assert.equal(merged.count, 1);
+      assert.equal(merged.hasThumb, true);
+      // Restore Experiment A name then load a distinct second image
+      await page.evaluate(async i => {
+        App.S.lanes[i].name = 'Experiment A'; App.commit(); await App.saveDraft();
+        const gelB = Demo.makeGel({ tilt: 0 });
+        gelB.data = Float32Array.from(gelB.data, v => v * 0.92);
+        await UI.load([{ name: 'experiment_B.tif', buffer: Demo.encodeTiff16(gelB) }]);
+        App.S.lanes[UI.figLanes()[1]].name = 'Experiment B'; App.commit(); await App.saveDraft();
+      }, li);
       second = await page.evaluate(() => App.projectId);
       assert.notEqual(first, second);
       const r = await page.evaluate(async a => {
-        const db = await new Promise((resolve, reject) => { const q = indexedDB.open('gelfigure', 1); q.onsuccess = () => resolve(q.result); q.onerror = () => reject(q.error); });
-        const keys = await new Promise(r => { const q = db.transaction('drafts').objectStore('drafts').getAllKeys(); q.onsuccess = () => r(q.result); }); db.close();
         await App.restoreHistory(a);
-        return { keys, name: App.S.lanes[UI.figLanes()[1]].name, count: (await App.listHistory()).length };
+        return { name: App.S.lanes[UI.figLanes()[1]].name, count: (await App.listHistory()).length };
       }, first);
       assert.equal(r.name, 'Experiment A'); assert.equal(r.count, 2);
-      assert.equal(r.keys.filter(k => k.startsWith('img:')).length, 1);
       expected = await page.evaluate(() => App.snapshot());
     });
-    await check('history survives reload and restores without running detection', async () => {
+    await check('history survives reload, renders thumbnails and restores without running detection', async () => {
       await page.goto(base + '/index.html?lang=en');
       await page.locator('#btnHistoryStart').click();
       await page.waitForSelector('.library-card');
+      assert(await page.locator('.library-card img.project-thumb').count() >= 2);
       await page.evaluate(() => { App.autoAll = () => { throw Error('History must not re-detect'); }; });
       await page.locator(`[data-project="${first}"] .open-project`).click();
       await page.waitForFunction(id => App.projectId === id && document.getElementById('historyDlg').classList.contains('hidden'), first);
@@ -81,7 +110,7 @@ export async function historyChecks(browser, base, root, engine) {
       });
       assert(ok);
     });
-    await check('deleting a project keeps shared source bytes usable', async () => {
+    await check('deleting a project keeps remaining projects usable', async () => {
       await page.evaluate(async b => { await App.deleteHistory(b); }, second);
       assert.equal(await page.evaluate(async () => (await App.listHistory()).length), 1);
       await page.evaluate(a => App.restoreHistory(a), first);
@@ -175,9 +204,12 @@ export async function historyChecks(browser, base, root, engine) {
       });
       await page.goto(base + '/index.html?lang=en');
       await page.waitForSelector('#draftBox:not(.hidden)');
-      await page.locator('#btnDemo').click();
-      await page.waitForFunction(() => App.S && document.getElementById('busy').classList.contains('hidden'));
-      await page.evaluate(() => App.saveDraft());
+      await page.evaluate(async () => {
+        const gel = Demo.makeGel({ tilt: 0 });
+        gel.data = Float32Array.from(gel.data, v => v * 0.77);
+        await UI.load([{ name: 'new_after_legacy.tif', buffer: Demo.encodeTiff16(gel) }]);
+        await App.saveDraft();
+      });
       assert.equal(await page.evaluate(async () => (await App.listHistory()).length), 2);
       await page.evaluate(() => App.restoreHistory('legacy_1234567890'));
       assert.equal(await page.evaluate(() => App.snapshot()), legacy);
@@ -229,7 +261,11 @@ export async function historyChecks(browser, base, root, engine) {
     try {
       await offline.setOffline(true); const p = await offline.newPage();
       const url = pathToFileURL(path.join(root, 'dist/GelFigure.html')).href;
-      await p.goto(url + '?lang=en'); await p.locator('#btnDemo').click();
+      await p.goto(url + '?lang=en');
+      await p.evaluate(async () => {
+        const gel = Demo.makeGel({ tilt: 0 });
+        await UI.load([{ name: 'offline_gel.tif', buffer: Demo.encodeTiff16(gel) }]);
+      });
       await p.waitForFunction(() => App.S && document.getElementById('busy').classList.contains('hidden'), null, { timeout: 60000 });
       const state = await p.evaluate(async () => { App.S.lanes[UI.figLanes()[1]].name = 'Offline'; App.commit(); const ok = await App.saveDraft(); return { ok, snapshot: App.snapshot() }; });
       // Some browsers isolate or deny IndexedDB on file://; editing and a clear fallback must work.
