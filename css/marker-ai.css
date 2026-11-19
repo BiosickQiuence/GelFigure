@@ -6,7 +6,7 @@
 .ai-body input[type=checkbox]{margin-right:6px}.ai-body textarea{font:12px ui-monospace,Consolas,monospace;resize:vertical;white-space:pre}
 .ai-config{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px}.ai-body .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
 .ai-columns{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}.ai-result{min-width:0;border:1px solid #cbd5e1;border-radius:9px;padding:14px;background:#f8fafc}
-.ai-result canvas{display:block;width:100%;height:auto;max-height:350px;object-fit:contain;background:#e2e8f0;border-radius:4px}
+.ai-result canvas{display:block;width:100%;height:auto;max-height:350px;object-fit:contain;background:#e2e8f0;border-radius:4px;touch-action:none;user-select:none;cursor:ns-resize}
 .ai-row{min-width:0;margin:16px 0;padding:12px;border:1px solid #cbd5e1;border-radius:6px;background:white}.ai-row legend{padding:0 5px}.ai-row-fields{display:grid;grid-template-columns:2fr 1fr;gap:10px}.ai-row label{margin-bottom:6px}
 .ai-overwrite{padding:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:5px}.ai-error,#aiStatus.error{color:#b91c1c}#aiStatus{min-height:24px;white-space:pre-wrap;font-size:14px}
 .ai-body .hint{font-size:12px;color:#475569}.ai-body button:disabled{opacity:.5}

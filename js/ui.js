@@ -26,11 +26,31 @@
   if (location.protocol === 'file:') $('offlineDownload').hidden = true;
 
   /* ---------- toasts / warnings ---------- */
-  function toast(msg, ms) {
+  function toast(msg, ms, action) {
     const el = document.createElement('div');
-    el.className = 'toast'; el.textContent = msg;
+    el.className = 'toast' + (action && action.label ? ' has-action' : '');
+    const dismiss = () => {
+      if (el._gone) return;
+      el._gone = true;
+      clearTimeout(timer);
+      el.style.transition = '.25s';
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), 260);
+    };
+    if (action && action.label && typeof action.onClick === 'function') {
+      const span = document.createElement('span');
+      span.textContent = msg;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn sm toast-action';
+      btn.textContent = action.label;
+      btn.onclick = () => { dismiss(); action.onClick(); };
+      el.append(span, btn);
+    } else {
+      el.textContent = msg;
+    }
     $('toasts').appendChild(el);
-    setTimeout(() => { el.style.transition = '.25s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 260); }, ms || 2400);
+    const timer = setTimeout(dismiss, ms || (action ? 6000 : 2400));
   }
   const dismissed = new Set();
   function showWarnings(items) {
@@ -252,7 +272,24 @@
       G.dispatchEvent(new Event('gelfigure-figure-exported'));
     } catch (e) { alert(e.message); } finally { App.busy(false); }
   }
+  async function copyFigurePNG() {
+    if (needImage() || !(await preflight())) return;
+    App.busy(true, L('正在复制 PNG…', 'Copying PNG…'));
+    try {
+      const f = App.buildFigure(false), dpi = S().style.dpi;
+      await G.Export.copyPNG(f.svg, f.w, f.h, dpi, S());
+      toast(L(`已复制 ${dpi} dpi PNG 到剪贴板，可直接 Ctrl+V 粘贴到 PPT / Word`, `Copied ${dpi} dpi PNG to clipboard — paste into PowerPoint or Word`), 3800);
+      G.dispatchEvent(new Event('gelfigure-figure-exported'));
+    } catch (e) {
+      toast(L('无法直接写入剪贴板：', 'Could not copy to clipboard: ') + e.message, 6500, {
+        label: L('改为下载 PNG', 'Download PNG'),
+        onClick: () => exportRaster('png')
+      });
+    } finally { App.busy(false); }
+  }
   $('btnPNG').onclick = () => exportRaster('png');
+  if ($('btnCopyPNG')) $('btnCopyPNG').onclick = copyFigurePNG;
+  if ($('btnFigCopyPNG')) $('btnFigCopyPNG').onclick = copyFigurePNG;
   $('btnTIFF').onclick = () => exportRaster('tiff');
   $('btnPPTX').onclick = async () => {
     if (needImage() || !(await preflight())) return;
@@ -362,10 +399,20 @@
   $('btnRotCCW').onclick = () => applyOrient({ r: 270, f: 0 }, L('逆时针 90°', 'Rotated 90° anticlockwise'));
   $('btnFlipH').onclick = () => applyOrient({ r: 0, f: 1 }, L('水平翻转', 'Mirrored left to right'));
   $('btnFlipV').onclick = () => applyOrient({ r: 180, f: 1 }, L('垂直翻转', 'Mirrored top to bottom'));
+  let straightenRequest = 0;
+  function clearImageGrid() {
+    if ($('showGrid')) $('showGrid').checked = false;
+    G.Editor.setGrid(false);
+  }
+  if ($('rotationFine')) $('rotationFine').addEventListener('toggle', e => {
+    if (!e.target.open) clearImageGrid();
+  });
   $('btnDeskew').onclick = () => {
     if (!S()) return;
+    const req = ++straightenRequest, state = S();
     App.busy(true, L('正在检测角度…', 'Measuring the angle…'));
     setTimeout(() => {
+      if (req !== straightenRequest || S() !== state) return;
       const a = App.autoDeskew(); App.afterRotation(); App.busy(false); App.commit();
       toast(Math.abs(a) >= App.AUTO_ROT_LIMIT - 0.3
         ? L(`自动转正到达上限 ${a}°，可能还没转正，请手动确认`, `Auto-straightening hit its limit at ${a}°; the gel may still be tilted — please check`)
@@ -580,20 +627,93 @@
     toast(e.target.checked ? L('之后的自动识别只在常用型号中挑选（不吻合时回退全库）', 'Detection now picks from favourites only (falls back to all ladders if none fits)')
       : L('自动识别在全部型号中挑选（常用型号略优先）', 'Detection picks from all ladders (favourites slightly preferred)'));
   });
+  function ladderSearchHaystack(opt) {
+    const lad = opt.value ? G.Ladders.get(opt.value) : null;
+    return [opt.textContent, opt.value, lad ? lad.name : '', lad && lad.sizes ? lad.sizes.join(' ') : ''].join(' ').toLowerCase();
+  }
+  function attachLadderSearch(selectEl, opts = {}) {
+    if (!selectEl || !selectEl.parentNode) return null;
+    if (selectEl._searchInput && selectEl._searchInput.isConnected) {
+      if (selectEl._refreshSearch) selectEl._refreshSearch();
+      return selectEl._searchInput;
+    }
+    const input = document.createElement('input');
+    input.type = 'search';
+    input.className = 'ladder-search' + (opts.compact ? ' compact' : '');
+    if (opts.id && !$(opts.id)) input.id = opts.id;
+    const setPlaceholder = () => {
+      const ph = L('搜索 Marker 型号（如 DL2000、Thermo、250）…', 'Search marker ladders (e.g. DL2000, Thermo, 250)…');
+      input.placeholder = ph;
+      input.setAttribute('aria-label', ph);
+    };
+    setPlaceholder();
+    selectEl.parentNode.insertBefore(input, selectEl);
+    let snapshot = [];
+    function capture() {
+      snapshot = [];
+      for (const child of Array.from(selectEl.children)) {
+        if (child.tagName === 'OPTGROUP') {
+          snapshot.push({
+            type: 'group',
+            label: child.label,
+            items: Array.from(child.children).map(o => ({ value: o.value, text: o.textContent, hay: ladderSearchHaystack(o) }))
+          });
+        } else if (child.tagName === 'OPTION') {
+          snapshot.push({ type: 'option', value: child.value, text: child.textContent, hay: ladderSearchHaystack(child) });
+        }
+      }
+    }
+    function applyFilter() {
+      const q = input.value.trim().toLowerCase();
+      const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+      const cur = selectEl.value;
+      const matches = item => !tokens.length || item.value === '' || item.value === cur || tokens.every(t => item.hay.includes(t));
+      const frag = document.createDocumentFragment();
+      for (const node of snapshot) {
+        if (node.type === 'option') {
+          if (matches(node)) frag.appendChild(new Option(node.text, node.value, false, node.value === cur));
+        } else {
+          const kept = node.items.filter(matches);
+          if (!kept.length) continue;
+          const g = document.createElement('optgroup');
+          g.label = node.label;
+          kept.forEach(item => g.appendChild(new Option(item.text, item.value, false, item.value === cur)));
+          frag.appendChild(g);
+        }
+      }
+      selectEl.replaceChildren(frag);
+      selectEl.value = cur;
+    }
+    capture();
+    input.addEventListener('input', applyFilter);
+    selectEl._searchInput = input;
+    selectEl._refreshSearch = () => { setPlaceholder(); capture(); if (input.value.trim()) applyFilter(); };
+    selectEl._clearSearch = () => { if (input.value) { input.value = ''; applyFilter(); } };
+    G.I18N.onChange(() => { if (input.isConnected) setPlaceholder(); });
+    return input;
+  }
+  if ($('favSearch')) $('favSearch').addEventListener('input', renderFavs);
   function renderFavs() {
     const kind = App.gelKind();
     const mine = G.Ladders.favoritesOf(kind);
     $('favNote').textContent = mine.length ? L(`已选 ${mine.length} 个`, `${mine.length} chosen`) : L('未设置', 'none');
+    const q = ($('favSearch')?.value || '').trim().toLowerCase();
+    const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+    const filtered = G.Ladders.ordered(kind).filter(l => {
+      if (!tokens.length) return true;
+      const hay = `${l.name} ${l.id} ${(l.sizes || []).join(' ')}`.toLowerCase();
+      return tokens.every(t => hay.includes(t));
+    });
     // a plain tick list: a half-lit star gave no way to tell which ladders were actually chosen
     let lastVendor = null;
-    $('favList').innerHTML = G.Ladders.ordered(kind).map(l => {
+    $('favList').innerHTML = filtered.map(l => {
       const on = G.Ladders.isFavorite(l.id);
       // vendor headings among the unticked ones: the protein list alone has dozens of entries
       const v = on ? '★' : (l.custom ? L('自定义', 'Custom') : l.name.split(' ')[0]);
       const head = v !== lastVendor ? `<div class="fav-head">${esc(v === '★' ? L('★ 已勾选', '★ Ticked') : v)}</div>` : '';
       lastVendor = v;
       return head + `<label class="item fav-row${on ? ' on' : ''}"><input type="checkbox" data-fav="${l.id}"${on ? ' checked' : ''}><span class="fav-name">${esc(l.name)}</span></label>`;
-    }).join('');
+    }).join('') || `<p class="hint" style="padding:6px">${L('未找到匹配的 Marker 型号', 'No matching marker ladders')}</p>`;
     $('favList').querySelectorAll('[data-fav]').forEach(b => b.onchange = () => { G.Ladders.toggleFavorite(b.dataset.fav); renderFavs(); if (S()) renderMarkers(); });
     const custom = G.Ladders.all(kind).filter(l => l.custom);
     $('customList').innerHTML = custom.map(l => `<div class="item"><span style="flex:1">${esc(l.name)} <span class="h3-note">${L(`${l.sizes.length} 条`, `${l.sizes.length} bands`)}</span></span><button class="x" data-cdel="${l.id}" title="${L('删除', 'Delete')}">×</button></div>`).join('');
@@ -653,6 +773,7 @@
     $('markerList').querySelectorAll('.mk-card').forEach(card => {
       const m = st.markers[+card.dataset.mi], q = f => card.querySelector(`[data-f="${f}"]`);
       q('side').value = m.side; q('unit').value = m.unit;
+      attachLadderSearch(q('ladder'), { compact: true });
       q('guide').onclick = () => G.MarkerUI.open(+card.dataset.mi);
       if(m.bandMode==='fixed'){q('fixed').onclick=()=>G.MarkerAI.editMarker(+card.dataset.mi);q('align').disabled=true;q('match').disabled=true;}
       q('align').onclick = done(() => { App.alignMarker(+card.dataset.mi); toast(L('按当前型号识别此泳道，保留手动定位；其他泳道不变', 'Detected this lane with its current ladder; manual anchors kept, other lanes unchanged')); });
@@ -864,6 +985,12 @@
     $('lvBlackV').textContent = pct(st.levels.black); $('lvWhiteV').textContent = pct(st.levels.white);
     $('rot').value = st.rotation; $('rotNum').value = st.rotation; $('rotV').textContent = st.rotation + '°';
     $('rotAuto').textContent = App.autoRotation != null ? L(`自动检测 ${App.autoRotation}°`, `auto ${App.autoRotation}°`) : '';
+    if ($('imageAngleState')) $('imageAngleState').textContent = `${st.rotation}°`;
+    if ($('imageAdjustState')) {
+      const lv = st.levels;
+      const gNote = lv.gamma && lv.gamma !== 1 ? ` · γ ${lv.gamma}` : '';
+      $('imageAdjustState').textContent = `${pct(lv.black)}–${pct(lv.white)}${gNote}`;
+    }
     const kind = App.gelKind();
     document.querySelectorAll('#gelSeg button').forEach(b => b.classList.toggle('on', b.dataset.gel === kind));
     const det = App.gelDetection;
@@ -898,6 +1025,7 @@
 
   /* ---------- histogram ---------- */
   let histCache = null;
+  if ($('contrastManual')) $('contrastManual').addEventListener('toggle', e => { if (e.target.open) requestAnimationFrame(drawHisto); });
   function drawHisto() {
     const cv = $('histo'), st = S();
     if (!st || !cv.clientWidth) return;
@@ -974,6 +1102,9 @@
   App.on(what => {
     if (!S()) return;
     if (what === 'loaded') {
+      straightenRequest++;
+      clearImageGrid();
+      ['rotationFine', 'contrastManual', 'gammaControls', 'gelDetectionDetails'].forEach(id => { if ($(id)) $(id).open = false; });
       $('figureTools').classList.remove('hidden'); $('figureNames').classList.add('hidden');
       requestAnimationFrame(() => { G.Editor.resize(); G.Editor.fitCrop(); });
       $('emptyState').classList.add('hidden'); $('draftBox').classList.add('hidden'); $('sections').classList.remove('hidden');
@@ -999,7 +1130,7 @@
   window.addEventListener('resize', () => { if (S()) { updatePreview(); drawHisto(); } });
 
   G.UI = {
-    toast, updatePreview, figLanes, range, esc, flushPending, archiveCurrent, offerDraft, ladderOptions, lastFig: () => lastFig, preflight, renderExposures, openProject, load, isPhone, phoneMq,
+    toast, updatePreview, figLanes, range, esc, flushPending, archiveCurrent, offerDraft, ladderOptions, attachLadderSearch, copyFigurePNG, lastFig: () => lastFig, preflight, renderExposures, openProject, load, isPhone, phoneMq,
     figZoom: () => figZoom,
     setFigZoom(z) { figZoom = z; if (S()) updatePreview(); }
   };

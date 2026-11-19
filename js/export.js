@@ -101,10 +101,24 @@
     });
   }
 
-  async function exportPNG(svg, wPt, hPt, dpi, name, S) {
+  async function renderPNGBlob(svg, wPt, hPt, dpi, S) {
     const c = await svgToCanvas(svg, wPt, hPt, dpi);
     const blob = await new Promise(r => c.toBlob(r, 'image/png'));
-    download(await pngDecorate(blob, dpi, S ? { Software: 'GelFigure ' + G.App.VERSION, Description: summaryText(S) } : {}), name);
+    if (!blob) throw new Error(G.L('PNG 编码失败', 'Could not encode PNG'));
+    return pngDecorate(blob, dpi, S ? { Software: 'GelFigure ' + G.App.VERSION, Description: summaryText(S) } : {});
+  }
+
+  async function exportPNG(svg, wPt, hPt, dpi, name, S) {
+    download(await renderPNGBlob(svg, wPt, hPt, dpi, S), name);
+  }
+
+  async function copyPNG(svg, wPt, hPt, dpi, S) {
+    if (!navigator.clipboard || typeof navigator.clipboard.write !== 'function' || typeof ClipboardItem === 'undefined') {
+      throw new Error(G.L('当前浏览器环境不支持复制图片到剪贴板（file:// 或非安全上下文常见）', 'Clipboard image copy is unavailable in this browser context'));
+    }
+    const blob = await renderPNGBlob(svg, wPt, hPt, dpi, S);
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    return blob;
   }
 
   // ---- TIFF (8-bit grayscale or interleaved RGB, LZW, with resolution) ----
@@ -351,5 +365,5 @@
     return G.PPTX.zip(entries,'application/zip');
   }
 
-  G.Export = { reviewPackage, download, saveAs, deliver: null, exportPNG, exportTIFF, exportSVG, exportUncropped, exportOriginal, processingLog, legendHints, svgToCanvas, encodeTiffGray, encodeTiffRGB, pngDecorate };
+  G.Export = { reviewPackage, download, saveAs, deliver: null, renderPNGBlob, exportPNG, copyPNG, exportTIFF, exportSVG, exportUncropped, exportOriginal, processingLog, legendHints, svgToCanvas, encodeTiffGray, encodeTiffRGB, pngDecorate };
 })(window);

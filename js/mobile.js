@@ -108,7 +108,7 @@
     exportSync();
   });
   // the sheet only forwards to the desktop export buttons: one code path for both layouts
-  const XBTN = { png: 'btnPNG', tiff: 'btnTIFF', svg: 'btnSVG', pptx: 'btnPPTX', uncropped: 'btnUncropped', original: 'btnOriginal', log: 'btnLog', project: 'btnSaveProj', review:'btnReviewPackage' };
+  const XBTN = { copyPng: 'btnCopyPNG', png: 'btnPNG', tiff: 'btnTIFF', svg: 'btnSVG', pptx: 'btnPPTX', uncropped: 'btnUncropped', original: 'btnOriginal', log: 'btnLog', project: 'btnSaveProj', review:'btnReviewPackage' };
   $('exportSheet').addEventListener('click', e => {
     const b = e.target.closest('[data-x]'); if (!b) return;
     closeSheets();

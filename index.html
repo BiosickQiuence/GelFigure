@@ -54,6 +54,8 @@
         <button class="btn primary" id="btnPNG" data-en="Export PNG">导出 PNG</button><button class="btn primary caret" id="btnExportMenu" title="更多导出格式" data-en-title="More export formats">▾</button>
       </div>
       <div class="menu hidden right" id="exportMenu">
+        <button id="btnCopyPNG"><span data-en="Copy PNG to clipboard">复制 PNG 到剪贴板</span><small data-en="Paste straight into PowerPoint, Word or chat">可直接 Ctrl+V 粘贴进 PPT / Word</small></button>
+        <div class="menu-sep"></div>
         <button id="btnPPTX"><span data-en="PowerPoint (editable .pptx)">PowerPoint（可编辑 .pptx）</span><small data-en="Finished layout; editable text/shapes and crop (uncropped pixels included)">保留成图排版；文字图形可编辑、可重新裁切（含全图数据）</small></button>
         <button id="btnTIFF"><span data-en="TIFF (LZW)">TIFF（LZW）</span><small data-en="Keeps figure colours; grayscale when no colour is present">保留成图颜色；纯灰度图导出灰度</small></button>
         <button id="btnSVG" data-en="SVG (vector, editable in Illustrator)">SVG（矢量，可在 AI 中编辑）</button>
@@ -75,7 +77,7 @@
 
 <div id="app">
   <aside id="panel">
-    <div id="autoFlowHome"><button type="button" class="btn hidden" id="btnAutoFlow" data-en="AI automatic processing">AI 全自动处理</button></div>
+    <div id="autoFlowHome"><button type="button" class="btn auto-flow-hero" id="btnAutoFlow" data-ready="false"><span class="auto-flow-title" data-en="✦ AI automatic processing">✦ AI 全自动处理</span><span id="autoFlowBadge" class="auto-flow-badge" data-en="API setup">需配置 API</span></button></div>
     <div class="empty" id="emptyState">
       <div class="empty-icon">▣</div>
       <h2 class="d-only" data-en="Drop a gel image here">把胶图拖进来</h2>
@@ -99,66 +101,82 @@
 
     <div id="sections" class="hidden">
       <!-- image -->
-      <section class="sec">
+      <section class="sec" id="imageSection">
         <div class="sec-head"><span class="sec-n">1</span><span data-en="Image">图像</span><span class="sec-status" id="stImage"></span></div>
-        <div class="field">
-          <label><span data-en="Gel type">胶的类型</span> <span class="h3-note" id="gelTypeNote"></span></label>
+        <div class="image-block">
+          <div class="image-block-title"><span data-en="Gel type">胶的类型</span> <span class="h3-note" id="gelTypeNote"></span></div>
           <div class="seg full" id="gelSeg">
             <button data-gel="dna" data-en="DNA (bp)">DNA 胶（bp）</button><button data-gel="protein" data-en="Protein (kDa)">蛋白胶（kDa）</button>
           </div>
-          <p class="hint" id="gelTypeWhy"></p>
+          <details class="adv image-more" id="gelDetectionDetails">
+            <summary data-en="Detection details">判断依据</summary>
+            <p class="hint" id="gelTypeWhy"></p>
+          </details>
           <p class="hint storage-note hidden" data-en="Preference storage is unavailable; editing and export still work. Check the separate marker-library cache status. Save a project before closing.">偏好存储不可用，仍可编辑和导出；Marker 库是否保存成功请看其缓存状态。关闭前请保存项目。</p>
         </div>
-        <div class="field">
-          <label data-en="Image appearance">图像显示</label>
-          <div class="seg full" id="displayModeSeg"><button data-display="colour" data-en="Original colour">保留原色</button><button data-display="gray" data-en="Grayscale">灰度</button></div>
-          <p class="hint" id="displayModeNote"></p>
+
+        <div class="image-block" id="imageAppearance">
+          <div class="image-block-title" data-en="Appearance & contrast">显示与对比度</div>
+          <div class="field" id="imageColourField">
+            <div class="seg full" id="displayModeSeg"><button data-display="colour" data-en="Original colour">保留原色</button><button data-display="gray" data-en="Grayscale">灰度</button></div>
+            <p class="hint" id="displayModeNote"></p>
+          </div>
+          <div class="field" id="grayPolarity">
+            <label class="switch"><input type="checkbox" id="invChk"><span data-en="Invert (swap black and white)">反色（黑白对调）</span></label>
+            <p class="hint" id="invNote"></p>
+          </div>
+          <div id="grayAdjustments">
+            <div class="inline image-auto-row">
+              <button class="btn sm" id="btnAutoLv" data-en="Auto for current crop">按当前范围自动</button>
+              <button class="btn sm ghost" id="btnResetLv" title="回到导入时的自动对比度，Gamma 归 1，黑白极性不变" data-en-title="Back to the automatic contrast from import; gamma 1; polarity unchanged" data-en="Reset contrast">重置对比度</button>
+            </div>
+            <div class="clipline" id="clipLine"></div>
+            <details class="adv image-more" id="contrastManual">
+              <summary><span data-en="Levels & histogram">色阶与直方图</span> <span class="h3-note" id="imageAdjustState"></span></summary>
+              <div class="field"><label><span data-en="Black point">暗部</span> <b id="lvBlackV"></b></label><input type="range" id="lvBlack" min="0" max="1000"></div>
+              <div class="field"><label><span data-en="White point">亮部</span> <b id="lvWhiteV"></b></label><input type="range" id="lvWhite" min="0" max="1000"></div>
+              <canvas id="histo" height="40"></canvas>
+              <div class="field inline">
+                <label class="switch"><input type="checkbox" id="showSat"><span data-en="Show saturated pixels">标红过曝像素</span></label>
+              </div>
+              <details class="adv" id="gammaControls">
+                <summary data-en="Gamma (non-linear, must be stated in the legend)">Gamma（非线性，需在图注说明）</summary>
+                <div class="field inline">
+                  <label class="switch"><input type="checkbox" id="gammaUnlock"><span data-en="Unlock">解锁</span></label>
+                  <input type="number" id="gamma" min="0.2" max="5" step="0.05" value="1" class="num" disabled>
+                </div>
+              </details>
+            </details>
+          </div>
         </div>
-        <div class="field" id="grayPolarity">
-          <label class="switch"><input type="checkbox" id="invChk"><span data-en="Invert (swap black and white)">反色（黑白对调）</span></label>
-          <p class="hint" id="invNote"></p>
-        </div>
-        <div class="field">
-          <label><span data-en="Rotation">旋转</span> <b id="rotV"></b> <span class="h3-note" id="rotAuto"></span></label>
-          <div class="inline nowrap">
-            <button class="btn sm ghost step-btn" id="rotMinus" title="−0.5°">−</button>
-            <input type="range" id="rot" min="-45" max="45" step="0.1" value="0">
-            <button class="btn sm ghost step-btn" id="rotPlus" title="+0.5°">+</button>
-            <input type="number" id="rotNum" step="0.1" min="-45" max="45" class="num" style="width:58px">
+
+        <div class="image-block">
+          <div class="image-block-title"><span data-en="Direction & rotation">方向与转正</span> <span class="h3-note" id="orientNote"></span></div>
+          <div class="image-direction-grid">
+            <button class="btn sm ghost" id="btnRotCCW" title="逆时针 90°" data-en-title="Rotate 90° anticlockwise" aria-label="Rotate 90 degrees anticlockwise">⟲ 90°</button>
+            <button class="btn sm ghost" id="btnRotCW" title="顺时针 90°" data-en-title="Rotate 90° clockwise" aria-label="Rotate 90 degrees clockwise">⟳ 90°</button>
+            <button class="btn sm ghost" id="btnFlipH" title="水平翻转" data-en-title="Mirror left to right" data-en="⇋ Flip H">⇋ 水平</button>
+            <button class="btn sm ghost" id="btnFlipV" title="垂直翻转" data-en-title="Mirror top to bottom" data-en="⇅ Flip V">⇅ 垂直</button>
           </div>
           <div class="inline mt">
             <button class="btn sm" id="btnDeskew" data-en="Auto straighten">自动转正</button>
             <button class="btn sm ghost" id="btnResetRot" data-en="Back to auto angle">回到自动角度</button>
-            <label class="switch"><input type="checkbox" id="showGrid"><span data-en="Grid">参考网格</span></label>
           </div>
-        </div>
-        <div class="field">
-          <label><span data-en="Orientation">方向</span> <span class="h3-note" id="orientNote"></span></label>
-          <div class="inline nowrap">
-            <button class="btn sm ghost" id="btnRotCCW" title="逆时针 90°" data-en-title="Rotate 90° anticlockwise" aria-label="Rotate 90 degrees anticlockwise">⟲</button>
-            <button class="btn sm ghost" id="btnRotCW" title="顺时针 90°" data-en-title="Rotate 90° clockwise" aria-label="Rotate 90 degrees clockwise">⟳</button>
-            <button class="btn sm ghost" id="btnFlipH" title="水平翻转" data-en-title="Mirror left to right" data-en="⇋ Flip">⇋ 水平翻转</button>
-            <button class="btn sm ghost" id="btnFlipV" title="垂直翻转" data-en-title="Mirror top to bottom" data-en="⇅ Flip">⇅ 垂直翻转</button>
-          </div>
-          <p class="hint" data-en-html="Photos taken sideways or upside down can be turned here instead of in another app. Flips keep every label; quarter turns re-detect the lanes and keep the names in order.">拍歪、倒置或镜像的胶图可以直接在这里转正，不必先用别的软件处理。翻转会保留全部标注；90° 旋转会重新识别泳道，并按顺序保留泳道名。</p>
-        </div>
-        <div id="grayAdjustments">
-        <div class="field"><label><span data-en="Black point">暗部</span> <b id="lvBlackV"></b></label><input type="range" id="lvBlack" min="0" max="1000"></div>
-        <div class="field"><label><span data-en="White point">亮部</span> <b id="lvWhiteV"></b></label><input type="range" id="lvWhite" min="0" max="1000"></div>
-        <canvas id="histo" height="40"></canvas>
-        <div class="clipline" id="clipLine"></div>
-        <div class="field inline">
-          <button class="btn sm" id="btnResetLv" title="回到导入时的自动对比度，Gamma 归 1，黑白极性不变" data-en-title="Back to the automatic contrast from import; gamma 1; polarity unchanged" data-en="Reset contrast">重置对比度</button>
-          <button class="btn sm ghost" id="btnAutoLv" data-en="Auto for current crop">按当前范围自动</button>
-          <label class="switch"><input type="checkbox" id="showSat"><span data-en="Show saturated pixels">标红过曝像素</span></label>
-        </div>
-        <details class="adv">
-          <summary data-en="Gamma (non-linear, must be stated in the legend)">Gamma（非线性，需在图注说明）</summary>
-          <div class="field inline">
-            <label class="switch"><input type="checkbox" id="gammaUnlock"><span data-en="Unlock">解锁</span></label>
-            <input type="number" id="gamma" min="0.2" max="5" step="0.05" value="1" class="num" disabled>
-          </div>
-        </details>
+          <details class="adv image-more" id="rotationFine">
+            <summary><span data-en="Fine angle & grid">微调角度与参考网格</span> <span class="h3-note" id="imageAngleState"></span></summary>
+            <div class="field">
+              <label><span data-en="Rotation">旋转</span> <b id="rotV"></b> <span class="h3-note" id="rotAuto"></span></label>
+              <div class="inline nowrap">
+                <button class="btn sm ghost step-btn" id="rotMinus" title="−0.5°">−</button>
+                <input type="range" id="rot" min="-45" max="45" step="0.1" value="0">
+                <button class="btn sm ghost step-btn" id="rotPlus" title="+0.5°">+</button>
+                <input type="number" id="rotNum" step="0.1" min="-45" max="45" class="num" style="width:58px">
+              </div>
+              <div class="inline mt">
+                <label class="switch"><input type="checkbox" id="showGrid"><span data-en="Grid">参考网格</span></label>
+              </div>
+            </div>
+          </details>
         </div>
       </section>
 
@@ -168,15 +186,14 @@
         <div id="laneControls" class="lane-grid-control">
           <div class="raw-grid-row"><label for="cropLaneN" data-en="Lanes">泳道数</label><div class="lane-count-stepper"><button class="btn sm" id="laneCountMinus" title="减少一条" data-en-title="One fewer lane">−</button><input type="number" id="cropLaneN" min="1" max="60" class="num"><button class="btn sm" id="laneCountPlus" title="增加一条" data-en-title="One more lane">＋</button></div></div>
           <label class="switch"><input id="laneLinked" type="checkbox" checked><span data-en="Link end-lane spacing">首尾等距联动</span></label>
-          <p class="hint" data-en="Include marker and empty lanes. Drag the two end lines; the middle follows. Alt-drag adjusts one lane.">条数含 Marker 和空道。拖首尾线，中间联动；Alt 拖动可单独微调。</p>
+          <p class="hint" data-en="Drag end lines to space evenly (Alt-drag adjusts one). Drag red box to crop.">拖首尾线均分泳道（Alt 单独微调）；拖红框改出图范围。</p>
           <button class="btn sm primary" id="btnRedetectCrop" data-en="Re-detect lanes + markers in crop">框内重新识别泳道和 Marker</button>
-          <p class="hint" data-en="Runs both steps inside the red crop. Confirmed marker choices and manual anchors are kept.">在红框内一起识别；保留手动确认的 Marker 和定位点。</p>
         </div>
-        <p class="hint" data-en="Drag the red box directly to change the figure crop.">出图范围直接拖动原图上的红框调整。</p>
-        <button class="btn sm primary" id="btnGelAIBeta" data-en="AI lane correction + lane count">AI 泳道校正与计数</button>
-        <p class="hint" data-en="Preview first. Crops around band-containing lanes, not the whole gel; internal empty lanes are cut with splice markers.">先预览核对。围绕有条带的泳道校正，不取整块胶；中间空泳道以带拼接标记的方式移除。</p>
-        <button class="btn sm" id="btnPerspective" data-en="Four-point perspective correction">四点透视校正</button>
-        <p class="hint" data-en="For oblique photos: drag four corners, then rectify. Applying clears names/annotations and re-detects lanes/markers; undo is available.">用于斜拍胶图：拖动四角后拉正。应用时清空名称与标注，重新识别泳道和 Marker；可撤销。</p>
+        <div class="inline mt">
+          <button class="btn sm primary" id="btnGelAIBeta" data-en="AI lane correction + lane count">AI 泳道校正与计数</button>
+          <button class="btn sm" id="btnPerspective" data-en="Four-point perspective correction">四点透视校正</button>
+        </div>
+        <p class="hint" data-en="AI preview corrects oblique gels & removes empty lanes with splice marks; manual four-point works offline.">斜拍胶可用 AI 校正（带预览与空道拼接）或离线四点透视校正。</p>
 
         <div class="suggest hidden" id="emptyBar">
           <div id="emptyText"></div>
@@ -186,11 +203,11 @@
         <details class="adv" id="laneAdv">
           <summary><span data-en="Lane visibility and advanced tools">泳道显示与高级操作</span><span class="h3-note" id="laneCountNote"></span></summary>
           <div id="laneList" class="list"></div>
-          <p class="hint d-only" data-en-html="<b>Show</b> unticked = the lane is cut out of the figure. Drag lane lines to align. Double-click an existing marker lane to edit it; other lanes do nothing. Use “+ Lane” above the image to add one. Select a lane and press <code>Delete</code> / <code>⌫</code> to delete it, <code>H</code> to cut / restore it.">取消 <b>显示</b> = 把这条泳道从成图里剪掉。拖动泳道线对齐；双击已有 Marker 泳道打开编辑，普通泳道双击不操作。新增请点原图上方“＋ 泳道”；选中后按 <code>Delete</code> 或 <code>⌫</code> 删除，按 <code>H</code> 剪除/恢复。</p>
-          <p class="hint m-only" data-en-html="<b>Show</b> unticked = the lane is cut out of the figure. On the Image tab: tap a lane line or number to select it — the bar below nudges, cuts or deletes it. Double-tap an existing marker lane to edit it; use “+ Lane” to add a lane.">取消 <b>显示</b> = 把这条泳道从成图里剪掉。在「原图」页点泳道线或泳道号选中，底部按钮可微调、剪除、删除。双击已有 Marker 泳道打开编辑；新增请点“＋ 泳道”。</p>
+          <p class="hint d-only" data-en-html="<b>Show</b> unticked = cut out. Drag lines to align; <code>Delete</code> deletes, <code>H</code> cuts/restores.">取消 <b>显示</b> = 剪除泳道。选中后 <code>Delete</code> 删除，<code>H</code> 剪除/恢复。</p>
+          <p class="hint m-only" data-en-html="<b>Show</b> unticked = cut out. Tap a lane on the Image tab to nudge, cut or delete it.">取消 <b>显示</b> = 剪除泳道；在「原图」页点泳道即可微调、剪除或删除。</p>
           <div class="splice-box" id="spliceBox">
             <div class="step-row"><b data-en="Where lanes were cut">剪掉泳道后的拼接处</b></div>
-            <p class="hint" data-en="Journals require a visible mark where lanes from the same gel were cut out and the rest joined. Choose how it looks:">期刊规定：同一块胶剪掉中间泳道后再拼合，拼接处必须能看出来。选择标记方式：</p>
+            <p class="hint" data-en="Journals require a visible splice mark where lanes were removed:">同一块胶剪除泳道后的拼接标记样式：</p>
             <div class="seg full" id="spliceSeg">
               <button data-sp="gap" data-en="White gap">白色缝隙</button><button data-sp="line" data-en="Thin line">细分隔线</button>
             </div>
@@ -207,17 +224,17 @@
       <!-- marker -->
       <section class="sec">
         <div class="sec-head"><span class="sec-n">3</span>Marker<span class="sec-status" id="stMarker"></span></div>
-        <p class="lead" data-en="Pick a marker lane, choose its ladder, then Detect bands. The reference stays beside the image; click a number on the figure to edit its label.">选泳道、选型号，再点“识别此泳道”。图例留在原图旁；点成图数字可改显示、删除和字号。</p>
-        <button class="btn primary" id="btnAIMarker" data-en="AI Marker · review">AI Marker · 复核</button>
-        <p class="hint" data-en="Optional vision API; only an explicit click sends the complete analysis image. Manual perspective correction is unchanged.">可选视觉接口；只有主动点击才上传完整分析图。四点矫正仍手调。</p>
-        <div id="markerList"></div>
-        <div class="field inline">
+        <div class="inline">
+          <button class="btn sm primary" id="btnAIMarker" data-en="AI Marker · review">AI Marker · 复核</button>
           <button class="btn sm" id="btnAddMarker" data-en="Pick a marker lane">点选 Marker 泳道</button>
           <button class="btn sm ghost" id="btnAutoMarkers" data-en="Re-detect">重新识别</button>
         </div>
+        <p class="hint" data-en="Click a marker size on the figure to toggle or style labels; AI review runs only on explicit send.">点成图数字可改显示与字号；AI 复核仅在主动点击发送时上传分析图。</p>
+        <div id="markerList"></div>
         <details class="adv" id="favAdv">
           <summary><span data-en="Ladders we use">我们实验室常用的型号</span><span class="h3-note" id="favNote"></span></summary>
-          <p class="hint" style="margin-top:2px" data-en="Tick the ladders your lab actually buys. Detection prefers them, and still says so when it has to pick another one that fits better.">勾选你们实验室实际在用的型号。自动识别会优先选它们；确实不吻合时会换成更吻合的型号并提示你。</p>
+          <p class="hint" style="margin-top:2px" data-en="Tick ladders your lab buys; detection prefers them first.">勾选实验室常用型号，自动识别会优先选择它们。</p>
+          <input type="search" id="favSearch" class="ladder-search compact" placeholder="筛选常用型号…" data-en-placeholder="Filter favourite ladders…">
           <div id="favList" class="list"></div>
           <label class="switch"><input type="checkbox" id="onlyFav"><span data-en="Use only these (falls back to all if none fits)">只用勾选的型号（都不吻合时自动回退全库）</span></label>
         </details>
@@ -319,7 +336,7 @@
         <span class="zoomlabel" id="figSize"></span>
       </div>
       <div id="figureTools" class="figure-tools hidden" role="toolbar" aria-label="成图编辑" data-en-title="Figure editing">
-        <button class="btn sm" id="btnEditNames" data-en="Edit names">填写泳道名</button><button class="btn sm ghost" id="btnBulkNames" data-en="Paste names">批量粘贴</button>
+        <button class="btn sm" id="btnEditNames" data-en="Edit names">填写泳道名</button><button class="btn sm ghost" id="btnBulkNames" data-en="Paste names">批量粘贴</button><button class="btn sm ghost" id="btnFigCopyPNG" title="复制高清 PNG 到剪贴板（可直接粘贴到 PPT / Word）" data-en-title="Copy high-res PNG to clipboard (paste into PowerPoint or Word)" data-en="Copy PNG">复制 PNG</button>
         <span class="h3-note" id="stNames"></span>
         <details id="figureTextMenu" class="figure-text-menu"><summary data-en="Fonts & sizes">字体与字号</summary><div class="figure-text-fields">          <div class="field">
             <label for="fontFamily" data-en="Figure font">成图字体</label>
@@ -389,6 +406,7 @@
       <span class="muted small">dpi</span>
     </div>
     <p class="sheet-info" id="mDpiInfo"></p>
+    <button class="sheet-item" data-x="copyPng"><span class="si-ic">CPY</span><span class="si-tx"><span data-en="Copy PNG to clipboard">复制 PNG 到剪贴板</span><small data-en="Paste straight into slides or documents">直接粘贴进 PPT 或文档</small></span></button>
     <button class="sheet-item primary" data-x="png"><span class="si-ic">PNG</span><span class="si-tx"><span data-en="PNG image">PNG 图片</span><small data-en="For the manuscript and slides; save it to Photos on a phone">投稿、做 PPT 用；手机上可直接存到相册</small></span></button>
     <button class="sheet-item" data-x="tiff"><span class="si-ic">TIF</span><span class="si-tx"><span data-en="TIFF (LZW)">TIFF（LZW）</span><small data-en="Keeps figure colours; grayscale when no colour is present">保留成图颜色；纯灰度图导出灰度</small></span></button>
     <button class="sheet-item" data-x="svg"><span class="si-ic">SVG</span><span class="si-tx"><span data-en="SVG (vector)">SVG 矢量图</span><small data-en="Text stays editable in Illustrator or Inkscape">文字可在 Illustrator / Inkscape 中编辑</small></span></button>
@@ -608,17 +626,35 @@
       <h1 id="autoFlowTitle" data-en="AI automatic processing">AI 全自动处理</h1>
       <button class="btn sm" id="autoFlowBack" data-en="Back to editor">返回主界面</button>
     </header>
-    <p class="auto-flow-note" data-en="Once both inputs are ready, the configured API receives the input image for lane correction, then the corrected image and selected marker model for labelling.">选好图片和型号后自动开始。程序先将原图副本发给你的 API 定位泳道，再发送校正图和所选型号来标记条带。</p>
+    <div id="autoFlowSetup" class="auto-flow-setup hidden">
+      <p data-en="Configure an OpenAI-compatible vision API (Alibaba Bailian, OpenAI, Gemini, or custom) to start automatic processing.">请先配置兼容 OpenAI 格式的视觉模型 API（内置阿里云百炼、OpenAI、Gemini 等预设），即可一键全自动校正泳道并标记 Marker。</p>
+      <button type="button" class="btn sm primary" id="autoFlowOpenSettings" data-en="Configure API now">立即配置 API</button>
+    </div>
+    <p class="auto-flow-note" data-en="Once both inputs are ready, the configured API receives the input image for lane correction, then the corrected image and selected marker model for labelling.">选好胶图和 Marker 型号后自动开始：先定位四角与泳道并透视校正，再在校正图上标注 Marker 条带并打开可编辑成图。</p>
     <button type="button" id="autoFlowDrop" aria-describedby="autoFlowFileName">
       <img id="autoFlowThumb" class="hidden" alt="">
-      <strong data-en="Drop a gel image or choose a file">拖入胶图，或点击选择图片</strong>
+      <strong data-en="Drop, click, or paste (Ctrl+V) a gel image">拖入、点击或 Ctrl+V 粘贴胶图</strong>
       <span id="autoFlowFileName">TIFF · PNG · JPEG · BMP</span>
     </button>
     <input type="file" id="autoFlowFile" accept=".tif,.tiff,.png,.jpg,.jpeg,.bmp,image/*" hidden>
+    <div id="autoFlowQuickLadders" class="auto-flow-quick hidden"></div>
     <label for="autoFlowLadder" data-en="Marker model">Marker 型号</label>
     <select id="autoFlowLadder"><option value="" data-en="Select a marker model">选择 Marker 型号</option></select>
-    <p id="autoFlowStatus" role="status" aria-live="polite"></p>
-    <button id="autoFlowRetry" class="btn hidden" data-en="Retry with these inputs">用当前图片和型号重试</button>
+    <ol id="autoFlowSteps" class="auto-flow-steps hidden" aria-label="处理进度" data-en-title="Progress">
+      <li class="auto-flow-step" data-step="layout" data-en="1. Locate lanes & rectify">1. 定位泳道与校正</li>
+      <li class="auto-flow-step" data-step="markers" data-en="2. Label marker bands">2. 标记 Marker 条带</li>
+      <li class="auto-flow-step" data-step="saving" data-en="3. Open figure">3. 打开成图</li>
+    </ol>
+    <div class="auto-flow-status-row">
+      <p id="autoFlowStatus" role="status" aria-live="polite"></p>
+      <span id="autoFlowElapsed" class="auto-flow-elapsed hidden"></span>
+    </div>
+    <div class="auto-flow-actions">
+      <button type="button" id="autoFlowCancel" class="btn hidden" data-en="Cancel request">取消处理</button>
+      <button type="button" id="autoFlowRetry" class="btn primary hidden" data-en="Retry with these inputs">用当前图片和型号重试</button>
+      <button type="button" id="autoFlowOpenPartial" class="btn hidden" data-en="Open corrected gel in editor">先进入主界面查看校正图</button>
+      <button type="button" id="autoFlowRestart" class="btn ghost hidden" data-en="Restart from Step 1">重新从头处理</button>
+    </div>
   </div>
 </section>
 
@@ -644,6 +680,7 @@
 <script src="js/mobile.js"></script>
 <script src="js/perspective.js"></script>
 <script src="js/marker-ui.js"></script>
+<script src="js/ai-client.js"></script>
 <script src="js/ai-workspace.js"></script>
 <script src="js/marker-ai.js"></script>
 <script src="js/gel-ai-beta.js"></script>

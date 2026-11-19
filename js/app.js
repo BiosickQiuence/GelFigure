@@ -710,7 +710,7 @@
     const pitch = n > 1 ? (right - left) / (n - 1) : S.lanePitch || S.crop.w;
     S.lanes = order.map((o, i) => {
       const l = o >= 0 ? { ...old[o] } : { name: '', hidden: false };
-      if (i >= a && i < a + n) l.x = left + (i - a) * (n > 1 ? pitch : 0);
+      if (i >= a && i < a + n) l.x = i === a ? left : i === a + n - 1 ? right : E.clamp(left + (i - a) * pitch, left, right);
       return l;
     });
     const removed = S.markers.filter(mk => !remap.has(mk.lane)).length;
@@ -1835,11 +1835,11 @@
     const levels = E.autoLevels(corrected);
     state.levels.black = levels.black; state.levels.white = levels.white;
     state.saturatedInCrop = E.saturation(corrected, SAT);
-    state.currentSources = {lanes:'ai-automatic', markers:'ai-automatic'};
-    state.markerRecognition = {method:'ai', workflow:'automatic', protocol:1, at:new Date().toISOString()};
+    state.currentSources = {lanes:'ai-automatic', markers: markers.length ? 'ai-automatic' : 'none'};
+    if (markers.length) state.markerRecognition = {method:'ai', workflow:'automatic', protocol:1, at:new Date().toISOString()};
     state.resetBaseline = JSON.stringify(state);
 
-    App.prefLadder = markers[0].ladderId;
+    App.prefLadder = markers[0]?.ladderId || '';
     App.prefUnit = G.Ladders.unitOfKind(kind);
     App.invertInherited = p.invert != null;
     dropSelection();

@@ -82,18 +82,26 @@ export async function autoFlowChecks(browser, url, engine) {
       }
       window.autoTestBytes=Demo.encodeTiff16({width:w,height:h,data});
     });
-    await check('valid saved configuration gates a single entry without sending an image', async () => {
+    await check('always-visible entry shows API setup before valid configuration without sending an image', async () => {
       assert.equal(await p.locator('#btnAutoFlow').count(),1);
-      assert(!await p.locator('#btnAutoFlow').isVisible());
+      assert(await p.locator('#btnAutoFlow').isVisible());
+      assert.equal(await p.locator('#btnAutoFlow').getAttribute('data-ready'),'false');
+      await open();
+      assert(await p.locator('#autoFlowSetup').isVisible());
+      assert.equal(calls.length,0);
+      await p.locator('#autoFlowBack').click();
       await p.locator('#btnSettings').click();
       await p.locator('#aiEndpoint').fill('http://synthetic.invalid/v1');
       await p.locator('#aiModel').fill(testModel); await p.locator('#aiKey').fill(testKey);
       await p.locator('#aiSaveSettings').click();
-      assert(!await p.locator('#btnAutoFlow').isVisible()); assert(await p.locator('#aiSettingsStatus.error').count());
+      assert.equal(await p.locator('#btnAutoFlow').getAttribute('data-ready'),'false');
+      assert(await p.locator('#aiSettingsStatus.error').count());
       await p.locator('#aiEndpoint').fill(api); await p.locator('#aiSaveSettings').click();
       assert(await p.locator('#aiAutoSlot #btnAutoFlow').isVisible());
+      assert.equal(await p.locator('#btnAutoFlow').getAttribute('data-ready'),'true');
       await p.locator('#aiSettingsClose').click(); assert(await p.locator('#autoFlowHome #btnAutoFlow').isVisible());
       await open(); assert(!await p.locator('#stage').isVisible());
+      assert(!await p.locator('#autoFlowSetup').isVisible());
       assert.equal(calls.length,0);
     });
     await check('drop first, then select a protein ladder to rectify, label and open an editable figure', async () => {
@@ -192,9 +200,10 @@ export async function autoFlowChecks(browser, url, engine) {
       await open(); await choose('dl2000'); const n=calls.length;
       await drop('PRIVATE_two.tif',2); assert.match(await error(),/one gel/); assert.equal(calls.length,n);
       mode='bad-layout'; await drop(); assert.match(await error(),/Lane correction/); assert.equal(calls.length,n+1);
-      for(const m of ['http-markers','bad-markers','empty-markers']) {
+      for(const [idx, m] of ['http-markers','bad-markers','empty-markers'].entries()) {
         mode=m; const start=calls.length; await p.locator('#autoFlowRetry').click(); assert.match(await error(),/Marker labelling/);
-        assert.deepEqual(calls.slice(start).map(c=>c.stage),['layout','markers']);
+        assert.deepEqual(calls.slice(start).map(c=>c.stage), idx===0 ? ['layout','markers'] : ['markers']);
+        assert(await p.locator('#autoFlowOpenPartial').isVisible());
         assert.deepEqual(await p.evaluate(()=>[App.snapshot(),App.projectId,App.hist.slice()]), old);
       }
       mode='hold-markers'; await waitForHold(()=>p.locator('#autoFlowRetry').click()); await p.locator('#autoFlowBack').click();
@@ -237,7 +246,9 @@ export async function autoFlowChecks(browser, url, engine) {
       });
       assert.deepEqual(result,{same:true,svg:true,unit:'bp',mismatch:false});
       await p.locator('#btnSettings').click(); await p.locator('#aiClearKey').click();
-      assert(!await p.locator('#btnAutoFlow').isVisible()); assert.equal(calls.length,n+2);
+      assert(await p.locator('#btnAutoFlow').isVisible());
+      assert.equal(await p.locator('#btnAutoFlow').getAttribute('data-ready'), 'false');
+      assert.equal(calls.length,n+2);
     });
     assert.deepEqual(errors,[]);
   } catch (err) {

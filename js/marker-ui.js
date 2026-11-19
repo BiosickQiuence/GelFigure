@@ -113,6 +113,7 @@
     requestAnimationFrame(layout);
     $('markerReferenceClose').onclick=close;
     $('markerReferenceModel').onchange=e=>{candidate=e.target.value;selected=null;render(true);};
+    if(UI.attachLadderSearch)UI.attachLadderSearch($('markerReferenceModel'),{id:'markerRefModelSearch',compact:true});
     if($('markerUseModel'))$('markerUseModel').onclick=()=>{if(m.bandMode==='fixed'){G.MarkerAI.editMarker(index(m),candidate);return;}m.ladderId=candidate;m.bands=[];m.ladderLocked=true;m.userAssigned=true;App.prefLadder=candidate;App.alignMarker(index(m));App.commit();render(true);};
     $('markerAlign').disabled=preview||m.bandMode==='fixed';$('markerAlign').onclick=()=>{App.alignMarker(index(m));App.commit();UI.toast(L('只更新这个 Marker 泳道，保留手动定位','Updated this marker lane only; manual anchors kept'));};
     $('markerRefLabels').onclick=()=>labelPopover(index(m),-1,$('markerRefLabels'));

@@ -75,7 +75,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 #panel .btn.ghost:hover, .col-head .btn.ghost:hover { background: #f2f4f7; color: var(--text); }
 .btn.sm { padding: 4px 9px; font-size: 12.3px; }
 .btn.big { padding: 9px 14px; font-size: 13.5px; }
-input[type=number], input[type=text], select, textarea { border: 1px solid #d3d8de; border-radius: var(--r-sm); padding: 5px 8px; background: #fff; width: 100%; transition: border-color .12s, box-shadow .12s; }
+input[type=number], input[type=text], input[type=search], select, textarea { border: 1px solid #d3d8de; border-radius: var(--r-sm); padding: 5px 8px; background: #fff; width: 100%; transition: border-color .12s, box-shadow .12s; }
 /* Safari draws a native select that ignores padding and comes out ~10px shorter than the inputs beside it,
    so the arrow is drawn here and the control is sized by the box model like every other field. */
 select { appearance: none; -webkit-appearance: none; padding-right: 24px; cursor: pointer;
@@ -165,6 +165,19 @@ body.dragging #dropHint.hidden { display: flex !important; z-index: 5; }
 .seg.full button { flex: 1; }
 .seg button { border: none; background: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; color: var(--muted); font-size: 12.3px; }
 .seg button.on { background: #fff; color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(16,24,40,.1); }
+
+.image-block { padding: 9px 0; border-top: 1px solid var(--line-2); }
+.image-block:first-of-type { padding-top: 0; border-top: 0; }
+.image-block-title { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+.image-more { margin-top: 6px; }
+.image-direction-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.image-direction-grid .btn { padding: 5px 4px; font-size: 11.5px; }
+.image-auto-row { gap: 6px; }
+.ladder-search { margin-bottom: 5px; font-size: 12.5px; background-color: #f8fafc; }
+.ladder-search:focus { background-color: #fff; }
+.ladder-search.compact { padding: 4px 7px; font-size: 11.8px; margin-top: 5px; margin-bottom: 4px; }
+.mk-card .ladder-search + select { margin-top: 0; }
+.marker-reference-card .ladder-search { font-size: 11px; padding: 4px 6px; margin-top: 0; margin-bottom: 4px; }
 
 .list { display: flex; flex-direction: column; gap: 2px; max-height: 260px; overflow-y: auto; margin-top: 6px; }
 .item { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: var(--r-sm); }
@@ -303,6 +316,9 @@ select.annotation-color.is-red { color:#d32f2f; }
 #warnings div button { border: none; background: none; color: inherit; cursor: pointer; opacity: .6; font-size: 14px; line-height: 1; padding: 0; }
 #toasts { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
 .toast { background: #16202c; color: #fff; border-radius: 999px; padding: 8px 18px; font-size: 12.5px; box-shadow: 0 8px 24px rgba(16,24,40,.24); animation: toastIn .22s ease; }
+.toast.has-action { pointer-events: auto; display: inline-flex; align-items: center; gap: 10px; border-radius: 10px; padding: 8px 12px 8px 16px; max-width: min(560px, calc(100vw - 24px)); }
+.toast-action { background: var(--accent); border-color: var(--accent); color: #fff; flex: none; }
+.toast-action:hover { background: var(--accent-dk); border-color: var(--accent-dk); }
 @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .dlg { position: fixed; inset: 0; background: rgba(14,20,28,.42); display: flex; align-items: center; justify-content: center; z-index: 90; }
 .dlg-body { position: relative; background: #fff; border-radius: 14px; padding: 22px 28px; max-width: 640px; max-height: 86vh; overflow: auto; box-shadow: 0 20px 60px rgba(16,24,40,.3); }
@@ -502,7 +518,7 @@ html, body { height: 100dvh; }
   #preview svg .ed, #preview svg g[data-edit="cond"], #preview svg g[data-edit="arrow"] { cursor: pointer; }
   .btn, .seg button { min-height: 38px; }
   .btn.sm { min-height: 34px; padding: 5px 11px; }
-  input[type=number], input[type=text], select, textarea { font-size: 16px; min-height: 36px; }  /* iOS: no zoom on focus */
+  input[type=number], input[type=text], input[type=search], select, textarea { font-size: 16px; min-height: 36px; }  /* iOS: no zoom on focus */
   input[type=range] { height: 6px; }
   input[type=range]::-webkit-slider-thumb { width: 26px; height: 26px; }
   input[type=range]::-moz-range-thumb { width: 24px; height: 24px; }
