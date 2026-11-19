@@ -1,6 +1,15 @@
 /* Short bilingual release summaries, newest first. Keep the first version equal to App.VERSION.
  * Detailed history lives in CHANGELOG.md; this small local catalogue also works in offline HTML. */
 window.GelFigureReleases = Object.freeze([
+  {version:'1.2.0',date:'2026-11-20',zh:[
+    '启用方案 C 牛津蓝与暗胶片画布视觉体系、3 杠金带品牌标志与全套 1.8px 矢量图标。',
+    '精简顶栏并引入统一通知通道、交互式 5 步上手引导、可搜索帮助与 ? 快捷键面板。',
+    '优化 DNA Marker 简写单位与三选项预览、统一泳道名计数文案，并引入设计令牌与类型检查工程脚手架。'
+  ],en:[
+    'Adopt the Oxford Blue visual system with dark gel canvas, 3-bar gold-band brand mark and 1.8px vector icon set.',
+    'Slim down the top bar with a unified toast channel, interactive 5-step onboarding tour, searchable Help and ? shortcuts.',
+    'Default DNA markers to kb shorthand with a 3-option preview, standardize lane-name counts and add token/typecheck tooling.'
+  ]},
   {version:'1.1.1',date:'2026-11-20',zh:[
     '历史项目不记录示例图、按原图 SHA-256 合并重复项并显示缩略图。',
     '新增顶栏导出前检查状态角标；优化 AI 复核返回按钮与泳道名编辑条避让位置。',

@@ -174,6 +174,10 @@
       ${G.FigEdit.colorField('markerPopColor',m.color,L('此 Marker 颜色','This marker colour'))}
       ${bp!=null?G.FigEdit.colorField('markerBandColor',m.bands[bi].color,L('所选大小颜色','Selected size colour'),L('跟随此 Marker','Follow this marker')):''}
       ${bp!=null?`<div class="marker-selected-actions"><b>${esc(size(bp,m))}</b><button class="btn sm" id="markerHideOne">${L('隐藏标签','Hide label')}</button><button class="btn sm danger" id="markerDeleteOne">${L('删除标记','Delete mark')}</button></div>`:''}
+      <div class="marker-unit-preview" id="markerUnitPreview">${(App.gelKind()==='protein'
+        ?[['kDa','55','(kDa)'],['kDa-inline','55 kDa',L('带单位','Inline')],['none','55',L('纯数字','Plain')]]
+        :[['auto','20 kb',L('简写','Short')],['bp','20000','(bp)'],['bp-inline','20000 bp',L('完整','Full')]]
+      ).map(([u,sample,sub])=>`<button type="button" class="marker-unit-opt${m.unit===u?' on':''}" data-unit-opt="${u}"><strong>${sample}</strong><span>${sub}</span></button>`).join('')}</div>
       <div class="marker-pop-options"><label>${L('单位','Unit')}<select id="markerPopUnit">${(App.gelKind()==='protein'
         ?[['kDa',L('kDa（表头）','kDa (header)')],['kDa-inline',L('55 kDa（每个数字带单位）','55 kDa (unit on each)')],['none',L('不显示单位','No unit')]]
         :[['bp',L('bp（表头）','bp (header)')],['kb',L('kb（表头）','kb (header)')],['auto',L('bp / kb 自动','bp / kb auto')],['bp-inline',L('5000 bp（每个数字带单位）','5000 bp (unit on each)')],['kb-inline',L('5 kb（每个数字带单位）','5 kb (unit on each)')],['none',L('不显示单位','No unit')]]).map(([u,t])=>`<option value="${u}">${t}</option>`).join('')}</select></label><label>${L('标签位置','Label side')}<select id="markerPopSide"><option value="auto">${L('自动','Auto')}</option><option value="left">${L('左','Left')}</option><option value="right">${L('右','Right')}</option></select></label></div>
@@ -181,11 +185,13 @@
       <div class="marker-pop-bands">${m.bands.map(b=>`<label class="switch"><input type="checkbox" data-visible-size="${b.bp}" ${b.show?'checked':''} ${b.excluded?'disabled':''}>${esc(G.Ladders.fmt(b.bp,m.unit))}</label>`).join('')}</div>
       <div class="actions"><button class="btn sm" id="markerPopGuide">${L('定位条带 / 图例','Locate bands / reference')}</button><button class="btn sm danger" id="markerRemoveLane">${L('取消此 Marker','Remove marker role')}</button></div>`;
     place(labels,at);$('markerPopClose').onclick=closeLabels;$('markerPopUnit').value=m.unit;$('markerPopSide').value=m.side;$('markerPopWeight').value=String(m.weight||400);
+    const syncUnitOpts=()=>{labels.querySelectorAll('[data-unit-opt]').forEach(btn=>btn.classList.toggle('on',btn.dataset.unitOpt===m.unit));};
+    labels.querySelectorAll('[data-unit-opt]').forEach(btn=>btn.onclick=()=>{m.unit=btn.dataset.unitOpt;$('markerPopUnit').value=m.unit;App.prefUnit=m.unit;syncUnitOpts();App.commit();});
     $('markerPopPt').onchange=e=>{S().style.markerPt=e.target.value===''?null:E.clamp(+e.target.value||7,4,14);App.commit();};
     $('markerPopWeight').onchange=e=>{const w=+e.target.value;if(w===400)delete m.weight;else m.weight=w;App.commit();};
     G.FigEdit.bindColor('markerPopColor',m,true);
     if(bp!=null)G.FigEdit.bindColor('markerBandColor',()=>m.bands.find(b=>b.bp===bp),true);
-    $('markerPopUnit').onchange=e=>{m.unit=e.target.value;App.commit();};$('markerPopSide').onchange=e=>{m.side=e.target.value;App.commit();};
+    $('markerPopUnit').onchange=e=>{m.unit=e.target.value;App.prefUnit=m.unit;syncUnitOpts();App.commit();};$('markerPopSide').onchange=e=>{m.side=e.target.value;App.commit();};
     labels.querySelectorAll('[data-visible-size]').forEach(cb=>cb.onchange=()=>{m.bands.find(b=>b.bp===+cb.dataset.visibleSize).show=cb.checked;App.commit();});
     if($('markerHideOne'))$('markerHideOne').onclick=()=>{const b=m.bands.find(b=>b.bp===bp);b.show=!b.show;App.commit();};
     if($('markerDeleteOne'))$('markerDeleteOne').onclick=()=>{App.removeMarkerBand(index(m),bp);App.commit();UI.toast(L('标记已删除，Ctrl/⌘+Z 可撤销','Mark deleted; Ctrl/⌘+Z undoes it'));};

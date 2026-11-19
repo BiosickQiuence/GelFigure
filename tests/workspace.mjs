@@ -71,7 +71,7 @@ export async function workspaceChecks(browser,projectRoot,engine){
     });
     await check('review ZIP hashes original bytes, reopens its project and excludes API credentials',async()=>{
       const r=await p.evaluate(async()=>{const before=App.snapshot(),original=App.S.file.sha256,svg=App.buildFigure(false).svg;const b=await Export.reviewPackage(App.S,'svg');return {before,original,svg,same:before===App.snapshot(),bytes:[...new Uint8Array(await b.arrayBuffer())]};});
-      assert(r.same);const files=unzip(r.bytes),manifest=JSON.parse(files['manifest.json']);assert.equal(manifest.sourceSha256,r.original);assert.equal(manifest.files.length,5);
+      assert(r.same);const files=unzip(r.bytes),manifest=JSON.parse(files['manifest.json']);assert.equal(manifest.sourceSha256,r.original);assert.equal(manifest.files.length,6);assert(String(files['cover.html']).includes('#C8962E'));
       for(const f of manifest.files)assert.equal(createHash('sha256').update(files[f.name]).digest('hex'),f.sha256);
       assert.equal(files['figure.svg'].toString(),r.svg);const project=files['project.gelfig'];await p.evaluate(async bytes=>App.openProject(Uint8Array.from(bytes).buffer),[...project]);assert.equal(await p.evaluate(()=>App.buildFigure(false).svg),r.svg);
       assert(!Buffer.from(r.bytes).includes(Buffer.from('synthetic-only-secret')));assert(!Buffer.from(r.bytes).includes(Buffer.from('https://synthetic.invalid')));fs.writeFileSync(path.join(out,'synthetic-review.zip'),Buffer.from(r.bytes));

@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## [1.2.0] - 2026-11-20
+
+### 中文
+
+- 视觉与品牌升级：启用方案 C（牛津蓝顶栏 `#002147`、暖纸底 `#F6F4EF`、暗胶片画布 `#15181C`、仅用于品牌的琥珀金 `#C8962E`）、L1 3 杠标志（含 favicon 与审阅包封面页）、Noto Serif SC 子集标题字体与全套 1.8px 线性 SVG 图标。
+- 顶栏与信息层级精简：合并低频菜单、DPI 收入导出下拉、移除桌面端重复引导条，并将零散长提示收敛为可点开查看的 `ⓘ` 气泡。
+- 通知、引导与帮助：新增统一通知队列（单条不叠层、错误保留 6 秒）、首次打开 5 步交互式引导、可搜索帮助中心与 `?` 快捷键弹窗。
+- 细节文案与工程基础：DNA Marker 默认 `kb` 简写并在弹层提供 3 选项对比，统一“已填 X/Y 个泳道名”计数；拆分 `css/tokens.css` / `components.css`、`i18n/zh.json` / `en.json`，新增 Vite dev、字体子集脚本与 `// @ts-check` 检查。
+
+### English
+
+- Visual & brand upgrade: adopt Scheme C (Oxford Blue `#002147` top bar, warm paper `#F6F4EF`, dark gel canvas `#15181C`, brand-only Amber Gold `#C8962E`), L1 3-bar mark (favicon & review package cover), subsetted Noto Serif SC headings and 1.8px linear SVG icons.
+- Slimmer top bar & cleaner hierarchy: move DPI into the Export dropdown, remove duplicate desktop coach hints, and fold verbose panel hints into clickable `ⓘ` popovers.
+- Notifications, onboarding & help: add a unified single-toast notification manager, interactive 5-step onboarding tour, searchable Help center and `?` keyboard shortcut dialog.
+- Copy polish & engineering foundation: default DNA markers to `kb` shorthand with a 3-option popover preview, unify “X/Y lanes named” status copy, split `css/tokens.css` / `components.css` and `i18n/*.json`, and add Vite dev, font-subsetting and `// @ts-check` tooling.
+
 ## [1.1.1] - 2026-11-20
 
 ### 中文

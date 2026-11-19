@@ -1,8 +1,8 @@
 {
   "name": "gelfigure",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "private": true,
-  "description": "Turn a raw DNA or protein gel image into a publication-ready figure in the browser. The app itself has no dependencies; this file only installs the test runner.",
+  "description": "Turn a raw DNA or protein gel image into a publication-ready figure in the browser. The app itself has no dependencies; this file only installs dev/build/test tooling.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -10,9 +10,17 @@
   },
   "type": "module",
   "scripts": {
+    "dev": "vite",
+    "build:font": "node scripts/build-font-subset.mjs",
+    "build": "node scripts/build-font-subset.mjs && node scripts/bundle-onefile.mjs",
+    "typecheck": "tsc --noEmit",
     "test": "node tests/run.mjs"
   },
   "devDependencies": {
-    "playwright": "^1.56.0"
+    "playwright": "^1.56.0",
+    "subset-font": "^2.9.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vite-plugin-singlefile": "^2.3.4"
   }
 }

@@ -96,7 +96,7 @@ export async function unitHeaderChecks(browser,base,root,engine){
     });
     await check('unit headers: PPTX keeps editable headings at the SVG positions',async()=>{
       const r=await p.evaluate(async()=>{
-        const S=App.S,fl=App.figureLanes();S.conditions=['Drug A','Drug B','Induction'].map(name=>({name,values:S.lanes.map((_,i)=>i%2?'+':'−')}));
+        const S=App.S,fl=App.figureLanes();if(S.markers[0])S.markers[0].unit='bp';S.conditions=['Drug A','Drug B','Induction'].map(name=>({name,values:S.lanes.map((_,i)=>i%2?'+':'−')}));
         S.lanes.forEach((l,i)=>l.name=i===fl[0]?'M':'S'+(i+1));S.groups=[{from:fl[1],to:fl.at(-1),text:'Treatment'}];S.style.labelAngle='0';S.style.laneNumbers=false;App.commit();
         const f=App.buildFigure(false),doc=new DOMParser().parseFromString(f.svg,'image/svg+xml'),u=Array.from(doc.querySelectorAll('text')).find(t=>t.textContent==='(bp)');
         const b=new Uint8Array(await(await PPTX.build()).arrayBuffer());let s='';for(let i=0;i<b.length;i+=16384)s+=String.fromCharCode(...b.subarray(i,i+16384));

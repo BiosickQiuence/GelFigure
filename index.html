@@ -3,31 +3,83 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#131c29">
+<meta name="theme-color" content="#002147">
 <meta name="format-detection" content="telephone=no">
 <!-- Images stay local unless the user explicitly requests AI recognition. HTTPS connect-src permits user-configured APIs; scripts, images and forms remain restricted. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data: blob:; connect-src 'self' file: data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; font-src 'self' file: data:; img-src 'self' file: data: blob:; connect-src 'self' file: data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="description" content="GelFigure: turn a raw DNA or protein gel image into a publication-ready figure in the browser. Local image processing; optional AI recognition sends an analysis image only on request.">
-<title>GelFigure v1.1.1 · 胶图整理与 AI 复核</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111827'/%3E%3Cg fill='%23fff'%3E%3Crect x='6' y='8' width='6' height='2.2' rx='1'/%3E%3Crect x='6' y='13' width='6' height='2.2' rx='1'/%3E%3Crect x='6' y='18' width='6' height='2.2' rx='1'/%3E%3Crect x='6' y='23' width='6' height='2.2' rx='1'/%3E%3Crect x='19' y='15' width='7' height='3' rx='1.2'/%3E%3C/g%3E%3C/svg%3E">
+<title>GelFigure v1.2.0 · 胶图整理与 AI 复核</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23002147'/%3E%3Crect x='6' y='8' width='7' height='2.6' rx='1.2' fill='%23fff'/%3E%3Crect x='6' y='14.7' width='7' height='2.6' rx='1.2' fill='%23fff'/%3E%3Crect x='6' y='21.4' width='7' height='2.6' rx='1.2' fill='%23fff'/%3E%3Crect x='17' y='13.8' width='9' height='4.2' rx='1.4' fill='%23C8962E'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/heading-font.css">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/marker-ai.css">
 <link rel="stylesheet" href="css/gel-ai-beta.css">
 <link rel="stylesheet" href="css/workspace.css">
 </head>
 <body>
+<svg class="gf-sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2.6 15.1 8.8 22 9.8 17 14.7 18.2 21.5 12 18.3 5.8 21.5 7 14.7 2 9.8 8.9 8.8 12 2.6"/></symbol>
+  <symbol id="i-feedback" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.3a2.8 2.8 0 0 1 5.3 1c0 1.8-2.7 2.2-2.7 3.7"/><circle cx="12" cy="17.2" r=".9" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M19 3v3M17.5 4.5h3M5 17v3M3.5 18.5h3"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.8" r=".9" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.2" y2="16.2"/></symbol>
+  <symbol id="i-gel" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><line x1="7.5" y1="8.5" x2="10.5" y2="8.5"/><line x1="7.5" y1="12" x2="10.5" y2="12"/><line x1="7.5" y1="15.5" x2="10.5" y2="15.5"/><line x1="13.5" y1="11.5" x2="17" y2="11.5"/></symbol>
+  <symbol id="i-rot-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-rot-cw" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></symbol>
+  <symbol id="i-flip-h" viewBox="0 0 24 24"><line x1="12" y1="4" x2="12" y2="20" stroke-dasharray="2 2"/><polygon points="8 7 3 12 8 17 8 7"/><polygon points="16 7 21 12 16 17 16 7"/></symbol>
+  <symbol id="i-flip-v" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke-dasharray="2 2"/><polygon points="7 8 12 3 17 8 7 8"/><polygon points="7 16 12 21 17 16 7 16"/></symbol>
+  <symbol id="i-group" viewBox="0 0 24 24"><path d="M4 14v-3h16v3"/><line x1="12" y1="11" x2="12" y2="7"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><line x1="20" y1="12" x2="6" y2="12"/><polyline points="11 7 6 12 11 17"/></symbol>
+  <symbol id="i-cond" viewBox="0 0 24 24"><line x1="8" y1="5" x2="8" y2="11"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="14" y1="16" x2="20" y2="16"/><line x1="6" y1="18" x2="18" y2="6"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 2.5"/></symbol>
+  <symbol id="i-bracket" viewBox="0 0 24 24"><path d="M9 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H9"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><polyline points="5 7 5 5 19 5 19 7"/><line x1="12" y1="5" x2="12" y2="19"/><line x1="9" y1="19" x2="15" y2="19"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><line x1="6" y1="10" x2="6.01" y2="10"/><line x1="10" y1="10" x2="10.01" y2="10"/><line x1="14" y1="10" x2="14.01" y2="10"/><line x1="18" y1="10" x2="18.01" y2="10"/><line x1="7" y1="14" x2="17" y2="14"/></symbol>
+</svg>
 <header class="topbar">
-  <div class="brand">GelFigure</div>
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="7" fill="#0B3D78"/>
+      <rect x="6" y="7" width="7" height="2.4" rx="1.1" fill="#FFFFFF"/>
+      <rect x="6" y="12.5" width="7" height="2.4" rx="1.1" fill="#FFFFFF"/>
+      <rect x="6" y="18" width="7" height="2.4" rx="1.1" fill="#FFFFFF"/>
+      <rect x="6" y="23.5" width="7" height="2.4" rx="1.1" fill="#FFFFFF" opacity="0.72"/>
+      <rect x="17" y="14.5" width="9" height="3.8" rx="1.4" fill="#C8962E"/>
+    </svg>
+    <span>GelFigure</span>
+  </div>
   <button class="chip" id="imgChip" title="打开 / 更换图片" data-en-title="Open / replace image"><span class="chip-dot"></span><span id="imgChipName" data-en="Open image">打开图片</span></button>
   <button class="cache-status d-only" id="cacheStatus" data-en="Recent projects">历史项目</button>
   <div class="coach" id="coach"><span class="coach-dot"></span><span id="coachText" data-en="Drop a gel image into the window to start">把胶图拖进窗口即可开始</span></div>
   <div class="topbar-right">
-    <button class="icon-btn" id="btnUndo" title="撤销 (Ctrl+Z)" data-en-title="Undo (Ctrl+Z)">↺</button>
-    <button class="icon-btn" id="btnRedo" title="重做 (Ctrl+Shift+Z)" data-en-title="Redo (Ctrl+Shift+Z)">↻</button>
-    <button class="icon-btn m-only" id="btnMore" title="更多" data-en-title="More" aria-label="更多">⋯</button>
+    <button class="icon-btn" id="btnUndo" title="撤销 (Ctrl+Z)" data-en-title="Undo (Ctrl+Z)" aria-label="撤销"><svg class="ic"><use href="#i-undo"/></svg></button>
+    <button class="icon-btn" id="btnRedo" title="重做 (Ctrl+Shift+Z)" data-en-title="Redo (Ctrl+Shift+Z)" aria-label="重做"><svg class="ic"><use href="#i-redo"/></svg></button>
+    <button class="icon-btn m-only" id="btnMore" title="更多" data-en-title="More" aria-label="更多"><svg class="ic"><use href="#i-more"/></svg></button>
+    <button class="btn ghost top-ai-btn d-only" id="btnAutoFlowTop" title="AI 全自动处理" data-en-title="AI automatic processing"><svg class="ic ic-14"><use href="#i-sparkle"/></svg><span data-en="AI Assistant">AI 助手</span></button>
+    <a class="star-btn d-only" id="btnStarTop" href="https://github.com/BiosickQiuence/GelFigure" target="_blank" rel="noopener noreferrer" title="觉得好用？到 GitHub 点个 Star 支持" data-en-title="Like GelFigure? Star us on GitHub"><svg class="ic ic-14"><use href="#i-star"/></svg><span data-en="GitHub Star">GitHub Star</span></a>
+    <button class="icon-btn community-entry d-only" id="btnCommunity" title="反馈与社区" data-en-title="Feedback &amp; community" aria-label="反馈"><svg class="ic"><use href="#i-feedback"/></svg><span class="community-label" data-en="Feedback">反馈</span></button>
+    <button class="icon-btn settings-entry" id="btnSettings" title="设置：AI 接口" data-en-title="Settings: AI API" aria-label="设置"><svg class="ic"><use href="#i-settings"/></svg><span class="d-only" data-en="Settings">设置</span></button>
+    <button class="icon-btn" id="btnHelp" title="使用说明与快捷键 (?)" data-en-title="Help &amp; shortcuts (?)" aria-label="帮助"><svg class="ic"><use href="#i-help"/></svg></button>
+    <button class="icon-btn lang-btn" id="btnLang">EN</button>
     <div class="menu-wrap">
-      <button class="btn ghost" id="btnTplMenu" data-en="File ▾">文件 ▾</button>
-      <div class="menu hidden" id="tplMenu">
+      <button class="icon-btn" id="btnTplMenu" title="文件、项目与版式模板" data-en-title="File, projects &amp; style templates" aria-label="更多操作"><svg class="ic"><use href="#i-more"/></svg></button>
+      <div class="menu hidden right" id="tplMenu">
         <label><span data-en="Open image…">打开图片…</span><small data-en="Select several exposures of one gel to pick the best automatically">可一次选多张同一块胶的不同曝光，自动挑最佳</small><input type="file" id="fileInput3" accept=".tif,.tiff,.png,.jpg,.jpeg,.bmp,image/*" multiple hidden></label>
         <label><span data-en="Open project…">打开项目…</span><small data-en=".gelfig project file (original image and all annotations)">.gelfig 项目文件（含原图和全部标注）</small><input type="file" id="projInput" accept=".gelfig,.json" hidden></label>
         <button id="btnHistory" data-en="Recent projects…">历史项目…</button>
@@ -43,18 +95,15 @@
         <button id="btnResetAll" class="danger" data-en="Reset edits (import / adopted result)">重置调整（导入／采用结果）</button>
       </div>
     </div>
-    <button class="icon-btn community-entry d-only" id="btnCommunity" title="GitHub 反馈与 Star" data-en-title="GitHub feedback and Star" aria-label="GitHub 反馈与 Star"><span aria-hidden="true">♡</span><span class="community-label" data-en="GitHub feedback">GitHub 反馈</span></button>
-    <button class="icon-btn settings-entry" id="btnSettings" title="设置：AI 接口" data-en-title="Settings: AI API" aria-label="设置"><span aria-hidden="true">⚙</span><span class="d-only" data-en="Settings">设置</span></button>
-    <button class="icon-btn" id="btnHelp" title="使用说明" data-en-title="Help">?</button>
-    <button class="icon-btn lang-btn" id="btnLang">EN</button>
     <span class="divider"></span>
     <button type="button" class="readiness-badge d-only hidden" id="exportReadiness" title="点击查看导出前检查详情" data-en-title="Click to inspect pre-flight checks"><span class="readiness-dot" aria-hidden="true"></span><span id="exportReadinessText"></span></button>
-    <select id="dpiTop" title="导出分辨率" data-en-title="Export resolution"><option value="300">300 dpi</option><option value="600" selected>600 dpi</option><option value="1200">1200 dpi</option></select>
     <div class="menu-wrap">
       <div class="split">
-        <button class="btn primary" id="btnPNG" data-en="Export PNG">导出 PNG</button><button class="btn primary caret" id="btnExportMenu" title="更多导出格式" data-en-title="More export formats">▾</button>
+        <button class="btn primary" id="btnPNG" data-en="Export PNG">导出 PNG</button><button class="btn primary caret" id="btnExportMenu" title="更多导出格式与分辨率" data-en-title="More export formats &amp; DPI" aria-label="更多导出格式"><svg class="ic ic-14"><use href="#i-chevron"/></svg></button>
       </div>
       <div class="menu hidden right" id="exportMenu">
+        <label class="menu-dpi-row"><span data-en="Export resolution">导出分辨率</span><select id="dpiTop" title="导出分辨率" data-en-title="Export resolution"><option value="300">300 dpi</option><option value="600" selected>600 dpi</option><option value="1200">1200 dpi</option></select></label>
+        <div class="menu-sep"></div>
         <button id="btnCopyPNG"><span data-en="Copy PNG to clipboard">复制 PNG 到剪贴板</span><small data-en="Paste straight into PowerPoint, Word or chat">可直接 Ctrl+V 粘贴进 PPT / Word</small></button>
         <div class="menu-sep"></div>
         <button id="btnPPTX"><span data-en="PowerPoint (editable .pptx)">PowerPoint（可编辑 .pptx）</span><small data-en="Finished layout; editable text/shapes and crop (uncropped pixels included)">保留成图排版；文字图形可编辑、可重新裁切（含全图数据）</small></button>
@@ -78,17 +127,17 @@
 
 <div id="app">
   <aside id="panel">
-    <div id="autoFlowHome"><button type="button" class="btn auto-flow-hero" id="btnAutoFlow" data-ready="false"><span class="auto-flow-title" data-en="✦ AI automatic processing">✦ AI 全自动处理</span><span id="autoFlowBadge" class="auto-flow-badge" data-en="API setup">需配置 API</span></button></div>
+    <div id="autoFlowHome"><button type="button" class="btn auto-flow-hero" id="btnAutoFlow" data-ready="false"><span class="auto-flow-title"><svg class="ic ic-14"><use href="#i-sparkle"/></svg><span data-en="AI automatic processing">AI 全自动处理</span></span><span id="autoFlowBadge" class="auto-flow-badge" data-en="API setup">需配置 API</span></button></div>
     <div class="empty" id="emptyState">
-      <div class="empty-icon">▣</div>
-      <h2 class="d-only" data-en="Drop a gel image here">把胶图拖进来</h2>
-      <h2 class="m-only" data-en="Choose a gel image">选择一张胶图</h2>
+      <div class="empty-icon"><svg class="ic" style="width:40px;height:40px"><use href="#i-gel"/></svg></div>
+      <h2 class="d-only serif-heading" data-en="Drop a gel image here">把胶图拖进来</h2>
+      <h2 class="m-only serif-heading" data-en="Choose a gel image">选择一张胶图</h2>
       <p class="d-only" data-en-html="<b>DNA / agarose gels and protein gels (SDS-PAGE, Coomassie or ECL)</b> — the type is recognised on import.<br>TIFF (16 / 8-bit), PNG or JPG from any imager or scanner.<br>Straightening, cropping, lanes and marker sizes are automatic — you only type the lane names and export."><b>DNA / 琼脂糖胶和蛋白胶（SDS-PAGE，考马斯亮蓝或 ECL）</b>都可以，导入时自动判断是哪种。<br>任意成像仪或扫描仪导出的 TIFF（16 / 8 位）、PNG、JPG 都能读。<br>转正、裁切、泳道、Marker 全部自动完成，你只需要填泳道名然后导出。</p>
       <p class="m-only" data-en-html="<b>DNA gels and protein gels (SDS-PAGE)</b> — the type is recognised on import.<br>Pick a file or a photo, or take one; TIFF, PNG and JPG all work.<br>Straightening, lanes and markers are automatic — type the lane names and export."><b>DNA 胶和蛋白胶（SDS-PAGE）</b>都可以，导入时自动判断。<br>可从文件、相册选择，也可以直接拍照；TIFF、PNG、JPG 都能读。<br>转正、泳道、Marker 全自动，填好泳道名就能导出。</p>
       <label class="btn primary big"><span data-en="Choose file">选择文件</span><input type="file" id="fileInput2" accept=".tif,.tiff,.png,.jpg,.jpeg,.bmp,.gelfig,image/*" multiple hidden></label>
       <button class="btn big" id="btnDemo" data-en="Try the example">看看示例</button>
       <button class="btn big" id="btnHistoryStart" data-en="Open a recent project">打开历史项目</button>
-      <p class="hint d-only" id="offlineDownload"><a href="https://github.com/BiosickQiuence/GelFigure/releases/download/v1.1.1/GelFigure-v1.1.1.html" data-en="Download for offline use — one HTML file">下载离线版：只需一个 HTML 文件</a><br><span data-en="Save to your computer, then open in your browser. No installation or extraction.">保存到电脑，用浏览器打开；不用安装、不用解压。</span></p>
+      <p class="hint d-only" id="offlineDownload"><a href="https://github.com/BiosickQiuence/GelFigure/releases/download/v1.2.0/GelFigure-v1.2.0.html" data-en="Download for offline use — one HTML file">下载离线版：只需一个 HTML 文件</a><br><span data-en="Save to your computer, then open in your browser. No installation or extraction.">保存到电脑，用浏览器打开；不用安装、不用解压。</span></p>
       <p class="hint"><span data-app-version></span> · <span data-en="Local editing; optional AI review">本地编辑，可选 AI 复核</span></p>
       <div id="draftBox" class="draft hidden">
         <div><span data-en="Your most recent project:">最近一次的项目：</span><b id="draftName"></b><br><span class="muted small" id="draftTime"></span></div>
@@ -154,10 +203,10 @@
         <div class="image-block">
           <div class="image-block-title"><span data-en="Direction & rotation">方向与转正</span> <span class="h3-note" id="orientNote"></span></div>
           <div class="image-direction-grid">
-            <button class="btn sm ghost" id="btnRotCCW" title="逆时针 90°" data-en-title="Rotate 90° anticlockwise" aria-label="Rotate 90 degrees anticlockwise">⟲ 90°</button>
-            <button class="btn sm ghost" id="btnRotCW" title="顺时针 90°" data-en-title="Rotate 90° clockwise" aria-label="Rotate 90 degrees clockwise">⟳ 90°</button>
-            <button class="btn sm ghost" id="btnFlipH" title="水平翻转" data-en-title="Mirror left to right" data-en="⇋ Flip H">⇋ 水平</button>
-            <button class="btn sm ghost" id="btnFlipV" title="垂直翻转" data-en-title="Mirror top to bottom" data-en="⇅ Flip V">⇅ 垂直</button>
+            <button class="btn sm ghost" id="btnRotCCW" title="逆时针 90°" data-en-title="Rotate 90° anticlockwise" aria-label="Rotate 90 degrees anticlockwise"><svg class="ic ic-14"><use href="#i-rot-ccw"/></svg> 90°</button>
+            <button class="btn sm ghost" id="btnRotCW" title="顺时针 90°" data-en-title="Rotate 90° clockwise" aria-label="Rotate 90 degrees clockwise"><svg class="ic ic-14"><use href="#i-rot-cw"/></svg> 90°</button>
+            <button class="btn sm ghost" id="btnFlipH" title="水平翻转" data-en-title="Mirror left to right"><svg class="ic ic-14"><use href="#i-flip-h"/></svg> <span data-en="Flip H">水平</span></button>
+            <button class="btn sm ghost" id="btnFlipV" title="垂直翻转" data-en-title="Mirror top to bottom"><svg class="ic ic-14"><use href="#i-flip-v"/></svg> <span data-en="Flip V">垂直</span></button>
           </div>
           <div class="inline mt">
             <button class="btn sm" id="btnDeskew" data-en="Auto straighten">自动转正</button>
@@ -183,18 +232,16 @@
 
       <!-- range -->
       <section class="sec">
-        <div class="sec-head"><span class="sec-n">2</span><span data-en="Lane alignment">泳道对齐</span><span class="sec-status" id="stRange"></span></div>
+        <div class="sec-head"><span class="sec-n">2</span><span data-en="Lane alignment">泳道对齐</span><button type="button" class="info-btn" aria-label="说明" data-info-zh="拖首尾线均分泳道（Alt 单独微调）；拖红框改出图范围。斜拍胶可用 AI 校正（带预览与空道拼接）或离线四点透视校正。" data-info-en="Drag end lines to space evenly (Alt-drag adjusts one). Drag the red frame to crop. Use AI preview or offline four-point correction for oblique gels."><svg class="ic ic-14"><use href="#i-info"/></svg></button><span class="sec-status" id="stRange"></span></div>
         <div id="laneControls" class="lane-grid-control">
-          <div class="raw-grid-row"><label for="cropLaneN" data-en="Lanes">泳道数</label><div class="lane-count-stepper"><button class="btn sm" id="laneCountMinus" title="减少一条" data-en-title="One fewer lane">−</button><input type="number" id="cropLaneN" min="1" max="60" class="num"><button class="btn sm" id="laneCountPlus" title="增加一条" data-en-title="One more lane">＋</button></div></div>
+          <div class="raw-grid-row"><label for="cropLaneN" data-en="Lanes">泳道数</label><div class="lane-count-stepper"><button class="btn sm" id="laneCountMinus" title="减少一条" data-en-title="One fewer lane">−</button><input type="number" id="cropLaneN" min="1" max="60" class="num"><button class="btn sm" id="laneCountPlus" title="增加一条" data-en-title="One more lane">+</button></div></div>
           <label class="switch"><input id="laneLinked" type="checkbox" checked><span data-en="Link end-lane spacing">首尾等距联动</span></label>
-          <p class="hint" data-en="Drag end lines to space evenly (Alt-drag adjusts one). Drag red box to crop.">拖首尾线均分泳道（Alt 单独微调）；拖红框改出图范围。</p>
           <button class="btn sm primary" id="btnRedetectCrop" data-en="Re-detect lanes + markers in crop">框内重新识别泳道和 Marker</button>
         </div>
         <div class="inline mt">
           <button class="btn sm primary" id="btnGelAIBeta" data-en="AI lane correction + lane count">AI 泳道校正与计数</button>
           <button class="btn sm" id="btnPerspective" data-en="Four-point perspective correction">四点透视校正</button>
         </div>
-        <p class="hint" data-en="AI preview corrects oblique gels & removes empty lanes with splice marks; manual four-point works offline.">斜拍胶可用 AI 校正（带预览与空道拼接）或离线四点透视校正。</p>
 
         <div class="suggest hidden" id="emptyBar">
           <div id="emptyText"></div>
@@ -224,13 +271,12 @@
 
       <!-- marker -->
       <section class="sec">
-        <div class="sec-head"><span class="sec-n">3</span>Marker<span class="sec-status" id="stMarker"></span></div>
+        <div class="sec-head"><span class="sec-n">3</span>Marker<button type="button" class="info-btn" aria-label="说明" data-info-zh="点成图上的 Marker 数字可改显示与单位样式；AI 复核仅在主动点击发送时上传分析图。" data-info-en="Click a marker size on the figure to toggle or style labels; AI review runs only on explicit send."><svg class="ic ic-14"><use href="#i-info"/></svg></button><span class="sec-status" id="stMarker"></span></div>
         <div class="inline">
           <button class="btn sm primary" id="btnAIMarker" data-en="AI Marker · review">AI Marker · 复核</button>
           <button class="btn sm" id="btnAddMarker" data-en="Pick a marker lane">点选 Marker 泳道</button>
           <button class="btn sm ghost" id="btnAutoMarkers" data-en="Re-detect">重新识别</button>
         </div>
-        <p class="hint" data-en="Click a marker size on the figure to toggle or style labels; AI review runs only on explicit send.">点成图数字可改显示与字号；AI 复核仅在主动点击发送时上传分析图。</p>
         <div id="markerList"></div>
         <details class="adv" id="favAdv">
           <summary><span data-en="Ladders we use">我们实验室常用的型号</span><span class="h3-note" id="favNote"></span></summary>
@@ -255,21 +301,20 @@
       <section class="sec">
         <div class="sec-head"><span class="sec-n">4</span><span data-en="Annotations">标注</span> <span class="h3-note" data-en="optional">可选</span></div>
         <div class="tools">
-          <button class="tool" id="btnAddGroup"><span class="ti">⎴</span><span data-en="Group line">分组横线</span><small class="d-only" data-en="Drag across lane names on the figure">在成图上拖过几个泳道名</small><small class="m-only" data-en="Tap the first and last lane names">依次点首尾两个泳道名</small></button>
-          <button class="tool" id="btnAddArrow"><span class="ti">◀</span><span data-en="Target band">目标条带</span><small data-en="Click a band; its size is estimated">点一下条带，自动标大小</small></button>
-          <button class="tool" id="btnAddCond"><span class="ti">±</span><span data-en="Condition row">条件行</span><small data-en="+ / − matrix">+ / − 矩阵</small></button>
-          <button class="tool" id="btnAddBox"><span class="ti">⬚</span><span data-en="Region box">区域框</span><small data-en="Frame bands; optional zoom inset">框出条带，可放大展示</small></button>
-          <button class="tool" id="btnAddBracket"><span class="ti">]</span><span data-en="Side bracket">侧边括号</span><small data-en="A size range: smear, (Ub)n, dimer">一段区域：拖尾、多聚体</small></button>
-          <button class="tool" id="btnAddLabel"><span class="ti">T</span><span data-en="Side text">侧边文字</span><small data-en="Stain, antibody, exposure">染色、抗体、曝光时间</small></button>
-          <button class="tool" id="btnAddNote"><span class="ti">T</span><span data-en="Free text box">自由文本框</span><small data-en="Place it, then drag it anywhere on the gel">点胶图放置，之后可自由拖动</small></button>
+          <button class="tool" id="btnAddGroup"><span class="ti"><svg class="ic"><use href="#i-group"/></svg></span><span data-en="Group line">分组横线</span><small class="d-only" data-en="Drag across lane names on the figure">在成图上拖过几个泳道名</small><small class="m-only" data-en="Tap the first and last lane names">依次点首尾两个泳道名</small></button>
+          <button class="tool" id="btnAddArrow"><span class="ti"><svg class="ic"><use href="#i-arrow"/></svg></span><span data-en="Target band">目标条带</span><small data-en="Click a band; its size is estimated">点一下条带，自动标大小</small></button>
+          <button class="tool" id="btnAddCond"><span class="ti"><svg class="ic"><use href="#i-cond"/></svg></span><span data-en="Condition row">条件行</span><small data-en="+ / − matrix">+ / − 矩阵</small></button>
+          <button class="tool" id="btnAddBox"><span class="ti"><svg class="ic"><use href="#i-box"/></svg></span><span data-en="Region box">区域框</span><small data-en="Frame bands; optional zoom inset">框出条带，可放大展示</small></button>
+          <button class="tool" id="btnAddBracket"><span class="ti"><svg class="ic"><use href="#i-bracket"/></svg></span><span data-en="Side bracket">侧边括号</span><small data-en="A size range: smear, (Ub)n, dimer">一段区域：拖尾、多聚体</small></button>
+          <button class="tool" id="btnAddLabel"><span class="ti"><svg class="ic"><use href="#i-text"/></svg></span><span data-en="Side text">侧边文字</span><small data-en="Stain, antibody, exposure">染色、抗体、曝光时间</small></button>
+          <button class="tool" id="btnAddNote"><span class="ti"><svg class="ic"><use href="#i-note"/></svg></span><span data-en="Free text box">自由文本框</span><small data-en="Place it, then drag it anywhere on the gel">点胶图放置，之后可自由拖动</small></button>
         </div>
         <div id="annoList" class="list"></div>
       </section>
 
       <!-- layout -->
       <section class="sec" id="layoutSection" aria-labelledby="layoutHeading">
-          <h3 class="sec-head" id="layoutHeading"><span class="sec-n">5</span><span data-en="Layout">版式</span> <span class="h3-note" id="stLayout"></span></h3>
-          <p class="lead" data-en="Adjust figure width, label layout and numbering.">调整成图宽度、标签排版和编号。</p>
+          <h3 class="sec-head" id="layoutHeading"><span class="sec-n">5</span><span data-en="Layout">版式</span><button type="button" class="info-btn" aria-label="说明" data-info-zh="仍会相撞的分组文字会自动错开到上一行；泳道名默认紧贴胶图，勾选「泳道名在条件行上方」可将条件矩阵贴近胶图。" data-info-en="Colliding group labels stack automatically; lane names sit next to the gel unless moved above condition rows."><svg class="ic ic-14"><use href="#i-info"/></svg></button> <span class="h3-note" id="stLayout"></span></h3>
           <div class="field inline">
             <label class="switch"><input type="checkbox" id="autoWidth" checked><span data-en="Auto width">宽度自动</span></label>
             <label class="inline-label"><span data-en="Gel width">凝胶宽</span> <input type="number" id="gelW" min="10" max="180" step="1" class="num"> mm</label>
@@ -281,14 +326,12 @@
               <select id="groupFit" style="width:auto"><option value="wrap" data-en="Wrap to the line">自动换行</option><option value="shrink" data-en="Shrink the font">缩小字号</option><option value="none" data-en="Keep one line">保持一行</option></select></label>
             <label class="inline-label" id="minFontRow"><span data-en="not below">最小</span> <input type="number" id="minFontPt" min="4" max="10" step="0.5" class="num"> pt</label>
           </div>
-          <p class="hint" data-en="Group labels that still collide move up a row. For fonts and sizes, use the toolbar above the figure or click an annotation.">仍会相撞的分组文字会自动错开到上一行。字体与字号在成图上方调整，也可点标注单独设置。</p>
           <div class="field inline wrap">
             <label class="switch"><input type="checkbox" id="laneNumbers"><span data-en="Lane numbers">泳道编号</span></label>
             <label class="switch"><input type="checkbox" id="frame"><span data-en="Frame">边框</span></label>
             <label class="switch"><input type="checkbox" id="groupTicks"><span data-en="Group line ends">分组线端点</span></label>
             <label class="switch"><input type="checkbox" id="laneNamesAboveConditions"><span data-en="Lane names above conditions">泳道名在条件行上方</span></label>
           </div>
-          <p class="hint" data-en="Lane names stay next to the gel; condition rows stack above them. Tick the box to put the condition matrix nearest the gel instead (lane names above it).">泳道名紧贴胶图，条件行依次叠在泳道名上方。勾选后改为条件矩阵贴近胶图、泳道名在其上方。</p>
           <div class="field inline">
             <label class="inline-label"><span data-en="Numbering">编号</span> <select id="laneNumberMode" style="width:auto"><option value="well" data-en="By well">按加样孔号</option><option value="seq" data-en="In figure order">按图中顺序</option></select></label>
             <label class="inline-label"><span data-en="Panel letter">面板字母</span> <input type="text" id="panelLetter" maxlength="2" class="num" placeholder="a"></label>
@@ -308,7 +351,7 @@
         <span class="flex"></span>
         <button class="btn sm ghost" id="fitFull" title="显示整张图" data-en-title="Show the whole image" data-en="Full">全图</button>
         <button class="btn sm ghost" id="fitCrop" title="放大到出图范围" data-en-title="Zoom to the figure area" data-en="Crop">范围</button>
-        <button class="btn sm ghost" id="btnAddLaneM" title="在原图上点一下加一条泳道" data-en-title="Click the image to add a lane" data-en="+ Lane">＋ 泳道</button>
+        <button class="btn sm ghost" id="btnAddLaneM" title="在原图上点一下加一条泳道" data-en-title="Click the image to add a lane" data-en="+ Lane">+ 泳道</button>
         <span class="zoomlabel" id="zoomLabel"></span>
       </div>
       <div id="perspectiveTools" class="perspective-tools hidden" role="region" aria-label="四点校正" data-en-title="Four-point correction">
@@ -320,7 +363,7 @@
       <div id="editorBox" tabindex="0">
         <canvas id="editor"></canvas>
         <div id="dropHint">
-          <div class="dh-icon">▣</div>
+          <div class="dh-icon"><svg class="ic" style="width:36px;height:36px"><use href="#i-gel"/></svg></div>
           <div class="dh-text" data-en="Drop the gel image here">把胶图拖到这里</div>
           <div class="dh-sub" data-en="A .tif straight from the imager works; or paste a copied image with ⌘V / Ctrl+V">成像仪导出的 .tif 直接拖进来；也可用 ⌘V / Ctrl+V 粘贴复制的图片</div>
         </div>
@@ -414,11 +457,11 @@
     <button class="sheet-item" data-x="pptx"><span class="si-ic">PPT</span><span class="si-tx"><span data-en="PowerPoint (editable .pptx)">PowerPoint（可编辑 .pptx）</span><small data-en="Finished layout; editable text/shapes and crop (uncropped pixels included)">保留成图排版；文字图形可编辑、可重新裁切（含全图数据）</small></span></button>
     <button class="sheet-item" data-x="review"><span class="si-ic">ZIP</span><span class="si-tx"><span data-en="Review package">一键审阅包</span><small data-en="Original, project, figure, log, legend and hash manifest">原图、项目、成图、日志、图例与校验清单</small></span></button>
     <div class="sheet-label" data-en="For the supplement">补充材料</div>
-    <button class="sheet-item" data-x="uncropped"><span class="si-ic">▣</span><span class="si-tx"><span data-en="Uncropped image (same processing)">未裁切图（与成图同处理）</span><small data-en="Crop box and well numbers marked">标出裁切框与孔号</small></span></button>
+    <button class="sheet-item" data-x="uncropped"><span class="si-ic"><svg class="ic"><use href="#i-gel"/></svg></span><span class="si-tx"><span data-en="Uncropped image (same processing)">未裁切图（与成图同处理）</span><small data-en="Crop box and well numbers marked">标出裁切框与孔号</small></span></button>
     <button class="sheet-item" data-x="original"><span class="si-ic">RAW</span><span class="si-tx"><span data-en="Original data (file + SHA-256)">原始数据（原文件 + SHA-256）</span><small data-en="The untouched source file">未经任何处理的原始文件</small></span></button>
     <button class="sheet-item" data-x="log"><span class="si-ic">{ }</span><span class="si-tx"><span data-en="Processing log (JSON)">处理日志 JSON</span><small data-en="All parameters, clipping, effective resolution">全部参数、削顶统计、有效分辨率</small></span></button>
     <div class="sheet-label" data-en="Continue later">接着做</div>
-    <button class="sheet-item" data-x="project"><span class="si-ic">⧉</span><span class="si-tx"><span data-en="Save project (.gelfig)">保存项目（.gelfig）</span><small data-en="Original image + every annotation; open it on any device">原图 + 全部标注，换设备也能接着改</small></span></button>
+    <button class="sheet-item" data-x="project"><span class="si-ic"><svg class="ic"><use href="#i-folder"/></svg></span><span class="si-tx"><span data-en="Save project (.gelfig)">保存项目（.gelfig）</span><small data-en="Original image + every annotation; open it on any device">原图 + 全部标注，换设备也能接着改</small></span></button>
     <label class="switch sheet-check"><input type="checkbox" id="mPreflight"><span data-en="Check before export">导出前检查</span></label>
     <p class="sheet-note hidden" id="mWechatNote" data-en="Inside WeChat files cannot be downloaded: a PNG opens as a picture you can long-press to save; for other formats tap ··· at the top right and open the page in your browser.">在微信里打开时无法直接下载文件：PNG 会显示成图片，长按即可保存或发送；其他格式请点右上角 ··· 选择“在浏览器打开”后再导出。</p>
   </div>
@@ -428,21 +471,21 @@
   <div class="sheet">
     <div class="sheet-grip"></div>
     <div class="sheet-head"><h3 data-en="More">更多</h3><button class="sheet-x" data-close aria-label="关闭" data-en-title="Close">×</button></div>
-    <button class="sheet-item" data-m="open"><span class="si-ic">＋</span><span class="si-tx"><span data-en="Open image…">打开图片…</span><small data-en="File, photo or camera; several exposures of one gel at once">文件、相册或拍照；可一次选同一块胶的多张曝光</small></span></button>
-    <button class="sheet-item" data-m="history"><span class="si-ic">◷</span><span class="si-tx"><span data-en="Recent projects">历史项目</span><small id="mCacheStatus" data-en="Continue from saved browser history">从本浏览器保存的历史继续</small></span></button>
-    <button class="sheet-item" data-m="openProj"><span class="si-ic">⧉</span><span class="si-tx"><span data-en="Open project…">打开项目…</span><small data-en=".gelfig file with the original image and all annotations">.gelfig 文件，含原图和全部标注</small></span></button>
-    <button class="sheet-item" data-m="saveProj"><span class="si-ic">↓</span><span class="si-tx"><span data-en="Save project">保存项目</span><small data-en="Continue on any device">换设备也能接着做</small></span></button>
+    <button class="sheet-item" data-m="open"><span class="si-ic"><svg class="ic"><use href="#i-plus"/></svg></span><span class="si-tx"><span data-en="Open image…">打开图片…</span><small data-en="File, photo or camera; several exposures of one gel at once">文件、相册或拍照；可一次选同一块胶的多张曝光</small></span></button>
+    <button class="sheet-item" data-m="history"><span class="si-ic"><svg class="ic"><use href="#i-history"/></svg></span><span class="si-tx"><span data-en="Recent projects">历史项目</span><small id="mCacheStatus" data-en="Continue from saved browser history">从本浏览器保存的历史继续</small></span></button>
+    <button class="sheet-item" data-m="openProj"><span class="si-ic"><svg class="ic"><use href="#i-folder"/></svg></span><span class="si-tx"><span data-en="Open project…">打开项目…</span><small data-en=".gelfig file with the original image and all annotations">.gelfig 文件，含原图和全部标注</small></span></button>
+    <button class="sheet-item" data-m="saveProj"><span class="si-ic"><svg class="ic"><use href="#i-download"/></svg></span><span class="si-tx"><span data-en="Save project">保存项目</span><small data-en="Continue on any device">换设备也能接着做</small></span></button>
     <div class="sheet-sep"></div>
-    <button class="sheet-item" data-m="saveTpl"><span class="si-ic">✎</span><span class="si-tx"><span data-en="Save style">保存样式</span><small data-en="Lane names, markers, groups, layout — reuse for similar gels">泳道名、Marker、分组、版式，下次同类胶一键套用</small></span></button>
+    <button class="sheet-item" data-m="saveTpl"><span class="si-ic"><svg class="ic"><use href="#i-edit"/></svg></span><span class="si-tx"><span data-en="Save style">保存样式</span><small data-en="Lane names, markers, groups, layout — reuse for similar gels">泳道名、Marker、分组、版式，下次同类胶一键套用</small></span></button>
     <button class="sheet-item" data-m="saveAppearance"><span class="si-ic">Aa</span><span class="si-tx"><span data-en="Save appearance only">保存仅版式模板</span><small data-en="Shared appearance without sample names or annotations">共享版式，不带样本名与实验标注</small></span></button>
     <button class="sheet-item" data-m="labDefault"><span class="si-ic">Aa</span><span class="si-tx"><span data-en="Use current appearance as lab default">将当前版式设为实验室默认</span></span></button>
     <button class="sheet-item" data-m="clearLabDefault"><span class="si-ic">Aa</span><span class="si-tx"><span data-en="Clear lab default">取消实验室默认版式</span></span></button>
-    <button class="sheet-item" data-m="loadTpl"><span class="si-ic">⤓</span><span class="si-tx"><span data-en="Apply style…">载入样式…</span></span></button>
+    <button class="sheet-item" data-m="loadTpl"><span class="si-ic"><svg class="ic"><use href="#i-upload"/></svg></span><span class="si-tx"><span data-en="Apply style…">载入样式…</span></span></button>
     <div class="sheet-sep"></div>
-    <button class="sheet-item" data-m="help"><span class="si-ic">?</span><span class="si-tx"><span data-en="How to use">使用说明</span></span></button>
-    <button class="sheet-item" data-m="community"><span class="si-ic">♡</span><span class="si-tx"><span data-en="GitHub feedback / Star">GitHub 反馈 / Star</span><small data-en="Always available, with or without an image">随时可打开，无需先导出图片</small></span></button>
-    <button class="sheet-item" data-m="lang"><span class="si-ic">文</span><span class="si-tx"><span>English / 中文</span></span></button>
-    <button class="sheet-item danger" data-m="reset"><span class="si-ic">↺</span><span class="si-tx"><span data-en="Reset edits (import / adopted result)">重置调整（导入／采用结果）</span></span></button>
+    <button class="sheet-item" data-m="help"><span class="si-ic"><svg class="ic"><use href="#i-help"/></svg></span><span class="si-tx"><span data-en="How to use">使用说明</span></span></button>
+    <button class="sheet-item" data-m="community"><span class="si-ic"><svg class="ic"><use href="#i-star"/></svg></span><span class="si-tx"><span data-en="GitHub feedback / Star">GitHub 反馈 / Star</span><small data-en="Always available, with or without an image">随时可打开，无需先导出图片</small></span></button>
+    <button class="sheet-item" data-m="lang"><span class="si-ic"><svg class="ic"><use href="#i-globe"/></svg></span><span class="si-tx"><span>English / 中文</span></span></button>
+    <button class="sheet-item danger" data-m="reset"><span class="si-ic"><svg class="ic"><use href="#i-undo"/></svg></span><span class="si-tx"><span data-en="Reset edits (import / adopted result)">重置调整（导入／采用结果）</span></span></button>
     <p class="sheet-foot" data-en-html="GelFigure · open source (MIT) · local editing; AI sends only on request<br><a href='https://github.com/BiosickQiuence/GelFigure' target='_blank' rel='noopener'>github.com/BiosickQiuence/GelFigure</a>">GelFigure · 开源（MIT）· 本地编辑；AI 识别仅在主动发送时上传<br><a href="https://github.com/BiosickQiuence/GelFigure" target="_blank" rel="noopener">github.com/BiosickQiuence/GelFigure</a></p>
   </div>
 </div>
@@ -501,11 +544,20 @@
 
 <div id="helpDlg" class="dlg hidden"><div class="dlg-body">
   <button class="dlg-x" id="btnHelpClose" title="关闭" data-en-title="Close">×</button>
+  <h3 class="serif-heading heading-rule" data-en="Help &amp; Quick Guide">使用说明与快捷帮助</h3>
   <p class="hint"><span data-app-version></span> · <a href="https://github.com/BiosickQiuence/GelFigure#api-setup" target="_blank" rel="noopener noreferrer" data-en="API setup tutorial">API 配置教程</a></p>
+  <div class="help-search-row">
+    <div class="help-search-wrap">
+      <svg class="ic ic-14"><use href="#i-search"/></svg>
+      <input type="search" id="helpSearch" placeholder="搜索功能、快捷键、Marker 或导出问题…" data-en-placeholder="Search features, shortcuts, markers or export…">
+    </div>
+    <button type="button" class="btn sm" id="btnReplayTour" data-en="Replay tour">重播引导</button>
+    <button type="button" class="btn sm ghost" id="btnOpenShortcuts"><svg class="ic ic-14"><use href="#i-keyboard"/></svg> <span data-en="Shortcuts (?)">快捷键 (?)</span></button>
+  </div>
   <div class="m-only" data-en-html="
   <h3>On a phone</h3>
   <ul>
-    <li>The bar at the bottom switches between <b>Image / Figure / Settings</b>; <b>Export</b> is at the bottom right. Undo and redo are ↺ ↻ at the top; ⋯ has open, save project and language.</li>
+    <li>The bar at the bottom switches between <b>Image / Figure / Settings</b>; <b>Export</b> is at the bottom right. Undo and redo are at the top; More has open, save project and language.</li>
     <li><b>Image</b>: pinch to zoom, drag to move. Tap a lane line or its number to select it — the bar that appears nudges, cuts or deletes it. Double-tap an existing marker lane to open its editor; ordinary lanes do nothing. Use “+ Lane” to add one. Drag the red box edges for the range, a yellow line to correct a marker band. Move marker panels by dragging their title.</li>
     <li><b>Figure</b>: tap a grey lane number and type; the keyboard’s Next key moves on. “Zoom in” makes small labels easier to hit. Group line: tap the first lane name, then the last.</li>
     <li><b>Export</b>: after a PNG is made, long-press the picture to save it to Photos or send it; “Share / Save” puts any file in Files or another app.</li>
@@ -513,8 +565,8 @@
   </ul>">
   <h3>在手机上</h3>
   <ul>
-    <li>底部切换<b>原图 / 成图 / 设置</b>，右下角是<b>导出</b>；顶部 ↺ ↻ 撤销 / 重做，⋯ 里有打开、保存项目和语言。</li>
-    <li><b>原图</b>：双指缩放、拖动。点泳道线或泳道号选中，底部可微调、剪除、删除；双击已有 Marker 泳道打开编辑，普通泳道双击不操作，新增请点“＋ 泳道”。拖红框改出图范围，拖黄线修正 Marker 条带。Marker 面板可按住标题拖动移开。</li>
+    <li>底部切换<b>原图 / 成图 / 设置</b>，右下角是<b>导出</b>；顶部可撤销 / 重做，更多菜单里有打开、保存项目和语言。</li>
+    <li><b>原图</b>：双指缩放、拖动。点泳道线或泳道号选中，底部可微调、剪除、删除；双击已有 Marker 泳道打开编辑，普通泳道双击不操作，新增请点“+ 泳道”。拖红框改出图范围，拖黄线修正 Marker 条带。Marker 面板可按住标题拖动移开。</li>
     <li><b>成图</b>：点灰色泳道号输入名称，键盘上的“下一项”跳到下一条；小字看不清点“放大”。分组横线：依次点首尾两个泳道名。</li>
     <li><b>导出</b>：PNG 生成后长按图片即可存到相册或发给朋友；“分享 / 存储”可以把任何文件存到“文件”或发到其他 App。</li>
     <li>在微信里打开时无法下载文件：点右上角 ··· 选择“在浏览器打开”。</li>
@@ -522,9 +574,9 @@
   </div>
   <div data-en-html="
   <h3>Offline use: download just one file</h3>
-  <p>Download <a href='https://github.com/BiosickQiuence/GelFigure/releases/download/v1.1.1/GelFigure-v1.1.1.html'>GelFigure-v1.1.1.html</a>, save it to your computer, then double-click to open in your browser. No installation or ZIP extraction. The repository's index.html alone is not the complete tool.</p>
-  <p>Recent projects in the top bar or File menu (⋯ on a phone) keeps images and edits in this browser, including all exposures. You can rename, delete and reopen them without re-detection. Importing another image keeps the previous project. Clearing browser data removes the cache.</p>
-  <p>For a backup or another computer, use File → Save project (⋯ on a phone). A .gelfig file contains the selected exposure and its annotations; keep other exposure files separately. If caching fails, save a project file before switching images.</p>
+  <p>Download <a href='https://github.com/BiosickQiuence/GelFigure/releases/download/v1.2.0/GelFigure-v1.2.0.html'>GelFigure-v1.2.0.html</a>, save it to your computer, then double-click to open in your browser. No installation or ZIP extraction. The repository's index.html alone is not the complete tool.</p>
+  <p>Recent projects in the top bar or menu keeps images and edits in this browser, including all exposures. You can rename, delete and reopen them without re-detection. Importing another image keeps the previous project. Clearing browser data removes the cache.</p>
+  <p>For a backup or another computer, use Save project. A .gelfig file contains the selected exposure and its annotations; keep other exposure files separately. If caching fails, save a project file before switching images.</p>
   <h3>Fastest way to a figure</h3>
   <p>For AI processing, save your API settings and open <b>AI automatic processing</b>. Drop one gel image and select its marker model. The app corrects the lanes, labels marker bands and opens the figure for editing.</p>
   <ol>
@@ -540,7 +592,7 @@
     <li><b>Group line</b>: drag from one lane name to another on the figure.</li>
     <li><b>Target band arrow</b>: click “Target band”, then the band. The size is estimated from the marker; values outside the ladder are marked ≈.</li>
     <li><b>+ / − rows</b>: add a row, then click cells on the figure to cycle + / − / empty.</li>
-    <li><b>Lane lines off</b>: set the count on the left (Settings on phones), then drag the ↔ end lines; the middle follows in real time. Drag a middle line to shift the grid. Turn off “Link spacing” or Alt-drag to adjust one lane. Counts include marker and empty lanes; changes can be undone.</li>
+    <li><b>Lane lines off</b>: set the count on the left (Settings on phones), then drag the end lines; the middle follows in real time. Drag a middle line to shift the grid. Turn off “Link spacing” or Alt-drag to adjust one lane. Counts include marker and empty lanes; changes can be undone.</li>
     <li><b>Try detection again</b>: “Re-detect lanes + markers in crop” runs both stages inside the red frame, keeping confirmed marker choices and manual anchors. Removed marker roles are not re-added. Simply moving the crop does not reclassify lanes.</li>
     <li><b>Text sizes / marker labels</b>: use “Fonts &amp; sizes” above the figure, click a marker number, or double-click an existing marker lane on the raw image. Drag the panel title to move it aside. Marker controls stay open for show/hide and delete. Hiding preserves calibration; deleting removes the anchor too. Undo or re-position the band to restore a deleted mark.</li>
     <li><b>Lane-name rotation</b>: use “Name angle” above the figure. Auto keeps the existing layout rule; presets, the slider or numeric input set 0–90° for all lane names. Choose Auto to restore it. The angle is included in projects, styles and exports.</li>
@@ -556,12 +608,12 @@
     <li>Removed lanes get a splice mark; never splice different gels into one panel.</li>
     <li>Also export the uncropped image and the original file for the supplement.</li>
   </ul>
-  <p class='muted small d-only'>Shortcuts: Ctrl+Z undo · Ctrl+Shift+Z redo · Space+drag pan · wheel zoom · H remove/restore lane · Esc cancel</p>
+  <p class='muted small d-only'>Shortcuts: Ctrl+Z undo · Ctrl+Shift+Z redo · Space+drag pan · wheel zoom · H remove/restore lane · ? shortcuts · Esc cancel</p>
   <p class='muted small'>Open source (MIT): <a href='https://github.com/BiosickQiuence/GelFigure' target='_blank' rel='noopener'>github.com/BiosickQiuence/GelFigure</a> — bug reports and ladder additions welcome.</p>">
   <h3>离线使用：只下载一个文件</h3>
-  <p>下载 <a href="https://github.com/BiosickQiuence/GelFigure/releases/download/v1.1.1/GelFigure-v1.1.1.html">GelFigure-v1.1.1.html</a>，保存到电脑，双击用浏览器打开即可。不用安装、不用解压。仓库里的 index.html 单独下载不包含完整工具。</p>
-  <p>顶栏或“文件 → 历史项目”（手机在右上角 ⋯）可打开本浏览器缓存的图片和编辑进度，包括全部曝光。支持改名、删除，恢复时不会重新识别；导入下一张图会保留上一张的进度。清理浏览器数据会清除缓存。</p>
-  <p>备份或换电脑时，请用“文件 → 保存项目”（手机在 ⋯）。.gelfig 保存当前曝光的原图和标注，其他曝光的原文件请另行保留。缓存失败时，建议先保存项目文件再切换图片。</p>
+  <p>下载 <a href="https://github.com/BiosickQiuence/GelFigure/releases/download/v1.2.0/GelFigure-v1.2.0.html">GelFigure-v1.2.0.html</a>，保存到电脑，双击用浏览器打开即可。不用安装、不用解压。仓库里的 index.html 单独下载不包含完整工具。</p>
+  <p>顶栏或“更多 → 历史项目”可打开本浏览器缓存的图片和编辑进度，包括全部曝光。支持改名、删除，恢复时不会重新识别；导入下一张图会保留上一张的进度。清理浏览器数据会清除缓存。</p>
+  <p>备份或换电脑时，请用“更多 → 保存项目”。.gelfig 保存当前曝光的原图和标注，其他曝光的原文件请另行保留。缓存失败时，建议先保存项目文件再切换图片。</p>
   <h3>最快的出图方式</h3>
   <p>需要 AI 处理时，在设置里保存接口配置，打开<b>“AI 全自动处理”</b>。拖入一张胶图并选择 Marker 型号，程序会校正泳道、标记条带，并打开可编辑的成图。</p>
   <ol>
@@ -577,7 +629,7 @@
     <li><b>分组横线</b>：在成图上从一个泳道名拖到另一个泳道名。</li>
     <li><b>目标条带箭头</b>：点"目标条带"，再点那条带；大小按 Marker 估算，超出 Marker 范围会标 ≈。</li>
     <li><b>+ / − 条件行</b>：加一行后，在成图上点格子即可在 + / − / 空 之间切换。</li>
-    <li><b>泳道线没对齐</b>：在左侧填写条数（手机在“设置”页），拖 ↔ 首尾线，中间实时均分；拖中间线可整体平移。关闭“等距联动”或按 Alt 拖动可单独微调。数量包含 Marker 和空道，修改可撤销。</li>
+    <li><b>泳道线没对齐</b>：在左侧填写条数（手机在“设置”页），拖首尾线，中间实时均分；拖中间线可整体平移。关闭“等距联动”或按 Alt 拖动可单独微调。数量包含 Marker 和空道，修改可撤销。</li>
     <li><b>重新识别</b>：“框内重新识别泳道和 Marker”一次完成两个步骤，保留手动确认的 Marker 和定位点，不重新添加已取消的 Marker；单纯拖裁切框不会重新分类。</li>
     <li><b>字号 / Marker 显示</b>：成图上方“字体与字号”统一设置，也可点 Marker 数字或双击原图中已有的 Marker 泳道；面板可按住标题拖动移开。支持显示、隐藏和删除且不会自动收起。隐藏仍保留校准，删除同时移除定位点；可撤销或重新定位恢复。</li>
     <li><b>泳道名旋转</b>：点成图上方“泳道名角度”。默认自动沿用原有排版规则；可选预设、拖动滑块或输入 0–90°，对所有泳道名生效。选回“自动”即可恢复，角度会随项目、样式和导出保存。</li>
@@ -593,8 +645,25 @@
     <li>剪除泳道会自动加拼接分隔；不同凝胶不可拼进同一面板。</li>
     <li>建议同时导出"未裁切图"和"原始数据"放补充材料。</li>
   </ul>
-  <p class="muted small d-only">快捷键：Ctrl+Z 撤销 · Ctrl+Shift+Z 重做 · 空格+拖动 平移 · 滚轮 缩放 · H 剪除/恢复泳道 · Esc 取消当前操作</p>
+  <p class="muted small d-only">快捷键：Ctrl+Z 撤销 · Ctrl+Shift+Z 重做 · 空格+拖动 平移 · 滚轮 缩放 · H 剪除/恢复泳道 · ? 快捷键清单 · Esc 取消当前操作</p>
   <p class="muted small">开源（MIT）：<a href="https://github.com/BiosickQiuence/GelFigure" target="_blank" rel="noopener">github.com/BiosickQiuence/GelFigure</a> —— 欢迎反馈问题、补充 Ladder 型号。</p>
+  </div>
+</div></div>
+
+<div id="shortcutsDlg" class="dlg hidden" role="dialog" aria-modal="true"><div class="dlg-body" style="max-width:460px">
+  <button class="dlg-x" id="btnShortcutsClose" title="关闭" data-en-title="Close">×</button>
+  <h3 class="serif-heading heading-rule" data-en="Keyboard Shortcuts">快捷键清单</h3>
+  <div class="shortcut-grid">
+    <kbd>Ctrl / ⌘ + Z</kbd><span data-en="Undo">撤销上一步</span>
+    <kbd>Ctrl / ⌘ + Shift + Z</kbd><span data-en="Redo">重做</span>
+    <kbd>Ctrl / ⌘ + V</kbd><span data-en="Paste gel image from clipboard">从剪贴板粘贴胶图</span>
+    <kbd>Enter / Tab</kbd><span data-en="Next lane name while editing">编辑泳道名时跳到下一条</span>
+    <kbd>H</kbd><span data-en="Cut / restore selected lane">剪除 / 恢复选中的泳道</span>
+    <kbd>Delete</kbd><span data-en="Delete selected lane or annotation">删除选中的泳道或标注</span>
+    <kbd>Space + Drag</kbd><span data-en="Pan raw image">平移原图画布</span>
+    <kbd>Alt + Drag</kbd><span data-en="Adjust one lane or disable band snap">微调单条泳道或关闭条带吸附</span>
+    <kbd>?</kbd><span data-en="Toggle this shortcut sheet">打开 / 关闭此快捷键面板</span>
+    <kbd>Esc</kbd><span data-en="Cancel current tool or close dialog">取消当前模式或关闭弹窗</span>
   </div>
 </div></div>
 
@@ -663,6 +732,7 @@
 
 <script src="js/storage.js"></script>
 <script src="js/i18n.js"></script>
+<script src="js/notifications.js"></script>
 <script src="js/tiff.js"></script>
 <script src="js/colour.js"></script>
 <script src="js/ladder-cache.js"></script>
@@ -690,5 +760,7 @@
 <script src="js/support-config.js"></script>
 <script src="js/feedback.js"></script>
 <script src="js/export-support.js"></script>
+<script src="js/onboarding.js"></script>
+<script src="js/help-ui.js"></script>
 </body>
 </html>

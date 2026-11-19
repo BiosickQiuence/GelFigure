@@ -469,6 +469,7 @@
     if (/[?&]draft=1/.test(location.search)) {
       document.title = 'UITEST-AT 19 ' + JSON.stringify(R);
       const ref = App.snapshot();
+      App.isDemo = false;
       await App.saveDraft();
       const d = await App.peekDraft();
       App.S.lanes[G.UI.figLanes()[0]].name = 'changed';

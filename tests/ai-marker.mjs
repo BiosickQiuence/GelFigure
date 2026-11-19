@@ -193,7 +193,7 @@ export async function aiMarkerChecks(browser,base,root,engine){
     await check('saved files and browser history omit superseded import recognition, including an empty adopted result',async()=>{
       await load();await send();await apply();
       const r=await p.evaluate(async()=>{
-        const P=App.projectData();await App.saveDraft();const current=App.snapshot();
+        const P=App.projectData();App.isDemo=false;await App.saveDraft();const current=App.snapshot();
         App.S.lanes[1].name='changed after save';await App.restoreDraft();
         return {initial:P.initial,adopted:P.state.markerRecognition.method,restored:App.snapshot()===current,resetBaseline:JSON.parse(App.initial).markerRecognition.method==='ai',emptySession:MarkerAI.session===null};
       });assert.equal(JSON.parse(r.initial).markerRecognition.method,'ai');assert.equal(r.adopted,'ai');assert(r.restored&&r.resetBaseline&&r.emptySession);

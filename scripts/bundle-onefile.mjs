@@ -19,19 +19,30 @@ const expectedConnect="connect-src 'self' file: data: blob: https:;";
 const csp=html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"/);
 if(!csp||!csp[1].includes(expectedConnect))throw new Error('AI trial requires HTTPS connect-src for user-configured endpoints');
 
-// inline css
-const cssFiles = fs.readdirSync(path.join(root, 'css')).filter(f => f.endsWith('.css')).sort((a, b) => a === 'style.css' ? -1 : b === 'style.css' ? 1 : a.localeCompare(b));
+// inline css in explicit cascade order
+const cssOrder = ['tokens.css', 'heading-font.css', 'style.css', 'components.css'];
+const allCss = fs.readdirSync(path.join(root, 'css')).filter(f => f.endsWith('.css'));
+const cssFiles = [
+  ...cssOrder.filter(f => allCss.includes(f)),
+  ...allCss.filter(f => !cssOrder.includes(f)).sort((a, b) => a.localeCompare(b))
+];
 let style = '';
 for (const f of cssFiles) style += `/* css/${f} */\n` + read(path.join(root, 'css', f)) + '\n';
 let cssInlined=false;
 html = html.replace(/<link rel="stylesheet" href="css\/[^"]+"\s*\/?>/g, () => {if(cssInlined)return '';cssInlined=true;return `<style>\n${style}\n</style>`;});
 
+// inline i18n JSON dictionaries so single-file offline mode has complete dictionary strings
+const i18nZh = JSON.parse(read(path.join(root, 'i18n', 'zh.json')));
+const i18nEn = JSON.parse(read(path.join(root, 'i18n', 'en.json')));
+const i18nBundle = `window.GelFigureI18N=${JSON.stringify({ zh: i18nZh, en: i18nEn })};`;
+
 // inline scripts in the same order as index.html
 // script order must match index.html exactly
-for (const f of ['storage', 'i18n', 'tiff', 'colour', 'ladder-cache', 'ladders', 'engine', 'name-text', 'render', 'export', 'pptx', 'demo', 'app', 'library', 'editor', 'ui', 'figedit', 'mobile', 'perspective', 'marker-ui', 'ai-client', 'ai-workspace', 'marker-ai', 'gel-ai-beta', 'auto-flow', 'history-ui', 'support-config', 'feedback', 'export-support']) {
+for (const f of ['storage', 'i18n', 'notifications', 'tiff', 'colour', 'ladder-cache', 'ladders', 'engine', 'name-text', 'render', 'export', 'pptx', 'demo', 'app', 'library', 'editor', 'ui', 'figedit', 'mobile', 'perspective', 'marker-ui', 'ai-client', 'ai-workspace', 'marker-ai', 'gel-ai-beta', 'auto-flow', 'history-ui', 'support-config', 'feedback', 'export-support', 'onboarding', 'help-ui']) {
   const code = read(path.join(root, 'js', f + '.js'));
+  const prefix = f === 'i18n' ? i18nBundle + '\n' : '';
   const tag = new RegExp(`<script src="js/${f}\\.js"><\\/script>`, 'g');
-  html = html.replace(tag, `<script>/* js/${f}.js */\n${code}\n</script>`);
+  html = html.replace(tag, () => `<script>/* js/${f}.js */\n${prefix}${code}\n</script>`);
 }
 // a script added to index.html but not to the list above would silently be missing from the single file
 const left = html.match(/<script src="js\/(?!uitest)[^"]+"><\/script>/g);
@@ -39,7 +50,7 @@ if (left) { console.error('not inlined:', left.join(' ')); process.exit(1); }
 
 // test scripts (test/test.html loads uitest.js too): inline if present
 if (html.includes('js/uitest.js')) {
-  html = html.replace(/<script src="js\/uitest\.js"><\/script>/g, `<script>/* js/uitest.js */\n${read(path.join(root, 'js', 'uitest.js'))}\n</script>`);
+  html = html.replace(/<script src="js\/uitest\.js"><\/script>/g, () => `<script>/* js/uitest.js */\n${read(path.join(root, 'js', 'uitest.js'))}\n</script>`);
 }
 
 // Single-file mode needs inline scripts. Preserve the exact feedback endpoint allowance, if any,

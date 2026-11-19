@@ -27,42 +27,20 @@
 
   /* ---------- toasts / warnings ---------- */
   function toast(msg, ms, action) {
+    if (G.Notify && G.Notify.toast) { G.Notify.toast(msg, ms, action); return; }
     const el = document.createElement('div');
-    el.className = 'toast' + (action && action.label ? ' has-action' : '');
-    const dismiss = () => {
-      if (el._gone) return;
-      el._gone = true;
-      clearTimeout(timer);
-      el.style.transition = '.25s';
-      el.style.opacity = '0';
-      setTimeout(() => el.remove(), 260);
-    };
-    if (action && action.label && typeof action.onClick === 'function') {
-      const span = document.createElement('span');
-      span.textContent = msg;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn sm toast-action';
-      btn.textContent = action.label;
-      btn.onclick = () => { dismiss(); action.onClick(); };
-      el.append(span, btn);
-    } else {
-      el.textContent = msg;
-    }
+    el.className = 'toast';
+    el.textContent = msg;
     $('toasts').appendChild(el);
-    const timer = setTimeout(dismiss, ms || (action ? 6000 : 2400));
+    setTimeout(() => el.remove(), ms || 2400);
   }
   const dismissed = new Set();
   function showWarnings(items) {
+    // Persistent warnings are surfaced via the topbar #exportReadiness badge + preflight dialog (V7),
+    // preventing overlapping floating cards over #toasts at 1280x720.
     const box = $('warnings');
-    box.innerHTML = '';
-    (items || []).filter(w => !dismissed.has(w)).slice(0, 3).forEach(w => {
-      const d = document.createElement('div');
-      d.innerHTML = `<span>⚠ ${esc(w)}</span>`;
-      const x = document.createElement('button'); x.textContent = '×'; x.title = L('不再提示', 'Dismiss');
-      x.onclick = () => { dismissed.add(w); d.remove(); };
-      d.appendChild(x); box.appendChild(d);
-    });
+    if (box) box.innerHTML = '';
+    void items;
   }
 
   /* ---------- helpers ---------- */
@@ -967,7 +945,7 @@
       + (App.isColour() ? L('保留原色', 'original colour') : App.displayDark() ? L('黑底白带', 'white on black') : L('白底黑带', 'dark on white'))
       + (!App.isColour() && st.saturatedInCrop ? L(' · 有过曝', ' · saturated') : ''), !App.isColour() && st.saturatedInCrop ? 'warn' : '');
     set('stRange', r ? L(`孔 ${r[0] + 1}–${r[1] + 1} · ${fl.length} 条`, `wells ${r[0] + 1}–${r[1] + 1} · ${fl.length} lanes`) : '');
-    set('stNames', `${named}/${fl.length}`);
+    set('stNames', L(`已填 ${named}/${fl.length} 个泳道名`, `${named}/${fl.length} lanes named`));
     set('stMarker', visMk.length ? (lowMk.length ? L('请核对型号', 'check ladder') : String(visMk.length)) : L('无', 'none'), lowMk.length || !visMk.length ? 'warn' : '');
     const secs = document.querySelectorAll('#sections .sec');
     const state = [true, !!r, named >= fl.length && fl.length > 0, visMk.length > 0 && !lowMk.length];
@@ -1165,7 +1143,9 @@
     setFigZoom(z) { figZoom = z; if (S()) updatePreview(); }
   };
   $('btnUndo').disabled = $('btnRedo').disabled = true;
+  if ($('btnAutoFlowTop')) $('btnAutoFlowTop').onclick = () => { if ($('btnAutoFlow')) $('btnAutoFlow').click(); };
   offerDraft();
+  setTimeout(() => { if (G.Onboarding && G.Onboarding.maybeStart) G.Onboarding.maybeStart(); }, 180);
 
   /* ---------- development / self-test URL parameters ----------
    * ?demo=1 loads the synthetic gel; ?uitest=1 runs js/uitest.js; ?annot=1, ?names=, ?range=, ?groups=,

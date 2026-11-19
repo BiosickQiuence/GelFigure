@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GelFigure Design System · Component Catalog (dev-only)</title>
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/heading-font.css">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/components.css">
+<style>
+  body { overflow: auto; background: var(--bg); padding: 24px; height: auto; display: block; }
+  .cat-wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+  .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .swatch { border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--surface); }
+  .swatch-bar { height: 48px; }
+  .swatch-meta { padding: 8px 10px; font-size: 12px; }
+  .swatch-meta code { font-family: var(--font-mono); color: var(--muted); font-size: 11px; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .dark-demo { background: var(--canvas); color: var(--text-inv); padding: 20px; border-radius: var(--r-md); display: flex; align-items: center; justify-content: space-between; }
+</style>
+</head>
+<body>
+<div class="cat-wrap">
+  <div style="background:var(--brand);color:#fff;padding:14px 18px;border-radius:var(--r-md);display:flex;align-items:center;gap:14px">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#FFFFFF"/>
+        <rect x="6" y="7" width="8" height="2.4" rx="1.2" fill="#002147"/>
+        <rect x="6" y="12" width="8" height="2.4" rx="1.2" fill="#002147"/>
+        <rect x="6" y="17" width="8" height="2.4" rx="1.2" fill="#002147"/>
+        <rect x="6" y="22" width="8" height="2.4" rx="1.2" fill="#002147"/>
+        <rect x="18" y="14" width="8" height="3.2" rx="1.4" fill="#C8962E"/>
+      </svg>
+      <span>GelFigure</span>
+    </div>
+    <span style="color:var(--muted-inv);font-size:12.5px">Scheme C · Oxford Blue + Amber Gold · Logo L1 Ladder &amp; Band</span>
+    <span style="flex:1"></span>
+    <a class="star-btn" href="#star">★ GitHub Star</a>
+  </div>
+
+  <div class="gf-card">
+    <h2 class="serif-heading heading-rule" style="margin-top:0">设计令牌与配色规范</h2>
+    <p style="color:var(--muted);font-size:12.5px">金色（#C8962E）仅用于品牌点缀（Logo 条带、Star 按钮、标题装饰线），绝不用于状态或通用交互。</p>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-bar" style="background:var(--brand)"></div><div class="swatch-meta"><b>--brand</b><br><code>#002147</code></div></div>
+      <div class="swatch"><div class="swatch-bar" style="background:var(--primary)"></div><div class="swatch-meta"><b>--primary</b><br><code>#0B3D78</code></div></div>
+      <div class="swatch"><div class="swatch-bar" style="background:var(--accent)"></div><div class="swatch-meta"><b>--accent (brand)</b><br><code>#C8962E</code></div></div>
+      <div class="swatch"><div class="swatch-bar" style="background:var(--bg)"></div><div class="swatch-meta"><b>--bg</b><br><code>#F6F4EF</code></div></div>
+      <div class="swatch"><div class="swatch-bar" style="background:var(--canvas)"></div><div class="swatch-meta"><b>--canvas</b><br><code>#15181C</code></div></div>
+      <div class="swatch"><div class="swatch-bar" style="background:var(--review)"></div><div class="swatch-meta"><b>--review</b><br><code>#8B6CF0</code></div></div>
+      <div class="swatch"><div class="swatch-bar" style="background:var(--ok)"></div><div class="swatch-meta"><b>--ok</b><br><code>#1D7A46</code></div></div>
+      <div class="swatch"><div class="swatch-bar" style="background:var(--warn)"></div><div class="swatch-meta"><b>--warn</b><br><code>#B45309</code></div></div>
+      <div class="swatch"><div class="swatch-bar" style="background:var(--danger)"></div><div class="swatch-meta"><b>--danger</b><br><code>#B42318</code></div></div>
+    </div>
+  </div>
+
+  <div class="gf-card">
+    <h3 class="serif-heading" style="margin-top:0">按钮 / 徽章 / 分段控件 / 步进器</h3>
+    <div class="row" style="margin-bottom:14px">
+      <button class="btn primary">主按钮 Primary</button>
+      <button class="btn">次按钮 Secondary</button>
+      <button class="btn sm">小按钮 Small</button>
+      <span class="gf-chip ok">可导出</span>
+      <span class="gf-chip warn">待处理 2 项</span>
+      <span class="gf-chip review">待核对 4 项</span>
+    </div>
+    <div class="row">
+      <div class="seg" style="width:220px"><button class="on">成图</button><button>原图</button></div>
+      <div class="gf-stepper"><button class="btn sm">−</button><input type="number" value="11" class="num"><button class="btn sm">+</button></div>
+      <input type="text" id="panelLetter" value="A" aria-label="Panel letter">
+    </div>
+  </div>
+
+  <div class="dark-demo">
+    <div>
+      <strong style="font-size:14px">暗色画布 (--canvas #15181C)</strong>
+      <p style="margin:4px 0 0;color:var(--muted-inv);font-size:12px">原图与成图预览均呈现于暗色画布，待核对编号使用 #A78BFA</p>
+    </div>
+    <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--review-canvas);color:#15181C;font-weight:700;font-size:12px">1</span>
+  </div>
+</div>
+</body>
+</html>

@@ -1,14 +1,14 @@
-# GelFigure v1.1.1
+# GelFigure v1.2.0
 
 **Prepare editable DNA/protein gel figures in your browser, with local editing, AI-assisted review and automatic lane correction and marker labelling.**
 
-[简体中文完整教程](README.zh-CN.md) · [Open the web app](https://biosickqiuence.github.io/GelFigure/) · [Download the complete offline HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v1.1.1/GelFigure-v1.1.1.html) · [Release downloads](https://github.com/BiosickQiuence/GelFigure/releases/tag/v1.1.1)
+[简体中文完整教程](README.zh-CN.md) · [Open the web app](https://biosickqiuence.github.io/GelFigure/) · [Download the complete offline HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v1.2.0/GelFigure-v1.2.0.html) · [Release downloads](https://github.com/BiosickQiuence/GelFigure/releases/tag/v1.2.0)
 
 > No programming is required. Local editing, manual correction and exports need no API account, Python or Node.js. A vision API is needed only if you choose AI recognition.
 
 ## Open a gel and prepare a figure
 
-1. Open the web app, or download **GelFigure-v1.1.1.html** from Releases and double-click it in Chrome, Edge, Firefox or Safari. Do not download only the repository’s `index.html`: that file depends on neighbouring folders.
+1. Open the web app, or download **GelFigure-v1.2.0.html** from Releases and double-click it in Chrome, Edge, Firefox or Safari. Do not download only the repository’s `index.html`: that file depends on neighbouring folders.
 2. Drop a gel image into the window or select Open image. Common images and TIFF are supported; multiple exposures can be imported together.
 3. Check Gel type. This release follows a colour rule: sufficient blue selects protein; monochrome selects DNA. Manual selection remains available, so choose protein yourself for a monochrome protein gel.
 4. New imports retain original colours and tones. Select Grayscale explicitly if adjustments are needed; saved projects retain their saved appearance.

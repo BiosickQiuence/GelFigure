@@ -76,7 +76,7 @@ export async function nameFormatChecks(browser,base,root,engine){
     const before=App.snapshot(),gene=JSON.stringify(App.S.lanes.find(l=>l.name==='ERH-/-').nameRuns),m=JSON.stringify(App.S.lanes[0].nameStyle);
     App.resizeLaneGrid(App.figureLanes().length+2);App.commit();
     const grid=JSON.stringify(App.S.lanes.find(l=>l.name==='ERH-/-').nameRuns)===gene&&JSON.stringify(App.S.lanes[0].nameStyle)===m;
-    App.undo();const undo=App.snapshot()===before;await App.saveDraft();const id=App.projectId;
+    App.undo();const undo=App.snapshot()===before;App.isDemo=false;await App.saveDraft();const id=App.projectId;
     App.S.lanes.forEach(l=>{delete l.nameStyle;delete l.nameRuns;});await App.restoreHistory(id);
     return {grid,undo,history:App.snapshot()===before};
    });assert.deepEqual(r,{grid:true,undo:true,history:true});

@@ -60,7 +60,7 @@
   App.defaultStyle = defaultStyle;
   App.onDropFile = null;   // set by the UI layer
 
-  App.VERSION = '1.1.1';
+  App.VERSION = '1.2.0';
   App.isDemo = false;
   App.prefs = prefs;
   App.setPref = function (k, v) { const p = prefs(); p[k] = v; G.PrefStorage.setItem(PREF_KEY, JSON.stringify(p)); };
@@ -171,7 +171,7 @@
     App.S = newImageState(input, App.src, App._orientOnInstall, p);
     App.invertInherited = p.invert != null;
     App.prefLadder = G.Ladders.get(p.ladderId) ? p.ladderId : 'gr1kbplus';
-    App.prefUnit = p.unit || 'bp';
+    App.prefUnit = p.unit || 'auto';
     App.loadWarnings = img.warnings || [];
     App._colorStats = img.colorStats || null;
     App.gelDetection = null;
@@ -1545,7 +1545,7 @@
     raf = requestAnimationFrame(() => { raf = 0; App.emit('refresh'); });
   };
 
-  App.BUILD = 'v1.1.1';
+  App.BUILD = 'v1.2.0';
   App.snapshot = function () { return JSON.stringify(App.S); };
   App.commit = function () {
     if (!App.S) return;

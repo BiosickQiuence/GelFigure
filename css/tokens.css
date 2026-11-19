@@ -1,0 +1,71 @@
+/* GelFigure Design Tokens — Scheme C (Oxford Blue + Amber Gold)
+ * Strictly 2 foreground text tiers on light surfaces (--text, --muted), both >= 4.5:1 WCAG AA.
+ * Amber Gold (--accent) is strictly reserved for brand accents (Logo band, Star button, heading rule),
+ * NEVER for status indicators or generic interactive controls. */
+:root {
+  /* Brand & primary */
+  --brand: #002147;
+  --brand-hover: #0A2E5C;
+  --primary: #0B3D78;
+  --primary-dk: #082F5D;
+  --primary-bg: #E8EEF6;
+  --accent: #C8962E;         /* Brand-only: Logo target band, GitHub Star, heading accent rule */
+  --accent-soft: rgba(200, 150, 46, 0.16);
+
+  /* Surfaces & borders */
+  --bg: #F6F4EF;
+  --surface: #FFFFFF;
+  --panel: #FFFFFF;
+  --line: #E6E1D6;
+  --line-2: #F0ECE3;
+  --canvas: #15181C;
+  --canvas-line: #262B33;
+
+  /* Foreground text (2 tiers, both WCAG AA >= 4.5:1 on #FFFFFF and #F6F4EF) */
+  --text: #16202C;
+  --muted: #525B66;
+  --faint: #525B66;          /* Legacy alias mapped to AA-compliant muted tier */
+  --text-inv: #F8FAFC;
+  --muted-inv: #C9D3DF;
+
+  /* Semantic status & AI review */
+  --review: #8B6CF0;
+  --review-bg: #F3F0FF;
+  --review-canvas: #A78BFA;
+  --ok: #1D7A46;
+  --ok-bg: #E6F6EC;
+  --warn: #B45309;
+  --warn-bg: #FFF4E5;
+  --danger: #B42318;
+  --danger-bg: #FDECEE;
+
+  /* Legacy accent aliases mapped to --primary so non-brand UI never turns gold */
+  --accent-dk: var(--primary-dk);
+  --accent-bg: var(--primary-bg);
+
+  /* 4px spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* Radii & elevation */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(0, 33, 71, 0.06);
+  --shadow: 0 2px 6px rgba(0, 33, 71, 0.08), 0 8px 24px rgba(0, 33, 71, 0.08);
+  --shadow-lg: 0 12px 36px rgba(0, 33, 71, 0.22);
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-serif-en: Georgia, "Times New Roman", Cambria, serif;
+  --font-serif-zh: "GelFigure Serif", Georgia, "Songti SC", "STSong", "SimSun", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

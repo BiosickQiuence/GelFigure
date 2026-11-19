@@ -63,7 +63,7 @@ export async function previewFitChecks(browser,root,engine,entry=path.join(root,
       await setup();await p.evaluate(()=>MarkerAI.open());await p.setViewportSize({width:1100,height:800});await p.keyboard.press('Escape');await assertFitted('escape-resize');
     });
     await check('the chosen preview zoom and export DPI survive return from review',async()=>{
-      await setup();await p.locator('#dpiTop').selectOption('300');await p.evaluate(()=>UI.setFigZoom(1.5));await send();await p.locator('[data-apply="ai"]').click();
+      await setup();await p.locator('#btnExportMenu').click();await p.locator('#dpiTop').selectOption('300');await p.locator('#btnExportMenu').click();await p.evaluate(()=>UI.setFigZoom(1.5));await send();await p.locator('[data-apply="ai"]').click();
       assert.equal(await p.evaluate(()=>UI.figZoom()),1.5);assert.equal(await p.evaluate(()=>App.S.style.dpi),300);await assertFitted('zoom-and-dpi');
     });
     await check('layout review also refits on return from its shared workspace',async()=>{

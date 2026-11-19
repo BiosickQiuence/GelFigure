@@ -1,0 +1,68 @@
+/* GelFigure Shared UI Primitives (Button, Field, Seg, Stepper, Chip, Card, Icon, Info Popover, Tour) */
+
+/* Inline SVG sprite host */
+.gf-sprite { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+.ic { display: inline-block; width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: -2px; }
+.ic-20 { width: 20px; height: 20px; }
+.ic-14 { width: 14px; height: 14px; }
+.ic-fill { fill: currentColor; stroke: none; }
+
+/* Brand Logo & Serif Wordmark (V2) */
+.brand { display: inline-flex; align-items: center; gap: var(--sp-2); font-family: var(--font-serif-en); font-weight: 700; font-size: 17px; letter-spacing: 0.01em; color: #FFFFFF; flex: none; text-decoration: none; }
+.brand-mark { width: 26px; height: 26px; display: block; flex: none; }
+.serif-heading { font-family: var(--font-serif-zh); font-weight: 700; letter-spacing: 0.01em; color: var(--text); }
+.heading-rule { position: relative; padding-bottom: var(--sp-2); }
+.heading-rule::after { content: ""; position: absolute; left: 0; bottom: 0; width: 36px; height: 2px; background: var(--accent); border-radius: 2px; }
+
+/* Star button — one of the 3 authorized uses of Amber Gold (--accent) */
+.star-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: var(--r-sm); border: 1px solid var(--accent); background: rgba(200, 150, 46, 0.14); color: #F5DFAC; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; white-space: nowrap; transition: background-color 0.15s, color 0.15s; }
+.star-btn:hover { background: rgba(200, 150, 46, 0.28); color: #FFFFFF; }
+.star-btn .ic { color: var(--accent); }
+
+/* Unified components (V5) */
+.gf-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); box-shadow: var(--shadow-sm); }
+.gf-field { display: flex; flex-direction: column; gap: var(--sp-1); margin-bottom: var(--sp-3); }
+.gf-field-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text); }
+.gf-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface); font-size: 12px; color: var(--text); white-space: nowrap; }
+.gf-chip.ok { background: var(--ok-bg); border-color: rgba(29, 122, 70, 0.28); color: var(--ok); }
+.gf-chip.warn { background: var(--warn-bg); border-color: rgba(180, 83, 9, 0.28); color: var(--warn); }
+.gf-chip.review { background: var(--review-bg); border-color: rgba(139, 108, 240, 0.35); color: #5B3CC4; }
+.gf-stepper { display: inline-flex; align-items: center; gap: 4px; }
+.gf-stepper .btn { min-width: 28px; height: 28px; padding: 0; }
+.gf-stepper input { width: 60px; text-align: center; height: 28px; }
+#panelLetter { width: 64px; }
+
+/* Info (ⓘ) button & on-demand popover (V3) */
+.info-btn { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; vertical-align: middle; flex: none; }
+.info-btn:hover, .info-btn:focus-visible { background: var(--primary-bg); color: var(--primary); outline: none; }
+.info-pop { position: fixed; z-index: 92; width: min(300px, calc(100vw - 24px)); padding: 10px 12px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 12.2px; line-height: 1.55; box-shadow: var(--shadow-lg); }
+.info-pop b { color: var(--brand); }
+
+/* Searchable Help & Shortcuts dialog (4.4) */
+.help-search-row { display: flex; align-items: center; gap: var(--sp-2); margin: var(--sp-3) 0; }
+.help-search-wrap { position: relative; flex: 1; }
+.help-search-wrap .ic { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.help-search-wrap input { padding-left: 32px; }
+.help-entry { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); margin-bottom: var(--sp-2); }
+.help-entry.hidden { display: none; }
+.help-entry h4 { margin: 0 0 4px; font-size: 13px; color: var(--brand); }
+.help-entry p { margin: 0; font-size: 12.3px; color: var(--muted); line-height: 1.6; }
+.shortcut-grid { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; align-items: center; margin-top: var(--sp-3); }
+.shortcut-grid kbd { display: inline-block; padding: 2px 7px; border-radius: 5px; border: 1px solid var(--line); background: var(--bg); font-family: var(--font-mono); font-size: 11.5px; color: var(--text); font-weight: 600; }
+
+/* Interactive 5-step Onboarding Tour (4.4) */
+.tour-backdrop { position: fixed; inset: 0; z-index: 96; background: rgba(0, 20, 45, 0.42); pointer-events: auto; }
+.tour-ring { position: fixed; z-index: 97; border-radius: var(--r); box-shadow: 0 0 0 3px var(--primary), 0 0 0 9999px rgba(0, 20, 45, 0.36); pointer-events: none; transition: all 0.2s ease; }
+.tour-card { position: fixed; z-index: 98; width: min(330px, calc(100vw - 24px)); padding: 16px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lg); color: var(--text); }
+.tour-step-meta { font-size: 11.5px; font-weight: 600; color: var(--primary); margin-bottom: 4px; }
+.tour-card h4 { margin: 0 0 6px; font-family: var(--font-serif-zh); font-size: 15px; color: var(--brand); }
+.tour-card p { margin: 0 0 14px; font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+.tour-actions { display: flex; align-items: center; gap: 8px; }
+.tour-actions .flex { flex: 1; }
+
+/* Marker style 3-option live preview (V6) */
+.marker-unit-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0; }
+.marker-unit-opt { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); cursor: pointer; font-size: 11.5px; color: var(--text); }
+.marker-unit-opt strong { font-family: var(--font-mono); font-size: 11.5px; color: var(--brand); }
+.marker-unit-opt span { font-size: 10.5px; color: var(--muted); }
+.marker-unit-opt.on { border-color: var(--primary); background: var(--primary-bg); }
