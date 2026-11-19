@@ -1,0 +1,422 @@
+/* v1.5.0 Productivity Features:
+ * - Sample Table (Excel TSV / CSV paste + column mapping + preview)
+ * - Historical Lane Name Autocomplete dropdown
+ * - One-Click Copy Figure Legend (ZH / EN)
+ * - Searchable & Date-Grouped Project History
+ * - Batch Processing Modal & Per-Gel Review Strip */
+
+/* ---------- History Search & Date Groups ---------- */
+.history-search-row {
+  margin: 4px 0 10px;
+}
+.history-search-input {
+  width: 100%;
+  height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  background: #fff;
+  color: var(--text);
+}
+.history-search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(11, 61, 120, 0.14);
+}
+.history-date-group {
+  margin-bottom: 12px;
+}
+.history-date-head {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.history-date-head span {
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+/* ---------- Review Footer Button Row (Copy Legend + Confirm & Export) ---------- */
+.review-foot-btns {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.review-foot-btns #btnCopyLegend {
+  flex: none;
+  white-space: nowrap;
+}
+.review-foot-btns #btnReviewConfirmExport {
+  flex: 1 1 auto;
+}
+
+/* ---------- Historical Lane Name Autocomplete ---------- */
+.lane-ac-menu {
+  position: fixed;
+  z-index: 95;
+  background: var(--surface);
+  border: 1px solid #CBD5E1;
+  border-radius: 9px;
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+  min-width: 185px;
+  max-width: 280px;
+  max-height: 210px;
+  overflow-y: auto;
+}
+.lane-ac-menu.hidden {
+  display: none;
+}
+.lane-ac-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 6px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.2px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.lane-ac-item:hover,
+.lane-ac-item.active {
+  background: #EDF3FA;
+  color: var(--brand);
+}
+.lane-ac-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lane-ac-meta {
+  font-size: 10.8px;
+  color: var(--muted);
+  flex: none;
+  white-space: nowrap;
+}
+
+/* ---------- Shared v1.5 Modal Shell ---------- */
+.v15-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(11, 22, 38, 0.56);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.v15-modal.hidden {
+  display: none;
+}
+.v15-card {
+  width: min(740px, calc(100vw - 28px));
+  max-height: calc(100vh - 36px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--text);
+}
+.v15-card.narrow {
+  width: min(560px, calc(100vw - 28px));
+}
+.v15-head {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.v15-head h2 {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--brand);
+}
+.v15-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.v15-foot {
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+  background: #FAF8F3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.v15-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Sample Table Modal ---------- */
+.st-textarea {
+  width: 100%;
+  min-height: 112px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+  background: #fff;
+  color: var(--text);
+}
+.st-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.st-map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.st-map-col {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #FAF8F3;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11.8px;
+}
+.st-map-col strong {
+  color: var(--brand);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.st-map-col select {
+  height: 28px;
+  font-size: 12px;
+}
+.st-preview-wrap {
+  max-height: 210px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+}
+.st-preview-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.st-preview-tbl th,
+.st-preview-tbl td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #EEEAE0;
+  text-align: left;
+  white-space: nowrap;
+}
+.st-preview-tbl th {
+  position: sticky;
+  top: 0;
+  background: #F4F2EC;
+  color: var(--brand);
+  font-weight: 700;
+}
+
+/* ---------- Copy Legend Modal ---------- */
+.legend-lang-seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 2px;
+  background: #F4F2EC;
+  gap: 2px;
+}
+.legend-lang-btn {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+.legend-lang-btn.on {
+  background: var(--primary);
+  color: #fff;
+}
+.legend-textarea {
+  width: 100%;
+  min-height: 170px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 12.8px;
+  line-height: 1.6;
+  background: #fff;
+  color: var(--text);
+  resize: vertical;
+}
+
+/* ---------- Batch Processing Modal & Stage Review Strip ---------- */
+.batch-drop {
+  border: 1.5px dashed #B9C8DA;
+  border-radius: 11px;
+  background: #F7F9FC;
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+}
+.batch-drop:hover {
+  border-color: var(--primary);
+  background: #EFF5FC;
+}
+.batch-cost-box {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #D4DFEE;
+  background: #F3F7FC;
+  font-size: 12.5px;
+  color: var(--brand);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.batch-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 170px;
+  overflow-y: auto;
+}
+.batch-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12.2px;
+}
+.batch-opts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.batch-opt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.batch-opt label {
+  font-weight: 600;
+  color: var(--brand);
+}
+.batch-progress-bar {
+  height: 7px;
+  border-radius: 999px;
+  background: #E8ECF2;
+  overflow: hidden;
+}
+.batch-progress-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.2s;
+}
+
+/* Top-of-Stage Batch Review Strip */
+.batch-strip {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #102542;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  color: #EDF2F8;
+  font-size: 12px;
+  overflow-x: auto;
+}
+.batch-strip.hidden {
+  display: none;
+}
+.batch-strip-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  min-width: 0;
+}
+.batch-chip {
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  background: rgba(255, 255, 255, 0.08);
+  color: #DCE5F0;
+  border-radius: 7px;
+  padding: 4px 9px;
+  font-size: 11.6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.batch-chip.on {
+  background: #FFFFFF;
+  color: var(--brand);
+  border-color: #FFFFFF;
+  font-weight: 700;
+}
+.batch-chip.done::before {
+  content: '✓ ';
+  color: #22C55E;
+}
+.batch-chip.on.done::before {
+  color: var(--ok);
+}
+.batch-strip-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+/* Welcome Card 3 Batch Pill */
+.welcome-card-sub-btn {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #C8D9EC;
+  background: #F1F6FC;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.welcome-card-sub-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}

@@ -5,10 +5,11 @@
   const dlg = document.createElement('div'); dlg.id = 'historyDlg'; dlg.className = 'dlg hidden';
   dlg.innerHTML = `<div class="dlg-body history-body" role="dialog" aria-modal="true" aria-labelledby="historyTitle" tabindex="-1">
     <button class="dlg-x" id="historyClose">×</button><h3 id="historyTitle"></h3><p class="hint" id="historyHint"></p>
+    <div class="history-search-row"><input type="search" id="historySearch" class="history-search-input" autocomplete="off"></div>
     <p class="history-error hidden" id="historyError" role="status"></p><div id="projectLibrary"></div>
     <div class="history-footer"><button class="btn" id="historySave"></button><button class="btn" id="historyRetry"></button></div></div>`;
   document.body.appendChild(dlg);
-  let opener = null, revision = 0, working = false;
+  let opener = null, revision = 0, working = false, lastList = [], searchQuery = '';
   function close() {
     revision++; dlg.classList.add('hidden');
     const target = opener && opener.isConnected && opener.getClientRects().length ? opener : $(UI.isPhone() ? 'btnMore' : 'cacheStatus');
@@ -30,6 +31,8 @@
     $('historyClose').setAttribute('aria-label', L('关闭', 'Close'));
     $('historyHint').textContent = L('原图和编辑进度自动保存在当前浏览器，清理浏览器数据会清除缓存。换电脑或备份可保存当前曝光的 .gelfig 文件；其他曝光请另存原文件。',
       'Images and edits stay in this browser; clearing browser data removes this history. Back up the selected exposure as a .gelfig file, and keep other exposure files separately.');
+    $('historySearch').placeholder = L('按项目名、文件名或泳道名搜索…', 'Search by project, filename, or lane name…');
+    $('historySearch').setAttribute('aria-label', L('搜索历史项目', 'Search recent projects'));
     $('historySave').textContent = L('保存当前项目文件', 'Save current project file');
     $('historySave').classList.toggle('hidden', !App.S);
     $('historyRetry').textContent = L('刷新 / 重试缓存', 'Refresh / retry saving');
@@ -44,47 +47,91 @@
     try { await fn(); } catch (e) { error(L('操作未完成：', 'Could not complete: ') + e.message); }
     finally { working = false; dlg.classList.remove('working'); dlg.setAttribute('aria-busy', 'false'); }
   }
+  function dateGroupKey(ts) {
+    const now = new Date();
+    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startYesterday = startToday - 86400000;
+    const startWeek = startToday - 6 * 86400000;
+    if (ts >= startToday) return 'today';
+    if (ts >= startYesterday) return 'yesterday';
+    if (ts >= startWeek) return 'week';
+    return 'earlier';
+  }
+  function dateGroupLabel(key) {
+    if (key === 'today') return L('今天', 'Today');
+    if (key === 'yesterday') return L('昨天', 'Yesterday');
+    if (key === 'week') return L('本周', 'This week');
+    return L('更早', 'Earlier');
+  }
+  function cardHtml(p) {
+    const summary = p.summary || {}, details = [new Date(p.savedAt).toLocaleString(G.I18N.lang === 'en' ? 'en' : 'zh-CN')];
+    if (summary.gelType) details.push(summary.gelType === 'protein' ? L('蛋白胶', 'Protein gel') : L('DNA 胶', 'DNA gel'));
+    const count = summary.images || 1;
+    details.push(count + L(' 张图', count === 1 ? ' image' : ' images'));
+    if (summary.lanes != null) details.push(summary.lanes + L(' 条泳道', ' lanes'));
+    const current = p.projectId === App.projectId;
+    const thumb = p.thumb ? `<img class="project-thumb" src="${esc(p.thumb)}" alt="">` : '<div class="project-thumb project-thumb-empty" aria-hidden="true"></div>';
+    return `<div class="library-card${current ? ' current' : ''}" data-project="${esc(p.projectId)}">
+      ${thumb}
+      <div class="project-info"><button class="open-project">${esc(p.projectName || p.name || L('未命名项目', 'Untitled project'))}</button>
+      <small>${esc(details.join(' · '))}${current ? ' · ' + L('当前项目', 'Current project') : ''}</small></div>
+      <div class="project-actions"><button class="btn sm rename-project">${L('改名', 'Rename')}</button>
+      <button class="btn sm delete-project" ${current ? 'disabled' : ''} title="${current ? L('当前项目正在自动缓存，切换后可删除', 'This project is being autosaved; switch projects before deleting it') : L('删除本地缓存', 'Delete local cache')}">${L('删除', 'Delete')}</button></div></div>`;
+  }
+  function paintList() {
+    const host = $('projectLibrary');
+    const q = searchQuery.trim().toLowerCase();
+    const filtered = lastList.filter(p => {
+      if (!q) return true;
+      const hay = [p.projectName, p.name, ...(p.summary?.laneNames || [])].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+    if (!lastList.length) {
+      host.innerHTML = `<div class="history-empty">${L('还没有历史项目。导入图片后会自动缓存，下次可从这里接着编辑。', 'No recent projects yet. Import an image to start; return here to continue editing.')}</div>`;
+      return;
+    }
+    if (!filtered.length) {
+      host.innerHTML = `<div class="history-empty">${L('未找到匹配的历史项目。', 'No matching recent projects.')}</div>`;
+      return;
+    }
+    const order = ['today', 'yesterday', 'week', 'earlier'];
+    const groups = { today: [], yesterday: [], week: [], earlier: [] };
+    filtered.forEach(p => groups[dateGroupKey(p.savedAt || 0)].push(p));
+    host.innerHTML = order.filter(k => groups[k].length).map(k =>
+      `<div class="history-date-group" data-group="${k}"><div class="history-date-head">${esc(dateGroupLabel(k))} <span>(${groups[k].length})</span></div>${groups[k].map(cardHtml).join('')}</div>`
+    ).join('');
+    host.querySelectorAll('[data-project]').forEach(card => {
+      const id = card.dataset.project;
+      card.querySelector('.open-project').onclick = () => action(async () => {
+        if (id === App.projectId) { close(); return; }
+        if (!await UI.archiveCurrent()) return;
+        if(await App.restoreHistory(id)!==false){close();UI.toast(L('已恢复原图和全部调整', 'Restored original images and all edits'));}
+      });
+      card.querySelector('.rename-project').onclick = () => rename(card, id);
+      card.querySelector('.delete-project').onclick = () => action(async () => {
+        if (!confirm(L('删除这个本地缓存项目？已下载的项目文件不会删除。', 'Delete this locally cached project? Downloaded project files are kept.'))) return;
+        await App.deleteHistory(id); await render(); await UI.offerDraft();
+        (dlg.querySelector('.open-project') || $('historyClose')).focus();
+      });
+    });
+  }
   async function render() {
     const token = ++revision;
     try {
       const list = await App.listHistory();
       if (token !== revision || dlg.classList.contains('hidden')) return;
-      const host = $('projectLibrary');
-      host.innerHTML = list.length ? list.map(p => {
-        const summary = p.summary || {}, details = [new Date(p.savedAt).toLocaleString(G.I18N.lang === 'en' ? 'en' : 'zh-CN')];
-        if (summary.gelType) details.push(summary.gelType === 'protein' ? L('蛋白胶', 'Protein gel') : L('DNA 胶', 'DNA gel'));
-        const count = summary.images || 1;
-        details.push(count + L(' 张图', count === 1 ? ' image' : ' images'));
-        if (summary.lanes != null) details.push(summary.lanes + L(' 条泳道', ' lanes'));
-        const current = p.projectId === App.projectId;
-        const thumb = p.thumb ? `<img class="project-thumb" src="${esc(p.thumb)}" alt="">` : '<div class="project-thumb project-thumb-empty" aria-hidden="true"></div>';
-        return `<div class="library-card${current ? ' current' : ''}" data-project="${esc(p.projectId)}">
-          ${thumb}
-          <div class="project-info"><button class="open-project">${esc(p.projectName || p.name || L('未命名项目', 'Untitled project'))}</button>
-          <small>${esc(details.join(' · '))}${current ? ' · ' + L('当前项目', 'Current project') : ''}</small></div>
-          <div class="project-actions"><button class="btn sm rename-project">${L('改名', 'Rename')}</button>
-          <button class="btn sm delete-project" ${current ? 'disabled' : ''} title="${current ? L('当前项目正在自动缓存，切换后可删除', 'This project is being autosaved; switch projects before deleting it') : L('删除本地缓存', 'Delete local cache')}">${L('删除', 'Delete')}</button></div></div>`;
-      }).join('') : `<div class="history-empty">${L('还没有历史项目。导入图片后会自动缓存，下次可从这里接着编辑。', 'No recent projects yet. Import an image to start; return here to continue editing.')}</div>`;
-      host.querySelectorAll('[data-project]').forEach(card => {
-        const id = card.dataset.project;
-        card.querySelector('.open-project').onclick = () => action(async () => {
-          if (id === App.projectId) { close(); return; }
-          if (!await UI.archiveCurrent()) return;
-          if(await App.restoreHistory(id)!==false){close();UI.toast(L('已恢复原图和全部调整', 'Restored original images and all edits'));}
-        });
-        card.querySelector('.rename-project').onclick = () => rename(card, id);
-        card.querySelector('.delete-project').onclick = () => action(async () => {
-          if (!confirm(L('删除这个本地缓存项目？已下载的项目文件不会删除。', 'Delete this locally cached project? Downloaded project files are kept.'))) return;
-          await App.deleteHistory(id); await render(); await UI.offerDraft();
-          (dlg.querySelector('.open-project') || $('historyClose')).focus();
-        });
-      });
+      lastList = list;
+      paintList();
     } catch (e) {
       if (token !== revision) return;
       $('projectLibrary').textContent = L('暂时无法读取浏览器缓存。仍可用“保存项目 / 打开项目”接着编辑。',
         'Browser history is unavailable. You can still save/open project files to continue later.');
     }
   }
+  $('historySearch').addEventListener('input', e => {
+    searchQuery = e.target.value || '';
+    paintList();
+  });
   function rename(card, id) {
     if (working || card.querySelector('input')) return;
     const old = card.querySelector('.open-project'), input = document.createElement('input');
@@ -111,6 +158,7 @@
     UI.flushPending();
     document.querySelectorAll('.menu').forEach(m => m.classList.add('hidden'));
     if (G.Mobile) G.Mobile.closeSheets();
+    searchQuery = ''; $('historySearch').value = '';
     labels(); error(''); dlg.classList.remove('hidden'); $('historyClose').focus();
     $('projectLibrary').textContent = L('读取中…', 'Loading…');
     await action(async () => {

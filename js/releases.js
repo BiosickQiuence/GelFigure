@@ -1,6 +1,15 @@
 /* Short bilingual release summaries, newest first. Keep the first version equal to App.VERSION.
  * Detailed history lives in CHANGELOG.md; this small local catalogue also works in offline HTML. */
 window.GelFigureReleases = Object.freeze([
+  {version:'1.5.0',date:'2026-11-20',zh:[
+    '新增样本表（支持直接从 Excel 复制 TSV 或上传 .csv，按列映射泳道名、分组横线与 +/- 条件行并实时预览）以及历史泳道名自动补全。',
+    '右侧待核对清单底部新增「复制图注」，一键生成并复制中/英文投稿图注草稿。',
+    '历史项目弹窗新增按项目名/文件名/泳道名搜索与按日期分组（今天 / 昨天 / 本周 / 更早）；新增多图串行批量处理（执行前明示 AI N×2 次调用，支持逐张清单核对与统一套用版式打包 ZIP）。'
+  ],en:[
+    'Add Sample Table (Excel TSV paste or .csv import with column mapping for lane names, groups, and +/- condition rows) plus historical lane-name autocomplete.',
+    'Add one-click “Copy legend” in the Review Checklist footer with ZH / EN toggle.',
+    'Add search and date grouping (Today / Yesterday / This week / Earlier) to Recent Projects, plus sequential multi-gel Batch Processing with N×2 AI call disclosure, per-gel checklist review, and unified ZIP export.'
+  ]},
   {version:'1.4.0',date:'2026-11-20',zh:[
     '成图为主画布与顶部视图切换：默认展示大图成图并支持一键切换「成图 / 原图（调泳道·裁切）」，进入校正步骤自动切回原图。',
     '左侧重构为 4 步手风琴面板（① 校正 ② Marker ③ 命名与标注 ④ 版式与导出）与底部「高级」折叠区，非当前步自动折叠为一行摘要。',

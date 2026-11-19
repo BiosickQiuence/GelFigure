@@ -113,7 +113,8 @@
       savedAt: Date.now(), app: 'GelFigure ' + App.VERSION, thumb,
       ladders: clone(G.Ladders.defsFor(App.S.markers.map(m => m.ladderId))), sources,
       expIdx: App.exposures ? App.expIdx : null,
-      summary: { images: sources.length, lanes: App.figureLanes().length, gelType: App.gelKind() } };
+      summary: { images: sources.length, lanes: App.figureLanes().length, gelType: App.gelKind(),
+        laneNames: App.S.lanes.map(l => (l.name || '').trim()).filter(Boolean).slice(0, 64) } };
     const sig = sourceSig(meta);
     let targetId = projectId;
     status('pending');

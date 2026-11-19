@@ -46,6 +46,7 @@ import { uxOptimizationChecks } from './ux-optimizations.mjs';
 import { v12VisualChecks } from './v12-visual.mjs';
 import { v13AiPrimaryChecks } from './v13-ai-primary.mjs';
 import { v14LayoutMobileChecks } from './v14-layout-mobile.mjs';
+import { v15ProductivityChecks } from './v15-productivity.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = name => (process.argv.find(a => a.startsWith(`--${name}=`)) || '').split('=')[1];
@@ -180,6 +181,7 @@ async function runIn(name, base) {
     const v12=await v12VisualChecks(browser,base,ROOT,name);out.results.push(...v12);if(v12.some(r=>r[0]==='FAIL'))out.ok=false;
     const v13=await v13AiPrimaryChecks(browser,base,ROOT,name);out.results.push(...v13);if(v13.some(r=>r[0]==='FAIL'))out.ok=false;
     const v14=await v14LayoutMobileChecks(browser,base,ROOT,name);out.results.push(...v14);if(v14.some(r=>r[0]==='FAIL'))out.ok=false;
+    const v15=await v15ProductivityChecks(browser,base,ROOT,name);out.results.push(...v15);if(v15.some(r=>r[0]==='FAIL'))out.ok=false;
     const ctx = await browser.newContext({ viewport: { width: 1600, height: 960 } });
     const watch = page => {
       const errs = [];

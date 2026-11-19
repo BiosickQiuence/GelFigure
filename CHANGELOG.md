@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## [1.5.0] - 2026-11-20
+
+### 中文
+
+- 样本表导入与列映射：新增「粘贴样本表」弹窗，内置零依赖 RFC-4180 CSV / Excel TSV 解析器，支持自由映射列为泳道名、分组横线、条件行（+/-）或忽略，实时预览并一键填充。
+- 历史泳道名自动补全：基于本地历史项目与使用频次，在步骤 ③ 泳道名输入与成图编辑框实时联想补全（标记“上次项目 / 历史 N 次”，支持上下方向键与回车确认）。
+- 一键复制图注：右侧待核对清单底部新增「复制图注」按钮，支持中/英文切换并自动汇总泳道名、Marker 型号、透视校正、拼接与线性/Gamma 披露。
+- 历史项目搜索与日期分组：历史项目弹窗新增实时搜索框（按项目名、文件名与泳道名过滤），并按「今天 / 昨天 / 本周 / 更早」分组展示。
+- 批量处理：支持多选多张胶图串行处理，启动前明示 `将调用 AI N×2 次`（亦支持离线本地批量），完成后在画布顶部提供 `1 / N` 核对切换条逐张进入待核对清单微调，最后统一套用当前版式模板打包导出 ZIP。
+
+### English
+
+- Sample Table (Excel TSV / CSV): zero-dependency RFC-4180 CSV & TSV parser with column-role mapping (Lane name, Group, +/- Condition row, Ignore), live preview, and one-click apply.
+- Historical Lane Name Autocomplete: suggests previously used lane names from IndexedDB project history and local usage frequency with keyboard navigation (`↑`/`↓`/`Enter`/`Esc`).
+- One-Click Copy Figure Legend: added `Copy legend` button in the Review Checklist footer with ZH / EN toggle and clipboard copy.
+- Searchable & Date-Grouped Project History: live filtering by project name, filename, or lane names, grouped into `Today / Yesterday / This week / Earlier`.
+- Batch Processing: sequential multi-gel queue with explicit `N×2` AI call disclosure (and offline local option), per-gel Review Checklist switcher strip, and unified style-template ZIP export.
+
 ## [1.4.0] - 2026-11-20
 
 ### 中文

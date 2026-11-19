@@ -361,6 +361,7 @@
           <span>${warnCount ? `⚠ ${esc(firstWarn?.text || L(`导出就绪度：${warnCount} 项注意`, `Export checks: ${warnCount} notice(s)`))}` : `✓ ${L('导出就绪度：通过', 'Export readiness: OK')}`}</span>
         </div>
         <div class="review-foot-btns">
+          <button type="button" class="btn sm" id="btnCopyLegend">${L('复制图注', 'Copy legend')}</button>
           <button type="button" class="btn primary" id="btnReviewConfirmExport">${pending.length ? L('全部确认并导出', 'Confirm all & export') : L('导出 PNG', 'Export PNG')}</button>
         </div>
       </div>`;
@@ -378,6 +379,13 @@
 
     const rerunBtn = panel.querySelector('#btnReviewRerunAI');
     if (rerunBtn && aiMeta?.onRerun) rerunBtn.addEventListener('click', () => aiMeta.onRerun());
+
+    const copyLegendBtn = panel.querySelector('#btnCopyLegend');
+    if (copyLegendBtn) {
+      copyLegendBtn.addEventListener('click', () => {
+        if (win.LegendCopy?.open) win.LegendCopy.open();
+      });
+    }
 
     const confirmAllBtn = panel.querySelector('#btnReviewConfirmExport');
     if (confirmAllBtn) {
