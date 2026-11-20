@@ -243,7 +243,7 @@ export async function v12VisualChecks(browser, base, root = ROOT, engine = 'chro
         topbarBg: getComputedStyle(document.querySelector('.topbar')).backgroundColor,
         editorBg: getComputedStyle(document.getElementById('editorBox')).backgroundColor
       }));
-      assert.match(info.version, /^1\.[2-9]\.\d+$/);
+      assert.match(info.version, /^(?:1\.[2-9]|[2-9]\.\d+)\.\d+$/);
       assert.ok(info.zhKeys >= 5 && info.enKeys >= 5, 'Inlined i18n dictionaries missing');
       assert.equal(info.topbarBg, 'rgb(0, 33, 71)');
       assert.equal(info.editorBg, 'rgb(21, 24, 28)');

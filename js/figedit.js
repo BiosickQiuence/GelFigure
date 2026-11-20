@@ -253,8 +253,21 @@
   const clean = (kind, v) => (kind === 'group'
     ? v.split('\n').map(s => s.trim()).join('\n').replace(/\n{2,}/g, '\n').trim()
     : v.replace(/\s*\n\s*/g, ' ').trim());
+  function commitOwnFields() {
+    if (!edit || edit.kind !== 'lane') return;
+    const lane = S().lanes[edit.id];
+    if (!lane?.nameStyle) return;
+    const ptEl = $('fedOwnPt'), angEl = $('fedOwnAngle');
+    if (ptEl) {
+      const v = +ptEl.value;
+      if (ptEl.value.trim() !== '' && v > 0) lane.nameStyle.pt = clamp(Math.round(v * 2) / 2, 4, 14);
+      else delete lane.nameStyle.pt;
+    }
+    if (angEl) lane.nameStyle.angle = G.Render.labelAngle(angEl.value);
+  }
   function closeEd(revert) {
     if (!edit) return;
+    if (!revert && edit.state === S()) commitOwnFields();
     const e = edit; edit = null;
     if(e.state!==S()){fed.classList.add('hidden');bar.classList.add('hidden');return;}
     if(e.kind==='lane'){
@@ -314,7 +327,7 @@
   bar.addEventListener('mousedown', e => {if(e.target.closest('button'))e.preventDefault();});
   bar.addEventListener('keydown',e=>{
     if(nameUndoKey(e))return;
-    if(e.key==='Tab'){barPress=false;finishOnBlur();}
+    if(e.key==='Tab')barPress=false;
     if(e.key==='Escape'&&!composing(e)&&edit){e.preventDefault();e.stopPropagation();closeEd(true);}
   });
   $('fedLaneSettings').addEventListener('toggle',()=>{if(edit)placeBar();});
@@ -329,7 +342,9 @@
     if(e.target.checked)lane.nameStyle={pt:curSize(),angle:String(G.UI.lastFig()?.angle||0)};else delete lane.nameStyle;
     syncBar();placeBar();recordNameEdit();App.refresh();
   };
+  $('fedOwnPt').oninput=e=>{if(!edit||edit.kind!=='lane'||!S().lanes[edit.id].nameStyle)return;const v=+e.target.value;if(e.target.value.trim()!==''&&v>0)S().lanes[edit.id].nameStyle.pt=clamp(Math.round(v*2)/2,4,14);else delete S().lanes[edit.id].nameStyle.pt;syncBar();App.refresh();};
   $('fedOwnPt').onchange=e=>{if(!edit||edit.kind!=='lane'||!S().lanes[edit.id].nameStyle)return;const v=+e.target.value;if(v>0)S().lanes[edit.id].nameStyle.pt=clamp(Math.round(v*2)/2,4,14);else delete S().lanes[edit.id].nameStyle.pt;e.target.value=curSize();syncBar();recordNameEdit();App.refresh();};
+  $('fedOwnAngle').oninput=e=>{if(!edit||edit.kind!=='lane'||!S().lanes[edit.id].nameStyle)return;S().lanes[edit.id].nameStyle.angle=G.Render.labelAngle(e.target.value);App.refresh();};
   $('fedOwnAngle').onchange=e=>{if(!edit||edit.kind!=='lane'||!S().lanes[edit.id].nameStyle)return;const v=G.Render.labelAngle(e.target.value);S().lanes[edit.id].nameStyle.angle=v;e.target.value=v==='auto'?'':v;recordNameEdit();App.refresh();};
   window.visualViewport?.addEventListener('resize',()=>{if(edit)placeBar();});
   bar.addEventListener('click', e => {

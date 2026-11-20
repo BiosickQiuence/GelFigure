@@ -5,7 +5,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {chromium, firefox, webkit} from 'playwright';
 
 export async function autoFlowChecks(browser, url, engine) {
-  const ctx = await browser.newContext({viewport:{width:1280, height:850}});
+  const ctx = await browser.newContext({viewport:{width:1280, height:850}, serviceWorkers:'block'});
   const p = await ctx.newPage(), calls = [], errors = [], results = [];
   const api = 'https://auto-flow.synthetic.invalid/v1/chat/completions';
   const testKey = 'synthetic-auto-fixture', testModel = 'synthetic-vision';
@@ -196,7 +196,7 @@ export async function autoFlowChecks(browser, url, engine) {
       assert(Math.abs(layouts.edge.q[0].x-layouts.edge.q[3].x)>1,'the top border does not require straightening the left edge');
     });
     await check('failed, empty and cancelled responses preserve the preceding project and its undo stack', async () => {
-      const old=await p.evaluate(()=>[App.snapshot(),App.projectId,App.hist.slice()]);
+      const old=await p.evaluate(async()=>{await App.saveDraft();return [App.snapshot(),App.projectId,App.hist.slice()];});
       await open(); await choose('dl2000'); const n=calls.length;
       await drop('PRIVATE_two.tif',2); assert.match(await error(),/one gel/); assert.equal(calls.length,n);
       mode='bad-layout'; await drop(); assert.match(await error(),/Lane correction/); assert.equal(calls.length,n+1);

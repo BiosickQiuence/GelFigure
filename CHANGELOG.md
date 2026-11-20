@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## [2.0.0] - 2026-11-21
+
+### 中文
+
+- **v2.0.0 里程碑正式发布**：完整集成 `v1.2.0`–`v1.6.0` 的全部重大升级与架构重塑，包括方案 C 牛津蓝工作台与 L1 品牌标志、全屏欢迎页与 4 步 API 配置向导、拖图即开始 AI 与三步进度浮层、右侧常驻待核对清单与 IndexedDB 结果缓存、成图为主视图与左侧四步手风琴、手机精简版、样本表与历史泳道名补全、一键复制图注与多图批量队列、默认关闭的未拉伸线性相对灰度定量及网页版离线 PWA。
+- **稳定性与并发竞态加固**：修复连续切换曝光、图像方向、放大缩放及 Marker 校准自动切回原图时的时序问题；增强异步 AI 自动流程的取消/错误处理、请求缓存隔离（包含接口基址）及直方图缓存键准确性。
+- **构建、部署与三引擎全量验收**：补全 GitHub Pages 与 Release ZIP 打包所需的 `i18n`、`icons`、`manifest.webmanifest` 与 `sw.js` 资产，使基于 v1.4/v1.2 新交互的自动化测试全部对齐，并通过 Chromium、Firefox 与 WebKit 三引擎全量回归及离线单文件验证。
+
+### English
+
+- **v2.0.0 Milestone Release**: consolidates all major `v1.2.0`–`v1.6.0` upgrades into a unified architecture—Scheme C Oxford Blue workspace and L1 brand mark, full-screen Welcome Page & 4-step API Wizard, drop-to-start AI Auto-Flow with progress overlay, persistent Review Checklist with IndexedDB result caching, Figure-First stage with 4-step accordion & Mobile Lite, Sample Table / lane-name autocomplete / one-click Copy Legend / multi-gel Batch queue, opt-in unclipped linear grayscale densitometry with saturation blocking, and installable Web PWA.
+- **Reliability & Race-Condition Hardening**: fixed timing and stage-view synchronization during Marker calibration, histogram cache keys across image orientation/exposure switches, AI cache keys across endpoints, and concurrent auto-flow guards.
+- **Packaging, CI & Three-Engine Verification**: included `i18n`, `icons`, `manifest.webmanifest`, and `sw.js` in GitHub Pages and Release archive workflows, aligned regression suites with the current workspace UX, and passed full Chromium, Firefox, WebKit, and offline single-file HTML verification.
+
 ## [1.6.0] - 2026-11-20
 
 ### 中文

@@ -1,6 +1,15 @@
 /* Short bilingual release summaries, newest first. Keep the first version equal to App.VERSION.
  * Detailed history lives in CHANGELOG.md; this small local catalogue also works in offline HTML. */
 window.GelFigureReleases = Object.freeze([
+  {version:'2.0.0',date:'2026-11-21',zh:[
+    'v2.0.0 正式发布：整合牛津蓝工作台、欢迎页与 AI 配置向导、成图优先四步手风琴与手机精简版、样本表 / 自动补全 / 批量处理、灰度定量及网页 PWA。',
+    '加固多引擎稳定性与并发状态保护：修复快速切换曝光/方向/缩放与异步加载竞态、完善 AI 自动流程报错提示及视图切换同步。',
+    '补齐离线单文件、GitHub Pages 与 Release 打包资产清单（i18n/icons/manifest/sw.js），通过 Chromium、Firefox 与 WebKit 全套自动化验证。'
+  ],en:[
+    'GelFigure v2.0.0 milestone: unifies Scheme C workspace, Welcome & AI Wizard, Figure-First 4-step workflow, Mobile Lite, Sample Table, batch processing, opt-in densitometry, and PWA.',
+    'Hardened multi-engine reliability and async state guards across exposure/orientation switching, histogram/AI caches, stage routing, and batch workflows.',
+    'Updated offline single-file HTML and GitHub Pages/Release packaging with complete i18n, icon, and Service Worker assets verified on Chromium, Firefox, and WebKit.'
+  ]},
   {version:'1.6.0',date:'2026-11-20',zh:[
     '新增基础相对灰度定量（默认关闭，位于左侧「高级」折叠区）：直接基于未拉伸线性灰度像素计算各泳道积分强度，支持滚球 / 泳道边缘 / 无三种背景扣除与指定参考泳道归一化。',
     '内置严格的过曝条带保护：检测到饱和像素的泳道自动标红并禁止定量及作为参考泳道；支持导出含参数与免责说明的 CSV，并同步写入处理日志。',

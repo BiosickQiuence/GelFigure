@@ -239,7 +239,7 @@
     const res = compute();
     if (!res) return '';
     const lines = [
-      `# GelFigure ${win.App?.VERSION || '1.6.0'} Basic Grayscale Densitometry`,
+      `# GelFigure ${win.App?.VERSION || '2.0.0'} Basic Grayscale Densitometry`,
       `# SourceFile,${csvCell(win.App?.S?.file?.name || '')}`,
       `# Algorithm,${res.algorithm}`,
       `# SourcePixels,${csvCell(res.sourcePixels)}`,

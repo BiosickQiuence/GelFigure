@@ -5,7 +5,7 @@ import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 
 export async function aiMarkerChecks(browser,base,root,engine){
-  const results=[],ctx=await browser.newContext({viewport:{width:1440,height:1000}}),p=await ctx.newPage(),errors=[],requests=[];
+  const results=[],ctx=await browser.newContext({viewport:{width:1440,height:1000},serviceWorkers:'block'}),p=await ctx.newPage(),errors=[],requests=[];
   const API='https://vision.gelfigure.invalid/v1/chat/completions',SECRET='synthetic-test-credential',MODEL='mock-vision-test';
   let mode='ok',mutate=null,hold=null,x=0.07,customId=null;
   const dir=path.join(root,'test-results','ai-marker',engine+'-'+Date.now());fs.mkdirSync(dir,{recursive:true});

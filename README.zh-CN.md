@@ -1,27 +1,27 @@
-# GelFigure v1.6.0
+# GelFigure v2.0.0
 
 **把 DNA 胶、蛋白胶整理成可编辑、可导出的实验图。支持本地编辑、AI 复核，以及从泳道校正到 Marker 标记的全自动处理。**
 
-[English](README.md) · [打开网页版](https://biosickqiuence.github.io/GelFigure/) · [下载完整离线 HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v1.6.0/GelFigure-v1.6.0.html) · [全部下载](https://github.com/BiosickQiuence/GelFigure/releases/tag/v1.6.0)
+[English](README.md) · [打开网页版](https://biosickqiuence.github.io/GelFigure/) · [下载完整离线 HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v2.0.0/GelFigure-v2.0.0.html) · [全部下载](https://github.com/BiosickQiuence/GelFigure/releases/tag/v2.0.0)
 
 > 不会编程也能用。普通整理、手动校正和导出不需要 API，也不需要安装 Python、Node.js 或其他软件。只有使用 AI 看图时，才需要准备自己的视觉 API。
 
 ## 先打开，再导入胶图
 
-1. 直接打开上面的网页版；或者在 Release 中下载 **GelFigure-v1.6.0.html**，双击，用 Chrome、Edge、Firefox 或 Safari 打开。不要只另存仓库中的 `index.html`，它依赖旁边的其他文件。
+1. 直接打开上面的网页版（HTTPS / GitHub Pages 支持安装为离线 PWA）；或者在 Release 中下载 **GelFigure-v2.0.0.html**，双击，用 Chrome、Edge、Firefox 或 Safari 打开。不要只另存仓库中的 `index.html`，它依赖旁边的其他文件。
 2. 将胶图拖进窗口，或点“打开图片”。支持常见图片及 TIFF；多张曝光可一起导入再比较。
 3. 核对左侧“胶的类型”。本版按颜色规则判断：检测到可靠蓝色时按蛋白胶，黑白图按 DNA 胶；仍可手动切换。黑白蛋白胶应自行选择“蛋白胶”。
 4. 新图默认保留原色和原始明暗。需要灰度调整时再主动切换。已有项目恢复其保存的显示选择。
-5. 核对裁切红框、泳道数与 Marker，填写泳道名、分组或标注，再导出。
+5. 按左侧四步手风琴（① 校正 ② Marker ③ 命名与标注 ④ 版式与导出）整理并在右侧待核对清单确认后导出。
 6. 继续编辑请保存 `.gelfig` 项目。PNG 等成图不能替代项目文件；关闭网页前先保存。浏览器缓存不等于永久备份。
 
 ## 本版可以做什么
 
+- 成图优先工作台与牛津蓝界面：顶部分段切换「成图 / 原图」、四步互斥手风琴、全屏欢迎页与离线 AI 示例、以及 4 标签手机精简版。
 - 手动四点透视校正，适用于斜拍胶图；支持方向、旋转、裁切、泳道与逐条标注编辑。
-- 可选 AI 泳道校正与 AI 全自动处理：定位四角与泳道、标记 Marker 条带并打开可编辑成图。
-- AI Marker 与本地比较共用工作区：顶部选一次型号，两种识别共同使用；顺序配对且不补造条带。
-- 顶栏常显导出前检查状态角标；历史项目带缩略图、按原图 SHA-256 去重且不记录示例图。
-- 支持撤销、仅版式模板、PNG / TIFF / SVG / 可编辑 PPTX，以及含原图、项目、记录和校验清单的审阅 ZIP。
+- 统一 AI 助手、4 步 API 配置向导、拖图即开始 AI 全自动、IndexedDB 结果缓存与右侧常驻待核对清单；AI Marker 与本地识别共用工作区且顺序配对不补造条带。
+- 科研效率增强：Excel TSV / CSV 样本表映射导入、历史泳道名自动补全、一键复制中英文投稿图注、历史项目搜索与日期分组、多图串行批量处理。
+- 顶栏常显导出前检查状态角标；支持撤销、仅版式模板、PNG / TIFF / SVG / 可编辑 PPTX，以及含原图、项目、记录和校验清单的审阅 ZIP。
 
 AI 建议需要人工复核，尤其是弱带、空道、型号、缺失条带和误匹配；本工具不提供条带修补，在「高级」面板提供基础相对灰度定量（默认关闭；需自行验证成像线性范围，过曝条带自动标红并禁止定量）。
 
@@ -101,4 +101,4 @@ node scripts/bundle-onefile.mjs
 
 ## 致谢
 
-本项目基于 [poplarity/GelFigure](https://github.com/poplarity/GelFigure) 改进。本仓库由 BiosickQiuence 维护 v1.x 改造与发布，原始版权声明和 MIT 许可保留在 [LICENSE](LICENSE)。
+本项目基于 [poplarity/GelFigure](https://github.com/poplarity/GelFigure) 改进。本仓库由 BiosickQiuence 维护 v1.x 与 v2.x 改造与发布，原始版权声明和 MIT 许可保留在 [LICENSE](LICENSE)。

@@ -1,28 +1,28 @@
-# GelFigure v1.6.0
+# GelFigure v2.0.0
 
 **Prepare editable DNA/protein gel figures in your browser, with local editing, AI-assisted review and automatic lane correction and marker labelling.**
 
-[简体中文完整教程](README.zh-CN.md) · [Open the web app](https://biosickqiuence.github.io/GelFigure/) · [Download the complete offline HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v1.6.0/GelFigure-v1.6.0.html) · [Release downloads](https://github.com/BiosickQiuence/GelFigure/releases/tag/v1.6.0)
+[简体中文完整教程](README.zh-CN.md) · [Open the web app](https://biosickqiuence.github.io/GelFigure/) · [Download the complete offline HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v2.0.0/GelFigure-v2.0.0.html) · [Release downloads](https://github.com/BiosickQiuence/GelFigure/releases/tag/v2.0.0)
 
 > No programming is required. Local editing, manual correction and exports need no API account, Python or Node.js. A vision API is needed only if you choose AI recognition.
 
 ## Open a gel and prepare a figure
 
-1. Open the web app, or download **GelFigure-v1.6.0.html** from Releases and double-click it in Chrome, Edge, Firefox or Safari. Do not download only the repository’s `index.html`: that file depends on neighbouring folders.
+1. Open the web app (installable as an offline PWA on HTTPS / GitHub Pages), or download **GelFigure-v2.0.0.html** from Releases and double-click it in Chrome, Edge, Firefox or Safari. Do not download only the repository’s `index.html`: that file depends on neighbouring folders.
 2. Drop a gel image into the window or select Open image. Common images and TIFF are supported; multiple exposures can be imported together.
 3. Check Gel type. This release follows a colour rule: sufficient blue selects protein; monochrome selects DNA. Manual selection remains available, so choose protein yourself for a monochrome protein gel.
 4. New imports retain original colours and tones. Select Grayscale explicitly if adjustments are needed; saved projects retain their saved appearance.
-5. Check the crop, lanes and Marker, then edit names, groups and annotations and export.
+5. Follow the Figure-First 4-step workflow (Correct, Marker, Names & Labels, Layout & Export) and use the right-hand Review Checklist to verify weak bands or warnings before exporting.
 6. Save a `.gelfig` project to continue later. A PNG is not an editable project; browser caches are not permanent backups.
 
 ## Features
 
+- Figure-First Oxford Blue workspace with 4-step accordion, live stage switcher (`Figure / Raw image`), full-screen Welcome Page with offline AI Demo, and Mobile Lite layout.
 - Manual four-corner perspective correction, orientation, rotation, crop and lane/annotation editing.
-- Optional AI lane correction with editable positions, blank/uncertain proposals and explicit adoption.
-- One top-of-workspace Marker model choice shared by local and AI recognition; selected sizes, exact positions and label visibility remain editable.
-- Sequential top-to-bottom / largest-to-smallest size pairing. Missing positions stay empty; surplus positions remain stored but hidden. Counts are disclosed; bands are not invented.
-- Always-visible export readiness badge, thumbnails and SHA-256 deduplication in recent projects (demo gels excluded).
-- Undo, recent projects, appearance-only templates, PNG/TIFF/SVG/editable PPTX and review ZIP packages with originals, projects, processing records and hashes.
+- Unified AI Assistant, 4-step API Setup Wizard, drop-to-start AI Auto-Flow, IndexedDB result caching, persistent Review Checklist (`#8B6CF0` pins), and editable proposals with explicit adoption.
+- One top-of-workspace Marker model choice shared by local and AI recognition; sequential top-to-bottom / largest-to-smallest size pairing without invented bands.
+- Productivity tools: RFC-4180 CSV / Excel TSV Sample Table import, historical lane-name autocomplete, one-click Copy Figure Legend, searchable & date-grouped project history, and sequential multi-gel batch queue.
+- Always-visible export readiness badge, PNG/TIFF/SVG/editable PPTX and review ZIP packages with originals, projects, processing records and SHA-256 hashes.
 
 Review weak bands, empty lanes, model choices and mismatches yourself. GelFigure does not perform band repair; it provides basic relative grayscale densitometry (disabled by default under Advanced — verify your imaging linear dynamic range yourself; saturated/overexposed bands are strictly blocked from quantification).
 
@@ -102,4 +102,4 @@ The standalone build is `dist/GelFigure.html`. See [CHANGELOG](CHANGELOG.md), [d
 
 ## Acknowledgements
 
-This project builds on [poplarity/GelFigure](https://github.com/poplarity/GelFigure). BiosickQiuence maintains the v1.x adaptations and releases in this repository; original copyright notices and MIT terms are retained in [LICENSE](LICENSE).
+This project builds on [poplarity/GelFigure](https://github.com/poplarity/GelFigure). BiosickQiuence maintains the v1.x and v2.x adaptations and releases in this repository; original copyright notices and MIT terms are retained in [LICENSE](LICENSE).

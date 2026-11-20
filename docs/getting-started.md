@@ -1,6 +1,6 @@
-# Getting started with GelFigure v1.1.0
+# Getting started with GelFigure v2.0.0
 
-Open https://biosickqiuence.github.io/GelFigure/ or download `GelFigure-v1.1.0.html` from https://github.com/BiosickQiuence/GelFigure/releases/tag/v1.1.0 and double-click it. Local editing needs no API account or developer tools.
+Open https://biosickqiuence.github.io/GelFigure/ or download `GelFigure-v2.0.0.html` from https://github.com/BiosickQiuence/GelFigure/releases/tag/v2.0.0 and double-click it. Local editing needs no API account or developer tools.
 
 Import → check type/orientation → correct crop/lanes → confirm Marker and per-band pairing → edit labels → save `.gelfig` and export.
 

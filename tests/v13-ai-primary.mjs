@@ -91,7 +91,7 @@ export async function v13AiPrimaryChecks(browser, base, root = ROOT, engine = 'c
   });
 
   await check('A1 4-Step API Wizard, A3 Privacy Consent, W6 Settings Center 5 tabs', async () => {
-    const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 } });
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, serviceWorkers: 'block' });
     const page = await ctx.newPage();
     const errs = [];
     page.on('pageerror', e => errs.push(String(e)));
@@ -149,7 +149,7 @@ export async function v13AiPrimaryChecks(browser, base, root = ROOT, engine = 'c
   });
 
   await check('A4 Drop-to-Start AI, A5 Progress, A7 Cache hit (0 calls), A8 1x retry on 429, A9 Error card (no retry on 401)', async () => {
-    const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 } });
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, serviceWorkers: 'block' });
     const page = await ctx.newPage();
     const errs = [];
     page.on('pageerror', e => errs.push(String(e)));

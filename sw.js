@@ -1,6 +1,6 @@
-/* GelFigure v1.6.0 Service Worker (GitHub Pages / Web version only).
+/* GelFigure v2.0.0 Service Worker (GitHub Pages / Web version only).
  * Offline-caches same-origin app shell assets; NEVER intercepts external HTTPS AI endpoints or POST calls. */
-const CACHE_NAME = 'gelfigure-v1.6.0';
+const CACHE_NAME = 'gelfigure-v2.0.0';
 const APP_SHELL = [
   './',
   './index.html',

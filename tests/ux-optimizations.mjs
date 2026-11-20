@@ -35,7 +35,7 @@ export async function uxOptimizationChecks(browser, base, root, engine = 'chromi
 
   // 1. AI Settings presets, paste sanitization, key toggle, and connection test
   await check('AI settings presets, paste sanitization, key show/hide, and connection test', async () => {
-    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, serviceWorkers: 'block' });
     const p = await ctx.newPage();
     const errs = [];
     p.on('pageerror', e => errs.push(String(e)));
@@ -170,7 +170,7 @@ export async function uxOptimizationChecks(browser, base, root, engine = 'chromi
 
   // 3. Auto Flow: unconfigured banner, cancel mid-request, partial result adoption, quick-pick ladder chip
   await check('Auto Flow unconfigured guidance, mid-request cancel, partial adoption, and quick ladder chips', async () => {
-    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, serviceWorkers: 'block' });
     const p = await ctx.newPage();
     const errs = [];
     p.on('pageerror', e => errs.push(String(e)));
@@ -270,7 +270,7 @@ export async function uxOptimizationChecks(browser, base, root, engine = 'chromi
 
   // 4. Interactive #aiPreview-ai canvas dragging and Shift+click band addition
   await check('interactive AI Marker preview canvas supports band drag and Shift+click band add', async () => {
-    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, serviceWorkers: 'block' });
     const p = await ctx.newPage();
     const errs = [];
     p.on('pageerror', e => errs.push(String(e)));
@@ -347,7 +347,7 @@ export async function uxOptimizationChecks(browser, base, root, engine = 'chromi
 
   // 5. One-click #layoutAutoCover + undo + actionable toast handoff to AI Marker
   await check('one-click layout auto-cover expands corners with undo and apply toast opens AI Marker', async () => {
-    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, serviceWorkers: 'block' });
     const p = await ctx.newPage();
     const errs = [];
     p.on('pageerror', e => errs.push(String(e)));
@@ -421,7 +421,7 @@ export async function uxOptimizationChecks(browser, base, root, engine = 'chromi
 
   // 6. Searchable ladder pickers, Copy PNG + fallback, Section 1 collapsible hierarchy
   await check('searchable ladder pickers, Copy PNG + fallback toast, and Section 1 collapsible hierarchy', async () => {
-    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, serviceWorkers: 'block' });
     const p = await ctx.newPage();
     const errs = [];
     p.on('pageerror', e => errs.push(String(e)));
