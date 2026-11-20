@@ -261,6 +261,48 @@ export async function v13AiPrimaryChecks(browser, base, root = ROOT, engine = 'c
     }
   });
 
+  await check('Opening AI AutoFlow from Welcome or Editor hides welcome-view and reviewPanel completely (no right-edge squeeze)', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 820 } });
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on('pageerror', e => errs.push(String(e)));
+    try {
+      await page.goto(`${base}/index.html?lang=zh`);
+      await page.waitForFunction(() => !!window.WelcomeAI && !!window.AutoFlow, null, { timeout: 30000 });
+      await page.click('#btnAutoFlow');
+      await page.waitForSelector('#autoFlowPage:not(.hidden)');
+      const fromWelcome = await page.evaluate(() => ({
+        welcomeVisible: getComputedStyle(document.getElementById('welcomeView')).display !== 'none',
+        workbenchWidth: document.getElementById('aiWorkbench').getBoundingClientRect().width,
+        viewportWidth: window.innerWidth
+      }));
+      assert.equal(fromWelcome.welcomeVisible, false, 'welcome-view must be hidden when ai-active');
+      assert.ok(fromWelcome.workbenchWidth >= fromWelcome.viewportWidth - 20, `Expected full-width #aiWorkbench, got ${fromWelcome.workbenchWidth}/${fromWelcome.viewportWidth}`);
+      if (engine === 'chromium') await page.screenshot({ path: path.join(shotDir, 'autoflow-fullscreen.png') });
+
+      await page.click('#autoFlowBack');
+      await page.waitForFunction(() => !document.body.classList.contains('ai-active'));
+      assert.equal(await page.locator('#welcomeView').isVisible(), true);
+      assert.equal(await page.locator('#aiWorkbench').isVisible(), false);
+
+      // Also verify with image loaded: opening AI task must hide #reviewPanel too
+      await page.goto(`${base}/index.html?demo=1&lang=zh`);
+      await page.waitForFunction(() => document.title.startsWith('READY ') && !!window.AutoFlow, null, { timeout: 60000 });
+      await page.evaluate(() => window.AutoFlow.open());
+      await page.waitForSelector('#autoFlowPage:not(.hidden)');
+      const fromEditor = await page.evaluate(() => ({
+        reviewVisible: getComputedStyle(document.getElementById('reviewPanel')).display !== 'none',
+        workbenchWidth: document.getElementById('aiWorkbench').getBoundingClientRect().width,
+        viewportWidth: window.innerWidth
+      }));
+      assert.equal(fromEditor.reviewVisible, false, '#reviewPanel must be hidden when ai-active');
+      assert.ok(fromEditor.workbenchWidth >= fromEditor.viewportWidth - 20, `Expected full-width #aiWorkbench from editor, got ${fromEditor.workbenchWidth}/${fromEditor.viewportWidth}`);
+      assert.equal(errs.length, 0, 'Page errors: ' + errs.join(' | '));
+    } finally {
+      await ctx.close();
+    }
+  });
+
   return results;
 }
 

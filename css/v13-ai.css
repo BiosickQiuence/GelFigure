@@ -10,11 +10,13 @@
   background: var(--bg);
   padding: 28px 24px 36px;
 }
-body:not(.has-image) .welcome-view {
+body:not(.has-image):not(.ai-active) .welcome-view {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+body.ai-active .welcome-view,
+body.ai-active #reviewPanel,
 body:not(.has-image) #panel,
 body:not(.has-image) #stage,
 body:not(.has-image) #reviewPanel {

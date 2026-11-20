@@ -1,6 +1,6 @@
 /* Main-window review tasks keep file, settings and export controls in place. */
 .settings-entry { display:flex;align-items:center;gap:5px; }
-.ai-active #panel,.ai-active #stage,.ai-active #mCoach,.ai-active #mNav { display:none!important; }
+.ai-active #panel,.ai-active #stage,.ai-active .welcome-view,.ai-active #reviewPanel,.ai-active #mCoach,.ai-active #mNav,.ai-active .m-review-bar,.ai-active .m-names-view,.ai-active .m-desktop-hint { display:none!important; }
 #aiWorkbench { flex:1;min-width:0;min-height:0;background:#f4f6f9; }
 .ai-task { width:100%;height:100%;min-width:0;min-height:0; }
 .ai-task .layout-body,.ai-task .ai-body { width:100%;max-width:none;height:100%;max-height:none;box-sizing:border-box;margin:0;border-radius:0;box-shadow:none; }
