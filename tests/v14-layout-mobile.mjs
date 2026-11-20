@@ -161,6 +161,44 @@ export async function v14LayoutMobileChecks(browser, base, root = ROOT, engine =
     }
   });
 
+  await check('Marker calibration & raw-canvas modes auto-switch to Raw view (yellow marker lane + reference card visible) and return on exit', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1400, height: 860 } });
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on('pageerror', e => errs.push(String(e)));
+    try {
+      await page.goto(`${base}/index.html?demo=1&lang=zh`);
+      await page.waitForFunction(() => document.title.startsWith('READY ') && !!window.StageView && !!window.MarkerUI, null, { timeout: 60000 });
+      await page.evaluate(() => { try { localStorage.setItem('gelfigure.tour.done.v1', '1'); } catch (e) {} });
+      assert.equal(await page.evaluate(() => window.StageView.mode), 'fig');
+
+      await page.evaluate(() => window.MarkerUI.open(0));
+      await page.waitForSelector('#markerReference:not(.hidden)');
+      await page.waitForTimeout(150);
+      const rawInfo = await page.evaluate(() => {
+        const ed = document.getElementById('editor').getBoundingClientRect();
+        const ref = document.getElementById('markerReference').getBoundingClientRect();
+        return { mode: window.StageView.mode, edW: ed.width, edH: ed.height, refW: ref.width, refH: ref.height };
+      });
+      assert.equal(rawInfo.mode, 'raw', 'MarkerUI.open must auto-switch stage to raw');
+      assert.ok(rawInfo.edW > 200 && rawInfo.edH > 200, `Raw canvas must be visible and sized, got ${rawInfo.edW}x${rawInfo.edH}`);
+      assert.ok(rawInfo.refW > 100 && rawInfo.refH > 100, `Marker reference card must be visible, got ${rawInfo.refW}x${rawInfo.refH}`);
+      if (engine === 'chromium') await page.screenshot({ path: path.join(shotDir, 'marker-band-raw.png') });
+
+      await page.click('#markerReferenceClose');
+      assert.equal(await page.evaluate(() => window.StageView.mode), 'fig', 'Closing auto-switched marker-band mode must return to fig');
+
+      // Also verify box mode auto-switches to raw and Esc returns to fig
+      await page.click('#btnAddBox');
+      assert.equal(await page.evaluate(() => window.StageView.mode), 'raw', 'Box mode must auto-switch to raw');
+      await page.click('#modeCancel');
+      assert.equal(await page.evaluate(() => window.StageView.mode), 'fig', 'Cancelling box mode must return to fig');
+      assert.equal(errs.length, 0, 'Page errors: ' + errs.join(' | '));
+    } finally {
+      await ctx.close();
+    }
+  });
+
   return results;
 }
 

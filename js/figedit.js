@@ -22,10 +22,8 @@
     $('modeText').textContent = m === 'arrow' ? L('点击目标条带（原图或成图上都行），自动吸附并估算大小', 'Click the target band (on either image); it snaps to the band and estimates the size')
       : m === 'group' ? (coarse.matches ? L('依次点第一个和最后一个泳道名，生成分组横线', 'Tap the first lane name, then the last, to make the group line')
         : L('在成图上从第一个泳道名拖到最后一个，松开即生成分组横线', 'Drag from the first to the last lane name on the figure; release to create the group line'))
-      : m === 'box' ? (phone() ? L('在原图上按住拖出一个矩形，框住要强调的条带', 'Drag a rectangle on the image around the bands to highlight')
-        : L('在左侧原图上按住拖出一个矩形，框住要强调的条带', 'On the image on the left, drag a rectangle around the bands to highlight'))
-      : m === 'bracket' ? (phone() ? L('在原图上从上往下拖，选出括号覆盖的区域（如拖尾、多聚体）', 'Drag from top to bottom on the image over the region the bracket covers (smear, oligomers …)')
-        : L('在左侧原图上从上往下拖，选出括号覆盖的区域（如拖尾、多聚体）', 'On the image on the left, drag from top to bottom over the region the bracket covers (smear, oligomers …)'))
+      : m === 'box' ? L('在原图上按住拖出一个矩形，框住要强调的条带', 'Drag a rectangle on the raw image around the bands to highlight')
+      : m === 'bracket' ? L('在原图上从上往下拖，选出括号覆盖的区域（如拖尾、多聚体）', 'Drag from top to bottom on the raw image over the region the bracket covers (smear, oligomers …)')
       : m === 'marker-lane' ? L('点原图中的 Marker 泳道，或点成图上的泳道名；选中后可核对型号和条带', 'Click the marker lane on the image, or its name on the figure; then review the ladder and bands')
       : m === 'marker-band' ? L('点黄色 Marker 泳道的实际条带选大小，或先点参考图大小再定位；拖黄线微调', 'Click a band on the yellow marker lane to choose its size, or choose a reference size first; drag yellow lines to adjust')
       : m === 'note' ? L('点胶图上要写字的位置（原图或成图都行），然后输入文字', 'Click where the text should go on the gel (either view), then type it')
@@ -36,6 +34,7 @@
     $('btnAddBracket').classList.toggle('on', m === 'bracket');
     $('btnAddNote').classList.toggle('on', m === 'note');
     prev.classList.toggle('arming', m === 'arrow' || m === 'note');
+    if (G.StageView?.onModeChange) G.StageView.onModeChange(m);
     if (G.MarkerUI) G.MarkerUI.modeChanged(m);
     G.Editor.draw();
   }

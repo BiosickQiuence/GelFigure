@@ -26,7 +26,8 @@
   function layout(){
     const box=$('editorBox').getBoundingClientRect(),banner=$('modeBanner'),bar=$('selBar');
     const br=banner.getBoundingClientRect(),sr=bar.getBoundingClientRect();
-    const top=UI.isPhone()&&!banner.classList.contains('hidden')?Math.max(0,br.bottom-box.top+8):0;
+    const overlaps=!banner.classList.contains('hidden')&&(UI.isPhone()||br.right>box.right-(card.offsetWidth||170)-18);
+    const top=overlaps?Math.max(0,br.bottom-box.top+8):0;
     const bottom=!bar.classList.contains('hidden')?Math.max(0,box.bottom-sr.top+8):0;
     card.style.top=Math.max(UI.isPhone()?8:10,top)+'px';
     card.style.maxHeight=Math.max(40,box.height-Math.max(10,top)-bottom-10)+'px';

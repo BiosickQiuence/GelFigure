@@ -16,12 +16,21 @@
    * ====================================================================== */
   /** @type {'fig' | 'raw'} */
   let stageMode = 'fig';
+  let autoRawReturn = false;
   /** @type {HTMLElement | null} */
   let switcherEl = null;
 
+  const RAW_ONLY_MODES = new Set(['marker-band', 'marker-lane', 'box', 'bracket', 'lane']);
+
   function setStageMode(mode, opts) {
     const next = mode === 'raw' ? 'raw' : 'fig';
-    const changed = stageMode !== next || !document.body.classList.contains('stage-' + next);
+    const prev = stageMode;
+    const changed = prev !== next || !document.body.classList.contains('stage-' + next);
+    if (opts?.autoFromMode && next === 'raw' && prev === 'fig') {
+      autoRawReturn = true;
+    } else if (!opts?.autoFromMode) {
+      autoRawReturn = false;
+    }
     stageMode = next;
     document.body.classList.toggle('stage-fig', next === 'fig');
     document.body.classList.toggle('stage-raw', next === 'raw');
@@ -34,6 +43,8 @@
     }
     if (win.App?.S && !win.UI?.isPhone?.()) {
       if (next === 'raw') {
+        // Resize synchronously so MarkerUI.open / fitMarker / bandPicker read real visible canvas bounds immediately
+        win.Editor?.resize?.();
         requestAnimationFrame(() => {
           win.Editor?.resize?.();
           if (opts?.fitCrop !== false) win.Editor?.fitCrop?.();
@@ -44,6 +55,19 @@
           win.ReviewChecklist?.render?.();
         });
       }
+    }
+  }
+
+  /** @param {string | null} mode */
+  function onModeChange(mode) {
+    if (!win.App?.S || win.UI?.isPhone?.()) return;
+    if (mode && RAW_ONLY_MODES.has(mode)) {
+      setStageMode('raw', { fitCrop: mode !== 'marker-band', autoFromMode: true });
+    } else if (mode === 'group') {
+      setStageMode('fig');
+    } else if (!mode && autoRawReturn) {
+      autoRawReturn = false;
+      setStageMode('fig');
     }
   }
 
@@ -321,18 +345,11 @@
     if (storageNote) sectionsEl.appendChild(storageNote);
     sectionsEl.appendChild(accRoot);
 
-    // Clicking raw-image tools automatically switches stage to 'raw'
-    ['btnAddArrow', 'btnAddBox', 'btnAddBracket', 'btnPerspective', 'btnRedetectCrop', 'btnAutoLanes'].forEach(id => {
+    // Clicking non-mode raw-image tools automatically switches stage to 'raw'
+    ['btnPerspective', 'btnRedetectCrop', 'btnAutoLanes'].forEach(id => {
       document.getElementById(id)?.addEventListener('click', () => {
         if (!win.UI?.isPhone?.() && win.App?.S) setStageMode('raw');
       });
-    });
-    // Clicking Calibrate / Reference on a marker card switches stage to 'raw'
-    document.getElementById('markerSection')?.addEventListener('click', e => {
-      const target = /** @type {HTMLElement} */ (e.target);
-      if (target.closest('[data-f="guide"], [data-f="calib"]')) {
-        if (!win.UI?.isPhone?.() && win.App?.S) setStageMode('raw');
-      }
     });
 
     setActiveStep(3, { noSwitch: true });
@@ -718,6 +735,7 @@
   win.StageView = {
     get mode() { return stageMode; },
     set: setStageMode,
+    onModeChange,
     sync: updateStageMeta
   };
   win.StepAccordion = {
