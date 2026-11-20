@@ -84,32 +84,45 @@
   /** @type {Map<string, any>} */
   const memCache = new Map();
 
+  /** @type {Promise<IDBDatabase> | null} */
+  let cacheDBPromise = null;
+
   function openCacheDB() {
-    return new Promise((resolve, reject) => {
+    if (cacheDBPromise) return cacheDBPromise;
+    cacheDBPromise = new Promise((resolve, reject) => {
       try {
-        if (!win.indexedDB) { reject(new Error('no-idb')); return; }
+        if (!win.indexedDB) { cacheDBPromise = null; reject(new Error('no-idb')); return; }
         const req = win.indexedDB.open(CACHE_DB, 1);
         req.onupgradeneeded = () => {
           const db = req.result;
           if (!db.objectStoreNames.contains(CACHE_STORE)) db.createObjectStore(CACHE_STORE);
         };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error || new Error('idb-open'));
-      } catch (e) { reject(e); }
+        req.onsuccess = () => {
+          const db = req.result;
+          db.onclose = () => { cacheDBPromise = null; };
+          db.onversionchange = () => { db.close(); cacheDBPromise = null; };
+          resolve(db);
+        };
+        req.onerror = () => { cacheDBPromise = null; reject(req.error || new Error('idb-open')); };
+      } catch (e) { cacheDBPromise = null; reject(e); }
     });
+    return cacheDBPromise;
   }
 
   /**
-   * Build deterministic cache key per spec: sha256 + ladderId + model + promptVersion
-   * @param {{ sha256: string, ladderId: string, model: string, promptVersion?: string }} parts
+   * Build deterministic cache key per spec: sha256 + ladderId + model + promptVersion (+ optional endpoint)
+   * @param {{ sha256: string, ladderId: string, model: string, promptVersion?: string, endpoint?: string }} parts
    */
   function cacheKey(parts) {
-    return [
+    const segs = [
       String(parts.sha256 || '').trim(),
       String(parts.ladderId || '').trim(),
       String(parts.model || '').trim(),
       String(parts.promptVersion || PROMPT_VERSION).trim()
-    ].join('::');
+    ];
+    const ep = String(parts.endpoint || '').trim();
+    if (ep) segs.push(ep);
+    return segs.join('::');
   }
 
   /** @param {string} key */

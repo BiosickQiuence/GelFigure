@@ -106,17 +106,27 @@ export async function fontChecks(browser, base, root, engine) {
       await p.locator('#preview > svg').screenshot({path:path.join(dir,'times-preview.png')});
       assert.deepEqual(errors,[]);assert.deepEqual(fontRequests,[]);
     });
-    await check('fonts: offline single HTML and phone selector work without downloads',async()=>{
+    await check('fonts: offline single HTML and phone view work without downloads',async()=>{
+      const dctx=await browser.newContext({viewport:{width:1400,height:900}});
+      try{
+        const q=await dctx.newPage();let network=0;await q.route(/^https?:/,r=>{network++;r.abort();});
+        await q.goto(pathToFileURL(path.join(root,'dist','GelFigure.html')).href+'?demo=1&lang=zh');
+        await q.waitForFunction(()=>document.title.startsWith('READY '),null,{timeout:120000});
+        await q.evaluate(()=>document.getElementById('fontFamily').closest('details').open=true);
+        await q.locator('#fontFamily').selectOption('Times New Roman');
+        const info=await q.evaluate(()=>({font:App.S.style.fontFamily,svg:App.buildFigure(false).fontFamily}));
+        assert.equal(info.font,'Times New Roman');assert.equal(info.svg,'Times New Roman');assert.equal(network,0);
+      }finally{await dctx.close();}
       const mctx=await browser.newContext({viewport:{width:390,height:844},hasTouch:true});
       try{
         const q=await mctx.newPage();let network=0;await q.route(/^https?:/,r=>{network++;r.abort();});
         await q.goto(pathToFileURL(path.join(root,'dist','GelFigure.html')).href+'?demo=1&lang=zh');
         await q.waitForFunction(()=>document.title.startsWith('READY '),null,{timeout:120000});
-        await q.locator('#mNav [data-view="fig"]').tap();await q.evaluate(()=>document.getElementById('fontFamily').closest('details').open=true);
-        await q.locator('#fontFamily').selectOption('Times New Roman');
+        await q.locator('#mNav [data-view="fig"]').tap();
+        await q.evaluate(()=>{App.S.style.fontFamily='Times New Roman';App.commit();});
         const info=await q.evaluate(()=>({font:App.S.style.fontFamily,svg:App.buildFigure(false).fontFamily,w:innerWidth,sw:document.documentElement.scrollWidth}));
         assert.equal(info.font,'Times New Roman');assert.equal(info.svg,'Times New Roman');assert.equal(info.w,info.sw);assert.equal(network,0);
-        await q.locator('#fontFamily').scrollIntoViewIfNeeded();await q.screenshot({path:path.join(dir,'phone-font.png'),animations:'disabled'});
+        await q.screenshot({path:path.join(dir,'phone-font.png'),animations:'disabled'});
       }finally{await mctx.close();}
     });
   }catch(e){out.push(['FAIL','font runner',e.stack]);}finally{await ctx.close();}

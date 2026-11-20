@@ -40,7 +40,7 @@
 
     // 1. Empty / low-confidence lanes
     const emptyLanes = S.lanes.map((l, idx) => ({ l, idx })).filter(({ l, idx }) => {
-      if (l.removed || !figLanes.includes(idx)) return false;
+      if (l.hidden || !figLanes.includes(idx)) return false;
       if (S.markers.some(m => m.lane === idx)) return false;
       const conf = aiMeta?.laneConf?.[idx];
       return !!l.empty || (typeof conf === 'number' && conf < 0.72);
@@ -59,7 +59,8 @@
           {
             label: L('剪除', 'Cut'),
             run: () => {
-              l.removed = true;
+              if (A.setLaneHidden) A.setLaneHidden(idx, true, 'empty');
+              else l.hidden = true;
               A.commit();
               confirmItem('empty-lane-' + idx);
             }
@@ -179,9 +180,13 @@
 
     // 7. Export readiness issues (preflight)
     const pf = A.preflight ? A.preflight() : [];
-    pf.forEach((p, idx) => {
+    const seenPf = new Map();
+    pf.forEach(p => {
       if (p.level === 'info') return;
-      const id = 'preflight-' + idx;
+      const baseKey = `${p.level}:${String(p.text || '').replace(/\d+(?:\.\d+)?/g, '#').slice(0, 64)}`;
+      const dup = seenPf.get(baseKey) || 0;
+      seenPf.set(baseKey, dup + 1);
+      const id = 'preflight-' + baseKey + (dup ? '-' + dup : '');
       const acts = [];
       if (p.fix) {
         acts.push({
@@ -248,6 +253,7 @@
     const imgEl = svg.querySelector('image');
     const gelRect = imgEl ? imgEl.getBoundingClientRect() : svgRect;
     const crop = S.crop || { x: 0, y: 0, w: 1, h: 1 };
+    const lastGel = A._lastGel;
 
     let badgeNum = 0;
     for (const item of pendingItems) {
@@ -255,7 +261,14 @@
       if (!item.target || item.target.kind !== 'lane') continue;
       const lane = S.lanes[item.target.laneIdx];
       if (!lane) continue;
-      const fracX = Math.max(0.02, Math.min(0.98, (lane.x - crop.x) / Math.max(1, crop.w)));
+      let fracX;
+      if (lastGel && typeof lastGel.map === 'function' && lastGel.canvas && lastGel.canvas.width > 0) {
+        const mapped = lastGel.map(lane.x - crop.x);
+        if (mapped == null) continue;
+        fracX = Math.max(0.02, Math.min(0.98, mapped / lastGel.canvas.width));
+      } else {
+        fracX = Math.max(0.02, Math.min(0.98, (lane.x - crop.x) / Math.max(1, crop.w)));
+      }
       const laneW = Math.max(16, (gelRect.width / Math.max(1, figLanes.length)) * 0.72);
       const cx = (gelRect.left - pvRect.left) + fracX * gelRect.width;
       const top = (gelRect.top - pvRect.top) - 4;
@@ -280,7 +293,7 @@
       pin.onclick = () => {
         activeId = item.id;
         render();
-        const row = panel?.querySelector(`[data-review-id="${item.id}"]`);
+        const row = panel?.querySelector(`[data-review-id="${CSS.escape(item.id)}"]`);
         if (row) row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       };
       overlayLayer.appendChild(pin);
@@ -302,6 +315,7 @@
       lastProjectKey = pk;
       confirmedIds.clear();
       activeId = null;
+      aiMeta = null;
     }
 
     const items = buildItems();
@@ -434,6 +448,7 @@
     setAIMeta,
     confirmItem,
     get items() { return buildItems(); },
+    get pendingItems() { return buildItems().filter(it => !isConfirmed(it)); },
     get pendingCount() { return buildItems().filter(it => !isConfirmed(it)).length; }
   };
 })(window);

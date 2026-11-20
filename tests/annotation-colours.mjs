@@ -56,7 +56,7 @@ export async function annotationColourChecks(browser,base,root,engine){
    await p.evaluate(()=>{delete App.S.arrows[0].sym;App.commit();});
   });
   await check('one marker size or the whole ladder can be red, including ticks and units',async()=>{
-   const b=await p.evaluate(()=>{const m=App.S.markers[0];const b=m.bands.findIndex(b=>b.show&&b.y>App.S.crop.y+App.S.crop.h*.1);MarkerUI.labelPopover(0,b);return {bi:b,bp:m.bands[b].bp};});
+   const b=await p.evaluate(()=>{const m=App.S.markers[0];m.unit='bp';App.commit();const b=m.bands.findIndex(b=>b.show&&b.y>App.S.crop.y+App.S.crop.h*.1);MarkerUI.labelPopover(0,b);return {bi:b,bp:m.bands[b].bp};});
    await p.locator('#markerBandColor').selectOption('red');
    assert.equal(await p.locator(`#preview [data-edit="marker"][data-marker="0"][data-band="${b.bi}"] text`).getAttribute('fill'),'#d32f2f');
    await p.locator('#markerPopColor').selectOption('red');await p.locator('#markerPopClose').click();

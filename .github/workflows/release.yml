@@ -19,7 +19,7 @@ jobs:
       - name: Build offline downloads
         run: |
           mkdir -p dist/GelFigure
-          cp -r index.html css js test docs LICENSE README.md README.zh-CN.md CHANGELOG.md CONTRIBUTING.md CITATION.cff dist/GelFigure/
+          cp -r index.html css js i18n icons manifest.webmanifest sw.js test docs LICENSE README.md README.zh-CN.md CHANGELOG.md CONTRIBUTING.md CITATION.cff dist/GelFigure/
           node scripts/bundle-onefile.mjs   # writes dist/GelFigure.html
           node scripts/release-notes.mjs "$GITHUB_REF_NAME"
           cd dist && zip -r "GelFigure-${GITHUB_REF_NAME}.zip" GelFigure

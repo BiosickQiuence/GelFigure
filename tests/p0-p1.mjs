@@ -301,6 +301,8 @@ export async function p0p1Checks(browser, base, root, engine) {
     });
 
     await check('free text boxes drag on the gel and undo in one step', async () => {
+      await p.locator('[data-stage-view="raw"]').click();
+      await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       const setup = await p.evaluate(() => {
         App.S.notes = [];
         const c = App.S.crop;
@@ -322,6 +324,8 @@ export async function p0p1Checks(browser, base, root, engine) {
       const undone = await p.evaluate(() => { App.undo(); const n = App.S.notes[0]; return { x: n.x, y: n.y }; });
       assert(Math.abs(undone.x - setup.x) < 0.01 && Math.abs(undone.y - setup.y) < 0.01, 'one undo must put the box back');
       assert.equal(await p.evaluate(() => App.S.notes.length), 1, 'undo must not remove the box');
+      await p.locator('[data-stage-view="fig"]').click();
+      await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       const pv = await p.evaluate(() => {
         const g = document.querySelector('#preview g[data-edit="note"]');
         const r = g.getBoundingClientRect();

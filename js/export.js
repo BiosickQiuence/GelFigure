@@ -238,7 +238,10 @@
     const key = S.lanes.map((l, i) => `${l.hidden ? 'X' : i + 1}: ${l.name || '—'}`).join('   ');
     ctx.fillText(key, fs * 0.5, H + top + fs * 2.4, W - fs);
     const dpi = Math.round(S.file.dpi) || 300;
-    c.toBlob(async b => download(await pngDecorate(b, dpi, { Software: 'GelFigure ' + G.App.VERSION, Description: summaryText(S) }), name), 'image/png');
+    c.toBlob(async b => {
+      if (!b) return;
+      download(await pngDecorate(b, dpi, { Software: 'GelFigure ' + G.App.VERSION, Description: summaryText(S) }), name);
+    }, 'image/png');
   }
 
   // the untouched bytes of the source file (byte-identical to what the imager wrote)
@@ -350,9 +353,15 @@
         if(!blob)throw new Error(G.L('成图编码失败','Figure encoding failed'));
         final=await pngDecorate(blob,S.style.dpi,{Software:'GelFigure '+A.VERSION,Description:summaryText(S)});
       }else{
-        const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data,rgb=new Uint8Array(canvas.width*canvas.height*3);
-        for(let i=0,j=0;i<pixels.length;i+=4){rgb[j++]=pixels[i];rgb[j++]=pixels[i+1];rgb[j++]=pixels[i+2];}
-        final=new Blob([encodeTiffRGB(rgb,canvas.width,canvas.height,S.style.dpi,summaryText(S))]);
+        const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data,n=canvas.width*canvas.height;
+        let colour=G.App.isColour(S);
+        for(let i=0;!colour&&i<n;i++)if(pixels[i*4]!==pixels[i*4+1]||pixels[i*4+1]!==pixels[i*4+2])colour=true;
+        const g=new Uint8Array(n*(colour?3:1));
+        for(let i=0;i<n;i++){
+          if(colour){g[i*3]=pixels[i*4];g[i*3+1]=pixels[i*4+1];g[i*3+2]=pixels[i*4+2];}
+          else g[i]=Math.round(0.299*pixels[i*4]+0.587*pixels[i*4+1]+0.114*pixels[i*4+2]);
+        }
+        final=new Blob([(colour?encodeTiffRGB:encodeTiffGray)(g,canvas.width,canvas.height,S.style.dpi,summaryText(S))],{type:'image/tiff'});
       }
     }
     unchanged();

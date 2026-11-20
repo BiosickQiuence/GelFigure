@@ -112,7 +112,7 @@
     return stDlg;
   }
 
-  function renderSampleTable() {
+  function renderSampleTable(keepTextarea) {
     const dlg = ensureSampleTableModal();
     const parsed = parseTable(stRaw);
     const rows = parsed.rows;
@@ -120,7 +120,7 @@
     const headers = stHasHeader && rows.length
       ? rows[0].map((h, i) => h || L(`列 ${i + 1}`, `Col ${i + 1}`))
       : Array.from({ length: colCount }, (_, i) => L(`列 ${i + 1}`, `Col ${i + 1}`));
-    const dataRows = stHasHeader && rows.length > 1 ? rows.slice(1) : rows;
+    const dataRows = stHasHeader ? rows.slice(1) : rows;
 
     if (stRoles.length !== colCount) {
       stRoles = headers.map((h, i) => guessColumnRole(h, dataRows.map(r => r[i] || ''), i));
@@ -177,6 +177,31 @@
         </table>
       </div>` : `<div style="font-size:12px;color:var(--muted);">${L('从 Excel / WPS / Google Sheets 复制多列直接粘贴，或上传 .csv 文件（列可包含：泳道名、分组、+/- 条件行）。', 'Paste columns from Excel/Sheets or upload a .csv file (columns: Lane name, Group, +/- Conditions).')}</div>`;
 
+    const statsText = colCount ? L(`已识别 ${dataRows.length} 行 × ${colCount} 列（${parsed.delimiter === '\t' ? 'TSV' : 'CSV'}）`, `${dataRows.length} rows × ${colCount} cols (${parsed.delimiter === '\t' ? 'TSV' : 'CSV'})`) : '';
+
+    if (keepTextarea && dlg.querySelector('#stRawInput') && dlg.querySelector('#stDynamicRegion')) {
+      const statsEl = dlg.querySelector('#stStatsText');
+      if (statsEl) statsEl.textContent = statsText;
+      const dynEl = dlg.querySelector('#stDynamicRegion');
+      if (dynEl) dynEl.innerHTML = mapHtml + previewHtml;
+      const applyBtn = /** @type {HTMLButtonElement | null} */ (dlg.querySelector('#stApply'));
+      if (applyBtn) {
+        applyBtn.disabled = !dataRows.length;
+        applyBtn.onclick = () => {
+          applySampleTable(headers, dataRows, targetLanes);
+          closeSampleTable();
+        };
+      }
+      dlg.querySelectorAll('[data-st-role]').forEach(sel => {
+        sel.addEventListener('change', () => {
+          const ci = Number((/** @type {HTMLElement} */ (sel)).dataset.stRole);
+          stRoles[ci] = (/** @type {HTMLSelectElement} */ (sel)).value;
+          renderSampleTable(true);
+        });
+      });
+      return;
+    }
+
     dlg.innerHTML = `
       <div class="v15-card" role="dialog" aria-modal="true" aria-label="${L('粘贴样本表', 'Sample table')}">
         <div class="v15-head">
@@ -193,11 +218,10 @@
             <label style="font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
               <input type="checkbox" id="stSkipMarker"${stSkipMarker ? ' checked' : ''}> ${L('跳过 Marker 泳道', 'Skip Marker lane')}
             </label>
-            ${colCount ? `<span style="margin-left:auto;font-size:11.5px;color:var(--muted);">${L(`已识别 ${dataRows.length} 行 × ${colCount} 列（${parsed.delimiter === '\t' ? 'TSV' : 'CSV'}）`, `${dataRows.length} rows × ${colCount} cols (${parsed.delimiter === '\t' ? 'TSV' : 'CSV'})`)}</span>` : ''}
+            <span id="stStatsText" style="margin-left:auto;font-size:11.5px;color:var(--muted);">${esc(statsText)}</span>
           </div>
-          <textarea id="stRawInput" class="st-textarea" placeholder="${esc(L('示例（直接从 Excel 复制粘贴）：\n样本\t分组\t处理\t对照\nWT\tCtrl\t-\t+\nKO-1\tMutant\t+\t-\nKO-2\tMutant\t+\t-', 'Example (paste from Excel):\nSample\tGroup\tDrug\tCtrl\nWT\tCtrl\t-\t+\nKO-1\tMutant\t+\t-'))}">${esc(stRaw)}</textarea>
-          ${mapHtml}
-          ${previewHtml}
+          <textarea id="stRawInput" class="st-textarea" placeholder="${esc(L('示例（直接从 Excel 复制粘贴）：\n样本\t分组\t处理\t对照\nWT\tCtrl\t-\t+\nKO-1\tMutant\t+\t-\nKO-2\tMutant\t+\t-', 'Example (paste from Excel):\nSample\tGroup\tDrug\tCtrl\nWT\tCtrl\t-\t+\nKO-1\tMutant\t+\t-\nKO-2\tMutant\t+\t-'))}">${esc(stRaw)}</textarea>
+          <div id="stDynamicRegion">${mapHtml}${previewHtml}</div>
         </div>
         <div class="v15-foot">
           <span style="font-size:11.8px;color:var(--muted);">${L(`当前可填充 ${targetLanes.length} 条泳道`, `${targetLanes.length} target lanes available`)}</span>
@@ -215,12 +239,7 @@
       rawEl.addEventListener('input', () => {
         stRaw = rawEl.value;
         stRoles = [];
-        renderSampleTable();
-        const nextEl = /** @type {HTMLTextAreaElement | null} */ (dlg.querySelector('#stRawInput'));
-        if (nextEl) {
-          nextEl.focus();
-          nextEl.selectionStart = nextEl.selectionEnd = nextEl.value.length;
-        }
+        renderSampleTable(true);
       });
     }
     const fileEl = /** @type {HTMLInputElement | null} */ (dlg.querySelector('#stCsvFile'));
@@ -236,23 +255,26 @@
     dlg.querySelector('#stHasHeader')?.addEventListener('change', e => {
       stHasHeader = !!(/** @type {HTMLInputElement} */ (e.target)).checked;
       stRoles = [];
-      renderSampleTable();
+      renderSampleTable(true);
     });
     dlg.querySelector('#stSkipMarker')?.addEventListener('change', e => {
       stSkipMarker = !!(/** @type {HTMLInputElement} */ (e.target)).checked;
-      renderSampleTable();
+      renderSampleTable(true);
     });
     dlg.querySelectorAll('[data-st-role]').forEach(sel => {
       sel.addEventListener('change', () => {
         const ci = Number((/** @type {HTMLElement} */ (sel)).dataset.stRole);
         stRoles[ci] = (/** @type {HTMLSelectElement} */ (sel)).value;
-        renderSampleTable();
+        renderSampleTable(true);
       });
     });
-    dlg.querySelector('#stApply')?.addEventListener('click', () => {
-      applySampleTable(headers, dataRows, targetLanes);
-      closeSampleTable();
-    });
+    const applyBtn = /** @type {HTMLButtonElement | null} */ (dlg.querySelector('#stApply'));
+    if (applyBtn) {
+      applyBtn.onclick = () => {
+        applySampleTable(headers, dataRows, targetLanes);
+        closeSampleTable();
+      };
+    }
   }
 
   /**
@@ -283,6 +305,8 @@
     }
 
     if (groupCol >= 0) {
+      const figLanes = win.UI?.figLanes ? win.UI.figLanes() : [];
+      const figPos = new Map(figLanes.map((li, idx) => [li, idx]));
       /** @type {{ from: number, to: number, text: string }[]} */
       const groups = [];
       let curText = '';
@@ -291,7 +315,10 @@
       for (let i = 0; i < n; i++) {
         const li = targetLanes[i];
         const g = (dataRows[i][groupCol] || '').trim();
-        if (g && g === curText && curTo === targetLanes[i - 1]) {
+        const prevPos = figPos.get(curTo);
+        const curPos = figPos.get(li);
+        const adjacent = prevPos != null && curPos != null ? curPos === prevPos + 1 : curTo === targetLanes[i - 1];
+        if (g && g === curText && adjacent) {
           curTo = li;
         } else {
           if (curText && curFrom >= 0) groups.push({ from: curFrom, to: curTo, text: curText });
@@ -501,7 +528,7 @@
 
     acInput = inp;
     acMatches = matches.slice(0, 8);
-    acIdx = 0;
+    acIdx = -1;
 
     const menu = ensureAcMenu();
     const rect = inp.getBoundingClientRect();
@@ -553,16 +580,24 @@
       if (document.activeElement !== acInput) return;
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        acIdx = (acIdx + 1) % acMatches.length;
+        acIdx = acIdx < 0 ? 0 : (acIdx + 1) % acMatches.length;
         updateAcHighlight();
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        acIdx = (acIdx - 1 + acMatches.length) % acMatches.length;
+        acIdx = acIdx < 0 ? acMatches.length - 1 : (acIdx - 1 + acMatches.length) % acMatches.length;
         updateAcHighlight();
-      } else if (e.key === 'Enter' && !e.isComposing && acIdx >= 0 && acMatches[acIdx]) {
+      } else if (e.key === 'Tab' && !e.shiftKey && !e.isComposing && acMatches.length) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        commitAcValue(acMatches[acIdx].name);
+        commitAcValue(acMatches[acIdx >= 0 ? acIdx : 0].name);
+      } else if (e.key === 'Enter' && !e.isComposing) {
+        if (acIdx >= 0 && acMatches[acIdx]) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          commitAcValue(acMatches[acIdx].name);
+        } else {
+          hideAcMenu();
+        }
       } else if (e.key === 'Escape') {
         e.preventDefault();
         hideAcMenu();
@@ -732,7 +767,11 @@
    *   buffer: ArrayBuffer,
    *   snapshot: string,
    *   initial: any,
+   *   projectId?: string | null,
+   *   projectName?: string,
    *   autoRotation: number,
+   *   hist?: string[] | null,
+   *   future?: string[],
    *   reviewed: boolean,
    *   mode: 'ai'|'local'
    * }} BatchEntry
@@ -824,7 +863,7 @@
 
           <div class="batch-opts">
             <div class="batch-opt">
-              <label for="batchLadderSel">${L('统一 Marker 型号', 'Marker model')}</label>
+              <label for="batchLadderSel">${L('统一 Marker 型号', 'Marker model')}${batchUseAI && !batchLadderId ? ` <span style="color:var(--danger,#c62828);font-weight:500;">${L('（AI 模式必选）', '(required for AI)')}</span>` : ''}</label>
               <select id="batchLadderSel">${allLadderOptionsHtml(batchLadderId)}</select>
             </div>
             <div class="batch-opt">
@@ -856,19 +895,22 @@
             </div>` : ''}
         </div>
         <div class="v15-foot">
-          <span style="font-size:11.8px;color:var(--muted);">${n ? L(`已选 ${n} 张胶图`, `${n} files selected`) : ''}</span>
+          <span style="font-size:11.8px;color:var(--muted);">${n ? L(`已选 ${n} 张胶图`, `${n} files selected`) : ''}${batchUseAI && !batchLadderId ? L(' · 请先选择统一 Marker 型号', ' · Select a Marker model first') : ''}</span>
           <div class="v15-row">
             ${batchRunning
               ? `<button type="button" class="btn sm" id="batchCancelRun">${L('中止队列', 'Stop queue')}</button>`
               : `<button type="button" class="btn sm" id="batchCancel">${L('取消', 'Cancel')}</button>
-                 <button type="button" class="btn sm primary" id="batchStartBtn"${n > 0 ? '' : ' disabled'}>${batchUseAI ? L(`确认并开始（AI ${n}×2 次）`, `Start (${n}×2 AI calls)`) : L(`开始离线批量处理（${n} 张）`, `Start offline batch (${n})`)}</button>`}
+                 <button type="button" class="btn sm primary" id="batchStartBtn"${n > 0 && (!batchUseAI || !!batchLadderId) ? '' : ' disabled'}>${batchUseAI ? L(`确认并开始（AI ${n}×2 次）`, `Start (${n}×2 AI calls)`) : L(`开始离线批量处理（${n} 张）`, `Start offline batch (${n})`)}</button>`}
           </div>
         </div>
       </div>`;
 
     dlg.querySelector('#batchClose')?.addEventListener('click', closeBatchModal);
     dlg.querySelector('#batchCancel')?.addEventListener('click', closeBatchModal);
-    dlg.querySelector('#batchCancelRun')?.addEventListener('click', () => { batchCancelled = true; });
+    dlg.querySelector('#batchCancelRun')?.addEventListener('click', () => {
+      batchCancelled = true;
+      batchAbortCtrl?.abort();
+    });
     const fileInput = /** @type {HTMLInputElement | null} */ (dlg.querySelector('#batchFileInput'));
     dlg.querySelector('#batchDropZone')?.addEventListener('click', () => { if (!batchRunning) fileInput?.click(); });
     if (fileInput) {
@@ -886,6 +928,7 @@
     });
     dlg.querySelector('#batchLadderSel')?.addEventListener('change', e => {
       batchLadderId = (/** @type {HTMLSelectElement} */ (e.target)).value;
+      renderBatchModal();
     });
     dlg.querySelector('#batchFmtSel')?.addEventListener('change', e => {
       batchFormat = (/** @type {HTMLSelectElement} */ (e.target)).value;
@@ -900,10 +943,18 @@
     dlg.querySelector('#batchStartBtn')?.addEventListener('click', () => runBatchQueue());
   }
 
+  /** @type {AbortController | null} */
+  let batchAbortCtrl = null;
+
   async function runBatchQueue() {
     if (batchRunning || !batchPendingFiles.length) return;
+    if (batchUseAI && !batchLadderId) {
+      win.UI?.toast?.(L('AI 批量模式请先选择一个统一 Marker 型号', 'Select a Marker model first for AI batch mode'), 4000);
+      return;
+    }
     batchRunning = true;
     batchCancelled = false;
+    batchAbortCtrl = new AbortController();
     batchItems = [];
     batchActiveIdx = -1;
     const files = batchPendingFiles.slice();
@@ -918,29 +969,47 @@
       renderBatchModal();
       try {
         const buffer = await f.arrayBuffer();
-        const loaded = await A.loadMany([{ name: f.name, buffer }]);
-        if (!loaded || !A.S) continue;
-
         let mode = /** @type {'ai'|'local'} */ ('local');
+        let aiSucceeded = false;
+
         if (batchUseAI && win.AutoFlow?.run && batchLadderId) {
           try {
-            await win.AutoFlow.run({ file: f, ladderId: batchLadderId, silent: true });
+            await win.AutoFlow.run({
+              file: { name: f.name, buffer: buffer.slice(0) },
+              ladderId: batchLadderId,
+              silent: true,
+              signal: batchAbortCtrl.signal
+            });
             mode = 'ai';
-          } catch (_) {
+            aiSucceeded = !!A.S;
+          } catch (aiErr) {
+            if (batchCancelled || batchAbortCtrl.signal.aborted) break;
+            console.warn('Batch AI failed, falling back to local:', f.name, aiErr);
             mode = 'local';
           }
-        } else if (batchLadderId && A.S.markers?.[0] && win.Ladders?.get?.(batchLadderId)) {
-          A.S.markers[0].ladderId = batchLadderId;
-          A.matchMarker?.(0);
-          A.commit();
+        }
+
+        if (!aiSucceeded) {
+          if (batchCancelled) break;
+          const loaded = await A.loadMany([{ name: f.name, buffer: buffer.slice(0) }]);
+          if (!loaded || !A.S) continue;
+          if (batchLadderId && A.S.markers?.[0] && win.Ladders?.get?.(batchLadderId)) {
+            A.S.markers[0].ladderId = batchLadderId;
+            A.matchMarker?.(0);
+            A.commit();
+          }
         }
 
         batchItems.push({
           name: f.name,
           buffer,
+          projectId: A.projectId || null,
+          projectName: A.projectName || f.name,
           snapshot: A.snapshot(),
           initial: A.projectInitial ? A.projectInitial() : null,
           autoRotation: A.autoRotation || 0,
+          hist: Array.isArray(A.hist) ? A.hist.slice() : null,
+          future: Array.isArray(A.future) ? A.future.slice() : [],
           reviewed: false,
           mode
         });
@@ -952,6 +1021,7 @@
     }
 
     batchRunning = false;
+    batchAbortCtrl = null;
     batchPendingFiles = [];
     closeBatchModal();
 
@@ -965,7 +1035,32 @@
 
   function saveCurrentBatchSnapshot() {
     if (batchActiveIdx < 0 || !batchItems[batchActiveIdx] || !win.App?.S) return;
-    batchItems[batchActiveIdx].snapshot = win.App.snapshot();
+    const item = batchItems[batchActiveIdx];
+    item.snapshot = win.App.snapshot();
+    if (Array.isArray(win.App.hist)) item.hist = win.App.hist.slice();
+    if (Array.isArray(win.App.future)) item.future = win.App.future.slice();
+  }
+
+  /** @param {any} item @param {any} [styleOverride] */
+  async function loadBatchItemState(item, styleOverride) {
+    const A = win.App;
+    const parsed = JSON.parse(item.snapshot);
+    if (styleOverride) parsed.style = { ...(parsed.style || {}), ...styleOverride };
+    if (A.readInput && A.restoreSnapshot) {
+      const input = await A.readInput({ name: item.name, buffer: item.buffer.slice(0) });
+      if (item.projectId && A.newCachedProject) A.newCachedProject(item.projectId, item.projectName || item.name);
+      A.restoreSnapshot(input, parsed, item.initial, item.autoRotation);
+      if (Array.isArray(item.hist) && item.hist.length) {
+        A.hist = item.hist.slice();
+        A.future = Array.isArray(item.future) ? item.future.slice() : [];
+        A.emit?.('refresh');
+      }
+    } else {
+      await A.loadMany([{ name: item.name, buffer: item.buffer.slice(0) }]);
+      A.S = parsed;
+      A.ensureRot?.();
+      A.commit?.();
+    }
   }
 
   /** @param {number} idx */
@@ -973,15 +1068,8 @@
     if (idx < 0 || idx >= batchItems.length) return;
     if (batchActiveIdx >= 0 && batchActiveIdx !== idx) saveCurrentBatchSnapshot();
     const item = batchItems[idx];
-    const A = win.App;
     batchActiveIdx = idx;
-    await A.loadMany([{ name: item.name, buffer: item.buffer.slice(0) }]);
-    if (item.snapshot) {
-      const parsed = JSON.parse(item.snapshot);
-      A.S = parsed;
-      A.ensureRot?.();
-      A.commit?.();
-    }
+    await loadBatchItemState(item);
     item.reviewed = true;
     win.ReviewChecklist?.render?.();
     renderBatchStrip();
@@ -1015,11 +1103,7 @@
     try {
       for (let i = 0; i < batchItems.length; i++) {
         const item = batchItems[i];
-        await A.loadMany([{ name: item.name, buffer: item.buffer.slice(0) }]);
-        const parsed = JSON.parse(item.snapshot);
-        parsed.style = { ...(parsed.style || {}), ...(tpl.style || {}) };
-        A.S = parsed;
-        A.ensureRot?.();
+        await loadBatchItemState(item, tpl.style || {});
 
         const safeStem = item.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_\u4e00-\u9fa5-]+/g, '_').slice(0, 48) || `gel_${i + 1}`;
         const folder = `${String(i + 1).padStart(2, '0')}_${safeStem}`;
@@ -1070,11 +1154,17 @@
       if (win.Export.deliver) win.Export.deliver(zipBlob, zipName);
       else win.Export.download(zipBlob, zipName);
 
-      if (origIdx >= 0 && origIdx < batchItems.length) await switchBatchItem(origIdx);
       win.UI?.toast?.(L(`已打包下载 ${manifestItems.length} 张胶图 ZIP`, `Downloaded batch ZIP (${manifestItems.length} gels)`));
       return zipBlob;
     } finally {
-      A.busy?.(false);
+      try {
+        if (origIdx >= 0 && origIdx < batchItems.length) {
+          batchActiveIdx = -1;
+          await switchBatchItem(origIdx);
+        }
+      } finally {
+        A.busy?.(false);
+      }
     }
   }
 
@@ -1130,7 +1220,7 @@
   }
 
   function injectBatchEntries() {
-    const moreMenu = document.getElementById('moreMenu');
+    const moreMenu = document.getElementById('tplMenu') || document.getElementById('moreMenu');
     if (moreMenu && !document.getElementById('btnBatchMenu')) {
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -1152,10 +1242,14 @@
         pill.setAttribute('role', 'button');
         pill.setAttribute('tabindex', '0');
         pill.textContent = L('进入批量处理 →', 'Open batch mode →');
-        pill.addEventListener('click', e => {
+        const triggerBatch = e => {
           e.stopPropagation();
           e.preventDefault();
           openBatchModal();
+        };
+        pill.addEventListener('click', triggerBatch);
+        pill.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') triggerBatch(e);
         });
         tx.appendChild(pill);
       }

@@ -256,11 +256,20 @@
     // Wire welcome controls
     const dropEl = welcomeEl.querySelector('#welcomeDrop');
     if (dropEl) {
-      dropEl.addEventListener('click', e => {
+      const openDropFile = e => {
         const target = /** @type {HTMLElement} */ (e.target);
         if (target.closest('button, select, input, .welcome-inline-picker, #autoFlowHome')) return;
         const fi = document.getElementById('fileInput');
         if (fi) fi.click();
+      };
+      dropEl.addEventListener('click', openDropFile);
+      dropEl.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          const target = /** @type {HTMLElement} */ (e.target);
+          if (target !== dropEl) return;
+          e.preventDefault();
+          openDropFile(e);
+        }
       });
     }
     const aiBtn = welcomeEl.querySelector('#btnWelcomeAIStatus');
@@ -351,16 +360,6 @@
       });
     }
 
-    // Recent projects
-    welcomeEl.querySelectorAll('[data-open-hist]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = /** @type {HTMLElement} */ (btn).dataset.openHist;
-        if (id && win.App?.restoreHistory) {
-          try { await win.App.restoreHistory(id); }
-          catch (err) { if (win.UI?.toast) win.UI.toast(err.message, 5000); }
-        }
-      });
-    });
     const histAll = welcomeEl.querySelector('#btnHistoryStart');
     if (histAll) {
       histAll.addEventListener('click', () => {
@@ -502,6 +501,10 @@
     overlayEl.querySelector('#aiProgBg')?.addEventListener('click', () => state.onBackground?.());
     overlayEl.querySelector('#aiProgChangeMarker')?.addEventListener('click', () => {
       state.onCancel?.();
+      if (win.App?.S && win.AIAssistant?.open) {
+        win.AIAssistant.open();
+        return;
+      }
       pendingDropFile = state.file || null;
       pickerOpen = true;
       renderWelcome();
@@ -581,6 +584,12 @@
    * @param {{ forceRefresh?: boolean }} [opts]
    */
   async function runPrimaryAI(file, ladderId, opts) {
+    if (activeRun) {
+      if (win.UI?.toast) {
+        win.UI.toast(L('上一张胶图仍在 AI 处理中，请等待完成或先取消后再导入新图。', 'Another gel is currently running in AI mode. Wait for it to finish or cancel it first.'), 4500);
+      }
+      return;
+    }
     const ladder = win.Ladders?.get ? win.Ladders.get(ladderId) : null;
     if (!ladder) {
       pendingDropFile = file;
@@ -655,7 +664,7 @@
       if (ctrl.signal.aborted) return;
 
       // A7 Check IndexedDB cache
-      const cacheKey = win.AICache ? win.AICache.key({ sha256: input.sha256, ladderId: ladder.id, model }) : '';
+      const cacheKey = win.AICache ? win.AICache.key({ sha256: input.sha256, ladderId: ladder.id, model, endpoint: ep }) : '';
       const cached = (!opts?.forceRefresh && cacheKey && win.AICache) ? await win.AICache.get(cacheKey) : null;
       if (ctrl.signal.aborted) return;
 
@@ -806,20 +815,26 @@
     if (!file) return false;
     if (/** @type {any} */ (file)._isDemo) return false;
     if (/\.gelfig$|\.json$/i.test(file.name || '')) return false;
+    if (activeRun) {
+      if (win.UI?.toast) {
+        win.UI.toast(L('上一张胶图仍在 AI 处理中，请等待完成或先取消后再导入新图。', 'Another gel is currently running in AI mode. Wait for it to finish or cancel it first.'), 4500);
+      }
+      return true;
+    }
     if (!isAIPrimaryReady()) return false;
 
     const ladId = defaultLadderId();
     if (!ladId) {
-      pendingDropFile = file;
-      pickerOpen = true;
-      renderWelcome();
       if (win.App?.S) {
-        // User already has an image open: fall back to AutoFlow selector or prompt via toast
+        // User already has an image open: do not mutate hidden welcome picker state
         if (win.UI?.toast) {
           win.UI.toast(L('请先选择默认 Marker 型号，或点击「AI 助手」处理新图。', 'Select a default Marker model or use AI Assistant.'), 4500);
         }
         return false;
       }
+      pendingDropFile = file;
+      pickerOpen = true;
+      renderWelcome();
       return true;
     }
     runPrimaryAI(file, ladId);

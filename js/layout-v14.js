@@ -348,7 +348,10 @@
     // Clicking non-mode raw-image tools automatically switches stage to 'raw'
     ['btnPerspective', 'btnRedetectCrop', 'btnAutoLanes'].forEach(id => {
       document.getElementById(id)?.addEventListener('click', () => {
-        if (!win.UI?.isPhone?.() && win.App?.S) setStageMode('raw');
+        if (!win.UI?.isPhone?.() && win.App?.S) {
+          setStageMode('raw', { fitCrop: id !== 'btnPerspective' });
+          if (id === 'btnPerspective') requestAnimationFrame(() => win.Editor?.fitFull?.());
+        }
       });
     });
 
@@ -460,7 +463,7 @@
         if (!listEl) return;
         const ql = hubQuery.trim().toLowerCase();
         const fl = allLaddersList().filter(l => !ql || l.name.toLowerCase().includes(ql) || l.id.toLowerCase().includes(ql));
-        const curSel = win.WelcomeAI?.defaultLadderId?.() || '';
+        const curSel = win.WelcomeAI?.defaultLadderId?.() || win.App?.S?.markers?.[0]?.ladderId || '';
         listEl.innerHTML = fl.slice(0, 30).map(l => `
           <button type="button" class="ai-hub-combo-item${l.id === curSel ? ' on' : ''}" data-hub-lad="${esc(l.id)}">
             <span>${l.fav ? '★ ' : ''}${esc(l.name)}</span>
@@ -475,11 +478,18 @@
           const id = /** @type {HTMLElement} */ (btn).dataset.hubLad || '';
           if (!id) return;
           win.WelcomeAI?.setDefaultLadderId?.(id);
-          if (win.App?.S?.markers?.[0]) {
-            const sel = /** @type {HTMLSelectElement | null} */ (document.querySelector('[data-mi="0"] [data-f="ladder"]'));
-            if (sel && Array.from(sel.options).some(o => o.value === id)) {
-              sel.value = id;
-              sel.dispatchEvent(new Event('change', { bubbles: true }));
+          if (win.App?.S) {
+            const lad = win.Ladders?.get?.(id);
+            const targetKind = lad && win.Ladders?.kindOf ? win.Ladders.kindOf(lad) : null;
+            if (targetKind && win.App.gelKind?.() !== targetKind && win.App.setGelType) {
+              win.App.setGelType(targetKind);
+            }
+            if (win.App.S.markers?.[0]) {
+              const sel = /** @type {HTMLSelectElement | null} */ (document.querySelector('[data-mi="0"] [data-f="ladder"]'));
+              if (sel && Array.from(sel.options).some(o => o.value === id)) {
+                sel.value = id;
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+              }
             }
           }
           renderAIAssistant();
@@ -540,9 +550,9 @@
       mReviewBar.innerHTML = '';
       return;
     }
-    const items = win.ReviewChecklist.items || [];
+    const items = win.ReviewChecklist.pendingItems || win.ReviewChecklist.items || [];
     const pending = win.ReviewChecklist.pendingCount || 0;
-    if (pending <= 0) {
+    if (pending <= 0 || !items.length) {
       mReviewBar.classList.remove('has-items');
       mReviewBar.innerHTML = '';
       return;
@@ -570,7 +580,7 @@
       });
       document.body.appendChild(mReviewSheet);
     }
-    const items = win.ReviewChecklist?.items || [];
+    const items = win.ReviewChecklist?.pendingItems || win.ReviewChecklist?.items || [];
     mReviewSheet.innerHTML = `
       <div class="sheet">
         <div class="sheet-grip"></div>

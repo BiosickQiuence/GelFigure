@@ -130,7 +130,7 @@ body.has-image .stage-switcher {
 }
 
 /* Single active pane on desktop (Figure-First default) */
-@media (min-width: 901px) {
+@media (min-width: 901px) and (min-height: 521px), (min-width: 901px) and (pointer: fine), (min-width: 901px) and (pointer: none) {
   body.has-image.stage-fig #rawCol {
     display: none !important;
   }
@@ -557,7 +557,7 @@ body.has-image #panel #autoFlowHome {
   display: none;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 900px), (max-height: 520px) and (pointer: coarse) {
   .stage-switcher {
     display: none !important;
   }

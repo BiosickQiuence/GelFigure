@@ -391,7 +391,7 @@ body.dragging .welcome-drop {
   padding: 0 2px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 900px), (max-height: 520px) and (pointer: coarse) {
   .welcome-view { padding: 16px 14px 28px; }
   .welcome-cards { grid-template-columns: 1fr; }
   .welcome-recent-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1076,7 +1076,7 @@ body.dragging .welcome-drop {
 @media (max-width: 1120px) {
   .review-panel { width: 248px; }
 }
-@media (max-width: 900px) {
+@media (max-width: 900px), (max-height: 520px) and (pointer: coarse) {
   .review-panel { display: none !important; }
   .demo-ai-banner { bottom: 70px; font-size: 12px; }
 }

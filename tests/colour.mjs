@@ -151,7 +151,7 @@ export async function colourChecks(browser,base,root,engine){
       try{
         const q=await mctx.newPage();await q.route(/^https?:/,r=>r.abort());await q.goto(pathToFileURL(path.join(root,'dist','GelFigure.html')).href+'?demo=1&lang=zh');await q.waitForFunction(()=>document.title.startsWith('READY '),null,{timeout:120000});
         await q.evaluate(async s=>{const buffer=Uint8Array.from(atob(s),c=>c.charCodeAt(0)).buffer;await App.load({name:'synthetic-colour.tif',buffer});App.setPref('preflight',false);},source);
-        await q.locator('#mNav [data-view="panel"]').tap();await q.locator('[data-display="gray"]').tap();assert.equal(await q.evaluate(()=>App.isColour()),false);await q.locator('[data-display="colour"]').tap();
+        await q.locator('#btnMore').tap();await q.locator('#moreSheet [data-m="panel"]').tap();await q.locator('[data-step-toggle="1"]').tap();await q.locator('[data-display="gray"]').tap();assert.equal(await q.evaluate(()=>App.isColour()),false);await q.locator('[data-display="colour"]').tap();
         await q.screenshot({path:path.join(dir,'phone-colour.png'),animations:'disabled'});
         await q.locator('#mExport').tap();await q.locator('#mDpiSeg [data-dpi="300"]').tap();await q.locator('[data-x="tiff"]').tap();await q.waitForFunction(()=>!document.getElementById('resultSheet').classList.contains('hidden'),null,{timeout:30000});
         assert((await q.locator('#rsName').textContent()).endsWith('.tif'));assert.equal(await q.evaluate(()=>innerWidth===document.documentElement.scrollWidth),true);

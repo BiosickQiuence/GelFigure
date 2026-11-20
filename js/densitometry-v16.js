@@ -103,11 +103,14 @@
     const bgMedian = median(sampleVals);
     const brightBandsOnDark = bgMedian < 0.5;
 
+    if (h < 2 || w < 2) return null;
     const topF = Math.max(0, Math.min(0.95, Math.min(roiTopPct, roiBotPct) / 100));
     const botF = Math.max(topF + 0.03, Math.min(1, Math.max(roiTopPct, roiBotPct) / 100));
-    const y0 = Math.max(0, Math.min(h - 1, Math.round(crop.y + crop.h * topF)));
-    const y1 = Math.max(y0 + 2, Math.min(h, Math.round(crop.y + crop.h * botF)));
+    const y0 = Math.max(0, Math.min(h - 2, Math.round(crop.y + crop.h * topF)));
+    const y1 = Math.min(h, Math.max(y0 + 1, Math.round(crop.y + crop.h * botF)));
     const roiH = y1 - y0;
+    const cropMinX = Math.max(0, Math.min(w - 1, Math.floor(crop.x)));
+    const cropMaxX = Math.max(cropMinX, Math.min(w - 1, Math.ceil(crop.x + crop.w) - 1));
 
     // Inter-lane spacing for strip half-width
     const xs = figLanes.map(li => S.lanes[li].x).sort((a, b) => a - b);
@@ -124,9 +127,9 @@
 
     const rows = figLanes.map((li, visIdx) => {
       const lane = S.lanes[li];
-      const cx = Math.round(lane.x);
-      const x0 = Math.max(0, cx - halfW);
-      const x1 = Math.min(w - 1, cx + halfW);
+      const cx = Math.max(cropMinX, Math.min(cropMaxX, Math.round(lane.x)));
+      const x0 = Math.max(cropMinX, cx - halfW);
+      const x1 = Math.min(cropMaxX, cx + halfW);
       const stripW = Math.max(1, x1 - x0 + 1);
 
       const profile = new Float64Array(roiH);
@@ -156,9 +159,9 @@
         profile[r] = rowSigSum / stripW;
         rawIntegrated += rowSigSum;
 
-        // Flanking lane-edge pixels for local background
-        const lx = Math.max(0, cx - edgeOffset);
-        const rx = Math.min(w - 1, cx + edgeOffset);
+        // Flanking lane-edge pixels for local background (stay within crop)
+        const lx = Math.max(cropMinX, cx - edgeOffset);
+        const rx = Math.min(cropMaxX, cx + edgeOffset);
         const lRaw = data[rowOff + lx];
         const rRaw = data[rowOff + rx];
         const lSig = brightBandsOnDark ? lRaw : (1 - lRaw);
@@ -254,9 +257,9 @@
         r.peakRaw,
         r.saturatedPixels,
         r.status,
-        r.rawIntegrated == null ? 'BLOCKED' : r.rawIntegrated,
-        r.netIntegrated == null ? 'BLOCKED' : r.netIntegrated,
-        r.relative == null ? 'BLOCKED' : r.relative.toFixed(3)
+        r.saturated ? 'BLOCKED' : (r.rawIntegrated == null ? 'N/A' : r.rawIntegrated),
+        r.saturated ? 'BLOCKED' : (r.netIntegrated == null ? 'N/A' : r.netIntegrated),
+        r.saturated ? 'BLOCKED' : (r.relative == null ? 'N/A' : r.relative.toFixed(3))
       ].join(','));
     }
     return '\uFEFF' + lines.join('\r\n') + '\r\n';
@@ -396,14 +399,18 @@
   }
 
   function summaryZh() {
-    if (!enabled || !lastResult) return '';
-    const bgName = lastResult.backgroundMethod === 'rolling_ball' ? '滚球背景扣除' : lastResult.backgroundMethod === 'lane_edge' ? '泳道边缘背景扣除' : '无背景扣除';
+    if (!enabled) return '';
+    const res = compute();
+    if (!res) return '';
+    const bgName = res.backgroundMethod === 'rolling_ball' ? '滚球背景扣除' : res.backgroundMethod === 'lane_edge' ? '泳道边缘背景扣除' : '无背景扣除';
     return `相对灰度定量基于未拉伸线性像素（${bgName}），过曝泳道已排除定量；请自行验证成像线性动态范围。`;
   }
 
   function summaryEn() {
-    if (!enabled || !lastResult) return '';
-    return `Basic relative grayscale densitometry was performed on unclipped linear pixels (${lastResult.backgroundMethod} background subtraction); overexposed lanes were excluded and linear dynamic range must be verified independently.`;
+    if (!enabled) return '';
+    const res = compute();
+    if (!res) return '';
+    return `Basic relative grayscale densitometry was performed on unclipped linear pixels (${res.backgroundMethod} background subtraction); overexposed lanes were excluded and linear dynamic range must be verified independently.`;
   }
 
   /* ======================================================================
@@ -426,7 +433,13 @@
     registerWebPWA();
     if (win.App?.on) {
       win.App.on(w => {
-        if (w === 'loaded' || w === 'change' || w === 'refresh') renderPanel();
+        if (w === 'loaded') {
+          refLaneIdx = -1;
+          lastResult = null;
+          renderPanel();
+        } else if (w === 'change' || w === 'refresh') {
+          renderPanel();
+        }
       });
     }
     if (win.I18N?.onChange) win.I18N.onChange(renderPanel);

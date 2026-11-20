@@ -95,9 +95,27 @@ export async function v15ProductivityChecks(browser, base, root = ROOT, engine =
       assert.ok(opts >= 2, 'Autocomplete must display matching historical names');
       if (engine === 'chromium') await page.screenshot({ path: path.join(shotDir, 'lane-autocomplete.png') });
 
+      // Bare Enter must NOT hijack typed prefix
+      await inp.press('Enter');
+      assert.equal(await inp.inputValue(), 'Res-', 'Bare Enter should preserve typed prefix instead of hijacking');
+
+      // ArrowDown + Enter commits the selected suggestion
+      await inp.click();
+      await inp.fill('Res-');
+      await page.waitForSelector('#laneAutocompleteMenu:not(.hidden)');
+      await inp.press('ArrowDown');
       await inp.press('Enter');
       const val = await inp.inputValue();
-      assert.ok(val === 'Res-2' || val === 'Res-ctrl', `Expected autocompleted value, got ${val}`);
+      assert.ok(val === 'Res-2' || val === 'Res-ctrl', `Expected autocompleted value via ArrowDown+Enter, got ${val}`);
+
+      // Tab commits top suggestion directly
+      const inpNext = page.locator('#step3LaneList .step3-lane-input').nth(3);
+      await inpNext.click();
+      await inpNext.fill('Res-');
+      await page.waitForSelector('#laneAutocompleteMenu:not(.hidden)');
+      await inpNext.press('Tab');
+      const tabVal = await inpNext.inputValue();
+      assert.ok(tabVal === 'Res-2' || tabVal === 'Res-ctrl', `Expected autocompleted value via Tab, got ${tabVal}`);
       assert.equal(errs.length, 0, 'Page errors: ' + errs.join(' | '));
     } finally {
       await ctx.close();

@@ -373,5 +373,87 @@
   // Editor shortcuts on window must not edit a project hidden behind this page.
   document.addEventListener('keydown', e => { if (active) e.stopPropagation(); });
   G.I18N.onChange(() => { if (active) { syncModels(); syncSetupBanner(); showStatus(phase, error); } });
-  G.AutoFlow = {open, selectFiles, get active() { return active; }, get hasCachedLayout() { return !!cachedLayout; }};
+  /**
+   * Headless single-gel AI Auto-Flow used by Batch Processing.
+   * Reuses AICache, AIRetry, perspective/lane detection, and Marker band detection, then installs via App.adoptAutomatic.
+   * @param {{ file: File | { name: string, buffer: ArrayBuffer }, ladderId: string, silent?: boolean, signal?: AbortSignal, forceRefresh?: boolean }} opts
+   */
+  async function run(opts) {
+    const f = opts && opts.file;
+    const ladderId = opts && opts.ladderId;
+    if (!f) throw new Error(L('缺少输入胶图文件', 'Missing input gel file'));
+    await G.Ladders.ready;
+    const ladder = G.Ladders.get(ladderId);
+    if (!ladder) throw new Error(L('请先选择一个有效的 Marker 型号', 'Select a valid Marker model first'));
+    if (!G.AIClient?.configured) throw new Error(L('AI 接口未配置', 'AI API is not configured'));
+
+    const outerSignal = opts.signal || null;
+    if (outerSignal?.aborted) throw new DOMException('Aborted', 'AbortError');
+    const kind = G.Ladders.kindOf(ladder);
+    const ep = /** @type {HTMLInputElement | null} */ (document.getElementById('aiEndpoint'))?.value?.trim() || '';
+    const model = /** @type {HTMLInputElement | null} */ (document.getElementById('aiModel'))?.value?.trim() || '';
+    const input = await A.readInput(f);
+    if (outerSignal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+    const img = input.img;
+    const raw = { w: img.width, h: img.height, data: img.data };
+    const cacheKey = G.AICache ? G.AICache.key({ sha256: input.sha256, ladderId: ladder.id, model, endpoint: ep }) : '';
+    const cached = (!opts.forceRefresh && cacheKey && G.AICache) ? await G.AICache.get(cacheKey) : null;
+    if (outerSignal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+    const callTimed = async fn => {
+      const exec = async () => {
+        const reqCtrl = new AbortController();
+        const onAbort = () => reqCtrl.abort();
+        if (outerSignal) outerSignal.addEventListener('abort', onAbort, { once: true });
+        const tm = setTimeout(() => reqCtrl.abort(), 90000);
+        try {
+          return await fn(reqCtrl.signal);
+        } catch (e) {
+          if (!outerSignal?.aborted && reqCtrl.signal.aborted) {
+            /** @type {any} */ const te = new Error(L('接口超过 90 秒未返回', 'API timed out after 90s'));
+            te.isTimeout = true;
+            throw te;
+          }
+          throw e;
+        } finally {
+          clearTimeout(tm);
+          if (outerSignal) outerSignal.removeEventListener('abort', onAbort);
+        }
+      };
+      if (G.AIRetry?.runWithRetry) {
+        return G.AIRetry.runWithRetry(exec, { retryOnce: true, backoffMs: 600, signal: outerSignal || undefined });
+      }
+      return exec();
+    };
+
+    let layout, corrected, markers;
+    if (cached && cached.proposal && cached.markers) {
+      layout = G.GelAIBeta.plan(cached.proposal, 4, raw);
+      corrected = G.Perspective.warp(raw, layout.spec, false);
+      markers = cached.markers;
+    } else {
+      const sourceImage = G.AIClient.encodeImage(raw, img.rgb);
+      const proposal = await callTimed(sig => G.GelAIBeta.detectLayout(sourceImage, kind, sig));
+      if (outerSignal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      layout = G.GelAIBeta.plan(proposal, 4, raw);
+      corrected = G.Perspective.warp(raw, layout.spec, false);
+      const rgb = img.rgb && G.Perspective.warp({ w: raw.w, h: raw.h, data: img.rgb }, layout.spec, true).data;
+      const markerImage = G.AIClient.encodeImage(corrected, rgb);
+      markers = await callTimed(sig => G.MarkerAI.detectAutomaticMarkers(markerImage, ladder, layout, sig));
+      if (outerSignal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      if (cacheKey && G.AICache) {
+        try { await G.AICache.set(cacheKey, { proposal, markers, savedAt: Date.now() }); } catch (_) {}
+      }
+    }
+
+    A.adoptAutomatic(input, layout, corrected, markers, kind);
+    if (!opts.silent) {
+      if (G.UI.isPhone()) G.Mobile.setView('fig');
+      G.Editor.fitCrop();
+    }
+    return { layout, markers, fromCache: !!(cached && cached.proposal && cached.markers) };
+  }
+
+  G.AutoFlow = {open, selectFiles, run, get active() { return active; }, get hasCachedLayout() { return !!cachedLayout; }};
 })(window);

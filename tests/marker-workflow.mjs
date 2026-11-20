@@ -18,6 +18,7 @@ export async function markerWorkflowChecks(browser,base,root,engine){
  try{
   await load();
   await check('left-side lane controls expose one combined detection button; crop selectors are removed',async()=>{
+   await p.locator('[data-step-toggle="1"]').click();
    assert.equal(await p.locator('#rawCol #cropLaneN').count(),0);assert(await p.locator('#panel #cropLaneN').isVisible());
    assert.equal(await p.locator('#rangeA,#rangeB,#btnRangeAuto').count(),0);
    assert.equal(await p.locator('#btnRedetectCrop').evaluate(e=>e.closest('details')),null);assert(await p.locator('#btnRedetectCrop').isVisible());
@@ -77,9 +78,10 @@ export async function markerWorkflowChecks(browser,base,root,engine){
    });assert.deepEqual(r,{model:true,other:true,confirmed:true});
   });
   await check('reference stays beside the image without a modal or replacing the working views',async()=>{
+   await p.locator('[data-step-toggle="2"]').click();
    await p.locator('[data-mi="0"] [data-f="guide"]').click();await p.waitForSelector('#markerReference:not(.hidden)');
    assert.equal(await p.locator('#markerGuide').count(),0);assert.equal(await p.locator('.dlg:not(.hidden)').count(),0);
-   assert(await p.locator('#preview svg').isVisible());assert(await p.locator('#editor').isVisible());
+   assert.equal(await p.locator('#preview svg').count(),1);assert(await p.locator('#editor').isVisible());
    const r=await p.locator('#markerReference').boundingBox();assert(r.width<=180);
    await p.screenshot({path:path.join(dir,'reference.png')});
   });
@@ -139,7 +141,7 @@ export async function markerWorkflowChecks(browser,base,root,engine){
   });
   await check('removing a marker on the figure is respected by the next combined detection',async()=>{
    await p.locator('#preview [data-edit="marker"]').first().click();const x=await p.evaluate(()=>App.S.lanes[App.S.markers[0].lane].x);
-   await p.locator('#markerRemoveLane').click();await p.locator('#btnRedetectCrop').click();
+   await p.locator('#markerRemoveLane').click();await p.locator('[data-step-toggle="1"]').click();await p.locator('#btnRedetectCrop').click();
    assert(await p.evaluate(x=>{const i=App.S.lanes.findIndex(l=>l.markerExcluded&&Math.abs(l.x-x)<App.S.lanePitch*.45);return i>=0&&!App.S.markers.some(m=>m.lane===i);},x));
   });
   await load();
@@ -179,8 +181,8 @@ export async function markerWorkflowChecks(browser,base,root,engine){
   });
   await check('phone layouts keep controls in Settings and use a compact reference on the image',async()=>{
    for(const width of [390,320]){
-    await p.setViewportSize({width,height:844});await p.locator('#mNav [data-view="panel"]').click();assert(await p.locator('#cropLaneN').isVisible());assert(await p.locator('#btnRedetectCrop').isVisible());
-    await p.locator('[data-mi="0"] [data-f="guide"]').click();assert(await p.locator('#markerReference').isVisible());assert(await p.locator('#editor').isVisible());
+    await p.setViewportSize({width,height:844});await p.locator('#btnMore').click();await p.locator('#moreSheet [data-m="panel"]').click();await p.locator('[data-step-toggle="1"]').click();assert(await p.locator('#cropLaneN').isVisible());assert(await p.locator('#btnRedetectCrop').isVisible());
+    await p.locator('[data-step-toggle="2"]').click();await p.locator('[data-mi="0"] [data-f="guide"]').click();assert(await p.locator('#markerReference').isVisible());assert(await p.locator('#editor').isVisible());
     await p.waitForFunction(()=>document.getElementById('markerReference').getBoundingClientRect().top>=document.getElementById('modeBanner').getBoundingClientRect().bottom);
     const ref=await p.locator('#markerReference').boundingBox();assert(ref.width<=140);assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth),width);assert.equal(await p.locator('.dlg:not(.hidden)').count(),0);
     const q=await p.evaluate(()=>{const m=App.S.markers[0],b=m.bands.find(b=>b.show),r=document.getElementById('editor').getBoundingClientRect(),pt=Editor.toScr(App.S.lanes[m.lane].x,b.y);return {x:r.left+pt.x,y:r.top+pt.y};});

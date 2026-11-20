@@ -161,7 +161,8 @@
     render();
     const t0 = performance.now();
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 20000);
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, 20000);
     try {
       const c = document.createElement('canvas');
       c.width = 16; c.height = 16;
@@ -196,7 +197,14 @@
       if (!data?.choices?.length) throw new Error(L('接口返回结构不符合 OpenAI 兼容格式', 'Response does not match OpenAI-compatible format'));
       testState = { ok: true, ms: Math.max(1, Math.round(performance.now() - t0)) };
     } catch (err) {
-      testState = { ok: false, err };
+      if (timedOut) {
+        /** @type {any} */
+        const te = new Error(L('连接测试超过 20 秒未返回', 'Connection test timed out after 20s'));
+        te.isTimeout = true;
+        testState = { ok: false, err: te };
+      } else {
+        testState = { ok: false, err };
+      }
     } finally {
       clearTimeout(timer);
       testing = false;
@@ -358,6 +366,19 @@
     dlg.querySelectorAll('[data-wstep]').forEach(btn => {
       btn.addEventListener('click', () => {
         const target = Number(/** @type {HTMLElement} */ (btn).dataset.wstep);
+        if (target === 4) {
+          const clean = win.AIClient?.sanitizeKey ? win.AIClient.sanitizeKey(keyVal) : { value: keyVal.trim(), cleaned: false };
+          keyVal = clean.value;
+          pushToClient();
+          try {
+            win.AIClient.validateSettings({ endpoint: endpointVal.trim(), model: modelVal.trim(), key: keyVal.trim() });
+          } catch (e) {
+            step = 3;
+            testState = { ok: false, err: e };
+            render();
+            return;
+          }
+        }
         if (target >= 1 && target <= 4) { step = target; render(); }
       });
     });
@@ -432,7 +453,17 @@
     const confirmBtn = dlg.querySelector('#wizConfirm');
     if (confirmBtn) {
       confirmBtn.addEventListener('click', () => {
+        const clean = win.AIClient?.sanitizeKey ? win.AIClient.sanitizeKey(keyVal) : { value: keyVal.trim(), cleaned: false };
+        keyVal = clean.value;
         pushToClient();
+        try {
+          win.AIClient.validateSettings({ endpoint: endpointVal.trim(), model: modelVal.trim(), key: keyVal.trim() });
+        } catch (e) {
+          step = 3;
+          testState = { ok: false, err: e };
+          render();
+          return;
+        }
         if (win.AIConsent) win.AIConsent.grant(endpointVal.trim());
         const cb = onCompleteCb;
         close();

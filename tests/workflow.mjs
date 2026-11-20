@@ -12,6 +12,7 @@ export async function workflowChecks(browser, base, root, engine) {
   try {
     await load();
     await check('end-line dragging links the grid and keeps annotations and outside lanes',async()=>{
+      await p.locator('[data-step-toggle="1"]').click();
       const r=await p.evaluate(()=>{
         const S=App.S,r=App.laneRange();S.lanes[r[0]+1].name='Keep name';S.conditions=[{name:'Drug',values:S.lanes.map((_,i)=>String(i))}];App.commit();
         const before=JSON.parse(App.snapshot()),base=App.laneGrid();
@@ -26,6 +27,7 @@ export async function workflowChecks(browser, base, root, engine) {
       assert(await p.evaluate(()=>{const r=App.laneRange(),xs=App.S.lanes.slice(r[0],r[1]+1).map(l=>l.x),d=xs[1]-xs[0];return xs.every((x,i)=>Math.abs(x-xs[0]-i*d)<1e-6);}));
     });
     await check('lane count applies immediately, supports one lane, and never recreates removed markers',async()=>{
+      await p.locator('[data-step-toggle="1"]').click();
       await p.evaluate(()=>{App.S.markers=[];App.commit();});
       await p.locator('#cropLaneN').fill('8');await p.locator('#cropLaneN').press('Tab');
       assert.equal(await p.evaluate(()=>{const r=App.laneRange();return r[1]-r[0]+1;}),8);

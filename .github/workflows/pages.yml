@@ -26,7 +26,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir _site
-          cp -r index.html css js LICENSE _site/
+          cp -r index.html css js i18n icons manifest.webmanifest sw.js LICENSE _site/
           rm -f _site/js/uitest.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

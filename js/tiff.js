@@ -256,14 +256,19 @@
         const tx = (idx % across) * tw, ty = Math.floor(idx / across) * th;
         const rowBytes = packed ? Math.ceil(tw * bits / 8) : tw * sppBlock * bps;
         const expected = th * rowBytes;
-        let block = await decompress(comp, new Uint8Array(buffer, offs[k], counts[k]), expected);
+        const cnt = counts ? counts[k] : expected;
+        let block = await decompress(comp, new Uint8Array(buffer, offs[k], Math.min(cnt, Math.max(0, buffer.byteLength - offs[k]))), expected);
+        if (block === undefined) continue;
         block = new Uint8Array(block.buffer.slice(block.byteOffset, block.byteOffset + Math.min(block.byteLength, expected)));
         if (predictor === 2 && !packed) undoPredictor(block, tw, th, sppBlock, bits, le);
         // tile widths are multiples of 16, so a packed tile starts on a byte boundary
         const copyW = packed ? Math.ceil(Math.min(tw, w - tx) * bits / 8) : Math.min(tw, w - tx) * sppBlock * bps;
         for (let r = 0; r < th && ty + r < h; r++) {
+          const srcOff = r * rowBytes;
+          if (srcOff >= block.length) break;
           const dst = packed ? (ty + r) * rowB + tx * bits / 8 : plane * w * h * bps + ((ty + r) * w + tx) * sppBlock * bps;
-          total.set(block.subarray(r * rowBytes, r * rowBytes + copyW), dst);
+          const len = Math.min(copyW, block.length - srcOff, total.length - dst);
+          if (len > 0) total.set(block.subarray(srcOff, srcOff + len), dst);
         }
       }
     }
@@ -404,14 +409,17 @@
         let mx = 0, chromaSum = 0, blueDom = 0, colorSamples = 0;
         const stepC = Math.max(1, Math.floor(n / 200000));
         for (let i = 0; i < n; i++) {
-          const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
+          const r0 = d[i * 4], g0 = d[i * 4 + 1], b0 = d[i * 4 + 2];
+          const alpha = d[i * 4 + 3] / 255;
+          const r = r0 * alpha + 255 * (1 - alpha);
+          const g = g0 * alpha + 255 * (1 - alpha);
+          const b = b0 * alpha + 255 * (1 - alpha);
           const v = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
           gray[i] = v; if (v > mx) mx = v;
-          const alpha = d[i * 4 + 3] / 255;
-          if (alpha > 0 && (r !== g || g !== b)) chromatic = true;
-          rgb[i * 3] = Math.round(r * alpha + 255 * (1 - alpha));
-          rgb[i * 3 + 1] = Math.round(g * alpha + 255 * (1 - alpha));
-          rgb[i * 3 + 2] = Math.round(b * alpha + 255 * (1 - alpha));
+          if (alpha > 0 && (r0 !== g0 || g0 !== b0)) chromatic = true;
+          rgb[i * 3] = Math.round(r);
+          rgb[i * 3 + 1] = Math.round(g);
+          rgb[i * 3 + 2] = Math.round(b);
           if (i % stepC === 0) {
             const mxc = Math.max(r, g, b), mnc = Math.min(r, g, b);
             if (mxc > 0) chromaSum += (mxc - mnc) / mxc;

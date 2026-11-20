@@ -29,7 +29,7 @@
     }
   }
   function removeItem(key) {
-    memory.delete(key);
+    memory.set(key, null);
     if (persistent) {
       try { G.localStorage.removeItem(key); }
       catch (e) { unavailable(); }

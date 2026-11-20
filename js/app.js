@@ -526,7 +526,7 @@
   // ---------- resolution ----------
   // pixels of the gel actually placed per inch of the printed figure (no upsampling)
   App.effectiveDpi = function () { return App.visibleWidthPx() / (App.gelWidthMm() / 25.4); };
-  App.maxSafeWidthMm = function (dpi) { return Math.floor(App.visibleWidthPx() / (dpi || 300) * 25.4); };
+  App.maxSafeWidthMm = function (dpi) { return Math.max(1, Math.floor(App.visibleWidthPx() / (dpi || 300) * 25.4)); };
   App.autoCrop = function () {
     App.S.crop = E.autoCrop(App.ensureRot(), App.S.bright);
     App.cropMeta = E.autoCrop.meta || null;
@@ -1388,7 +1388,7 @@
   App.emptyLanes = function () {
     const S = App.S, r = App.laneRange();
     if (!r) return [];
-    const key = [S.file.sha256, S.rotation, S.crop.y, S.crop.h, S.lanes.map(l => Math.round(l.x)).join()].join('|');
+    const key = [S.file.sha256, S.orient || '', JSON.stringify(S.perspective || null), App.gelKind(), S.rotation, S.crop.y, S.crop.h, S.lanes.map(l => Math.round(l.x)).join()].join('|');
     if (App._emptyKey !== key) {
       App._peakCrop = App.bandStrip();
       try { App._laneStrength = S.lanes.map((l, i) => { const p = App.lanePeaks(i); return p.length ? Math.max(...p.map(q => q.v)) : 0; }); }
@@ -1462,7 +1462,8 @@
     cc.getContext('2d').drawImage(App.fullCanvas, Math.round(r.x), Math.round(r.y), cc.width, cc.height, 0, 0, cc.width, cc.height);
     const approxScale = App.gelWidthMm() * G.Render.MM / App.visibleWidthPx();
     const gel = G.Render.composeGel(R, cc, approxScale);
-    const key = [App._display, r.x, r.y, r.w, r.h, gel.canvas.width, R.lanes.map(l => l.hidden ? 'h' + l.x : '').join()].join('|');
+    const segKey = (gel.segs || []).map(s => `${Math.round(s.sx)}:${Math.round(s.sw)}`).join(',');
+    const key = [App._display, r.x, r.y, r.w, r.h, gel.canvas.width, segKey, R.lanes.map(l => l.hidden ? 'h' + l.x : '').join()].join('|');
     if (App._gelKey !== key) { App._gelKey = key; App._gelHref = gel.canvas.toDataURL('image/png'); }
     App._lastGel = gel;
     const out = G.Render.build(R, gel, App._gelHref);

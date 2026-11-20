@@ -214,6 +214,12 @@
   }
 
   async function responseJSON(res) {
+    if (!res.body || typeof res.body.getReader !== 'function') {
+      const text = await res.text();
+      if (text.length > 2 * 1024 * 1024) throw new Error(L('接口响应超过 2 MB', 'API response exceeds 2 MB'));
+      try { return JSON.parse(text); }
+      catch (_) { throw new Error(L('接口未返回有效 JSON', 'API did not return valid JSON')); }
+    }
     const reader = res.body.getReader(), chunks = [];
     let n = 0;
     try {
@@ -224,7 +230,8 @@
         if (n > 2 * 1024 * 1024) { await reader.cancel(); throw new Error('size'); }
         chunks.push(r.value);
       }
-    } catch (_) {
+    } catch (err) {
+      if (err && (err.name === 'AbortError' || err.isTimeout)) throw err;
       throw new Error(L('接口响应读取失败或超过 2 MB', 'API response could not be read or exceeds 2 MB'));
     }
     const bytes = new Uint8Array(n);
@@ -436,12 +443,20 @@
   let activeSettingsTab = 'ai';
 
   function buildSettings() {
+    if ($('aiEndpoint')) {
+      settings = {
+        endpoint: $('aiEndpoint').value,
+        model: $('aiModel')?.value ?? settings.model,
+        key: $('aiKey')?.value ?? settings.key,
+        remember: $('aiRemember')?.checked ?? settings.remember
+      };
+    }
     if (autoEntry && $('autoFlowHome')) $('autoFlowHome').appendChild(autoEntry);
     const matched = matchPreset(settings.endpoint);
     const consentRec = G.AIConsent?.info;
     const consentedForEp = G.AIConsent?.isConsented(settings.endpoint);
     const curDefaultLadder = A.prefs().autoFlowLadder || '';
-    const hasLabTpl = !!A.prefs().labDefaultAppearance;
+    const hasLabTpl = !!A.prefs().stylePreset;
     settingsPanel.classList.add('settings-center');
     settingsPanel.innerHTML = `<div class="dlg-head" style="padding:14px 18px;margin:0;border-bottom:1px solid var(--line);">
         <h2 id="aiSettingsTitle" style="margin:0;font-size:16px;">${L('设置中心', 'Settings Center')}</h2>
@@ -543,18 +558,22 @@
     placeAutoEntry();
     updateAutoEntryState();
 
+    const refreshCacheInfo = () => {
+      if (!G.AICache) return;
+      G.AICache.count().then(n => {
+        const info = $('settingsCacheInfo');
+        if (info) info.textContent = L(`当前缓存 ${n} 条 AI 结果（按原图 SHA-256 + 型号 + 模型 + 提示词版本索引）`, `${n} cached AI result(s) (indexed by SHA-256 + ladder + model + prompt version)`);
+      });
+    };
+    if (activeSettingsTab === 'data') refreshCacheInfo();
+
     // Tab switching
     settingsPanel.querySelectorAll('[data-stab]').forEach(tab => {
       tab.onclick = () => {
         activeSettingsTab = tab.dataset.stab;
         settingsPanel.querySelectorAll('[data-stab]').forEach(t => t.classList.toggle('on', t.dataset.stab === activeSettingsTab));
         settingsPanel.querySelectorAll('[data-spane]').forEach(p => p.classList.toggle('hidden', p.dataset.spane !== activeSettingsTab));
-        if (activeSettingsTab === 'data' && G.AICache) {
-          G.AICache.count().then(n => {
-            const info = $('settingsCacheInfo');
-            if (info) info.textContent = L(`当前缓存 ${n} 条 AI 结果（按原图 SHA-256 + 型号 + 模型 + 提示词版本索引）`, `${n} cached AI result(s) (indexed by SHA-256 + ladder + model + prompt version)`);
-          });
-        }
+        if (activeSettingsTab === 'data') refreshCacheInfo();
       };
     });
 
@@ -637,8 +656,17 @@
   }
 
   function openSettings(tab) {
-    if (tab) activeSettingsTab = tab;
-    else activeSettingsTab = 'ai';
+    const alreadyOpen = !settingsPanel.classList.contains('hidden');
+    const targetTab = tab || 'ai';
+    if (alreadyOpen) {
+      if (targetTab !== activeSettingsTab) {
+        activeSettingsTab = targetTab;
+        settingsPanel.querySelectorAll('[data-stab]').forEach(t => t.classList.toggle('on', t.dataset.stab === activeSettingsTab));
+        settingsPanel.querySelectorAll('[data-spane]').forEach(p => p.classList.toggle('hidden', p.dataset.spane !== activeSettingsTab));
+      }
+      return;
+    }
+    activeSettingsTab = targetTab;
     buildSettings();
     settingsPanel.classList.remove('hidden');
     placeAutoEntry();

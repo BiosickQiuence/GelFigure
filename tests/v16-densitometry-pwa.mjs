@@ -246,6 +246,7 @@ export async function v16DensitometryPwaChecks(browser, base, root = ROOT, engin
         };
       });
 
+      const pkgVer = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
       assert.equal(pwa.manifestHref, 'manifest.webmanifest');
       assert.equal(pwa.manifestStatus, 200);
       assert.equal(pwa.manifestJson.name, 'GelFigure');
@@ -255,27 +256,27 @@ export async function v16DensitometryPwaChecks(browser, base, root = ROOT, engin
       assert.equal(pwa.iconStatus, 200);
       assert.ok(pwa.iconText.includes('<svg') && pwa.iconText.includes('#002147') && pwa.iconText.includes('#C8962E'));
       assert.equal(pwa.swStatus, 200);
-      assert.ok(pwa.swText.includes('gelfigure-v1.6.0'));
+      assert.ok(pwa.swText.includes(`gelfigure-v${pkgVer}`));
       assert.ok(pwa.swText.includes('url.origin !== self.location.origin'), 'SW must skip external origins');
       assert.ok(pwa.swText.includes("req.method !== 'GET'"), 'SW must skip non-GET requests');
 
       // On Chromium, verify live Service Worker registration & full APP_SHELL precache (zero 404s!)
       if (engine === 'chromium') {
-        const swReady = await page.evaluate(async () => {
+        const swReady = await page.evaluate(async expectedCache => {
           if (!('serviceWorker' in navigator)) return { supported: false };
           const reg = await Promise.race([
             navigator.serviceWorker.ready,
             new Promise((_, rej) => setTimeout(() => rej(new Error('SW ready timeout')), 15000))
           ]);
-          const hasCache = await caches.has('gelfigure-v1.6.0');
-          const cache = hasCache ? await caches.open('gelfigure-v1.6.0') : null;
+          const hasCache = await caches.has(expectedCache);
+          const cache = hasCache ? await caches.open(expectedCache) : null;
           const keys = cache ? (await cache.keys()).length : 0;
           await reg.unregister();
           return { supported: true, active: !!reg.active, hasCache, keys };
-        });
+        }, `gelfigure-v${pkgVer}`);
         assert.equal(swReady.supported, true);
         assert.equal(swReady.active, true, 'SW must activate cleanly');
-        assert.equal(swReady.hasCache, true, 'SW must create gelfigure-v1.6.0 cache');
+        assert.equal(swReady.hasCache, true, `SW must create gelfigure-v${pkgVer} cache`);
         assert.ok(swReady.keys >= 40, `Expected >=40 precached app shell assets, got ${swReady.keys}`);
       }
 
@@ -327,13 +328,14 @@ export async function v16DensitometryPwaChecks(browser, base, root = ROOT, engin
     }
   });
 
-  await check('README documentation reflects v1.6.0 opt-in densitometry & linear-range disclaimer', async () => {
+  await check('README documentation reflects opt-in densitometry & linear-range disclaimer', async () => {
+    const pkgVer = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
     const en = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
     const zh = fs.readFileSync(path.join(root, 'README.zh-CN.md'), 'utf8');
-    assert.ok(en.includes('1.6.0'), 'README.md should reference 1.6.0');
+    assert.ok(en.includes(pkgVer), `README.md should reference ${pkgVer}`);
     assert.ok(/densitometry/i.test(en) && /linear/i.test(en) && /saturated/i.test(en), 'README.md must describe densitometry, linear range, and saturation blocking');
     assert.ok(!/not a quantitative-analysis tool/i.test(en), 'README.md must update old "not a quantitative-analysis tool" sentence');
-    assert.ok(zh.includes('1.6.0'), 'README.zh-CN.md should reference 1.6.0');
+    assert.ok(zh.includes(pkgVer), `README.zh-CN.md should reference ${pkgVer}`);
     assert.ok(zh.includes('灰度定量') && zh.includes('线性') && zh.includes('过曝'), 'README.zh-CN.md must describe densitometry, linear range, and saturation blocking');
     assert.ok(!zh.includes('不提供定量分析'), 'README.zh-CN.md must update old "不提供定量分析" sentence');
   });
