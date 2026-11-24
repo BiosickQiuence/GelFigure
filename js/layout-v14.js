@@ -400,10 +400,15 @@
     const configured = !!win.AIClient?.configured;
     const ep = /** @type {HTMLInputElement | null} */ (document.getElementById('aiEndpoint'))?.value?.trim() || '';
     const consented = !!win.AIConsent?.isConsented(ep);
+    const activeProfile = win.AIClient?.activeProfile || null;
+    const savedProfiles = Array.isArray(win.AIClient?.profiles) ? win.AIClient.profiles : [];
     const hasImg = !!win.App?.S;
     const selectedId = win.WelcomeAI?.defaultLadderId?.() || win.App?.S?.markers?.[0]?.ladderId || '';
     const q = hubQuery.trim().toLowerCase();
     const filtered = allLaddersList().filter(l => !q || l.name.toLowerCase().includes(q) || l.id.toLowerCase().includes(q));
+    const statusSub = configured
+      ? [activeProfile?.name, win.AIConsent?.hostOf(ep) || ''].filter((v, i, a) => v && a.indexOf(v) === i).join(' · ')
+      : L('3 分钟向导，支持阿里云百炼 / OpenAI / Gemini / 自定义', '3-min wizard for Bailian / OpenAI / Gemini / Custom');
 
     hubDlg.innerHTML = `
       <div class="ai-hub-card" role="dialog" aria-modal="true" aria-label="${L('AI 助手', 'AI Assistant')}">
@@ -413,11 +418,14 @@
         </div>
         <div class="ai-hub-body">
           <div class="ai-hub-status">
-            <div>
+            <div class="ai-hub-status-main">
               <strong>${configured ? (consented ? L('AI 接口已就绪', 'AI API ready') : L('AI 已填 Key（待隐私确认）', 'Key saved (consent pending)')) : L('尚未配置 AI 接口', 'AI API not configured')}</strong>
-              <div style="color:var(--muted);margin-top:2px;">${configured ? esc(win.AIConsent?.hostOf(ep) || '') : L('3 分钟向导，支持阿里云百炼 / OpenAI / Gemini / 自定义', '3-min wizard for Bailian / OpenAI / Gemini / Custom')}</div>
+              <div style="color:var(--muted);margin-top:2px;">${esc(statusSub)}</div>
             </div>
-            <button type="button" class="btn sm${configured && consented ? '' : ' primary'}" id="aiHubSetupBtn">${configured ? L('修改配置', 'Settings') : L('配置向导', 'Setup wizard')}</button>
+            <div class="ai-hub-status-actions">
+              ${savedProfiles.length > 1 ? `<select id="aiHubProfileSelect" class="ai-hub-profile-select" aria-label="${L('切换已保存的 API 配置', 'Switch saved API profile')}">${savedProfiles.map(pr => `<option value="${esc(pr.id)}"${pr.active ? ' selected' : ''}>${esc(pr.name)}</option>`).join('')}</select>` : ''}
+              <button type="button" class="btn sm${configured && consented ? '' : ' primary'}" id="aiHubSetupBtn">${configured ? L('管理配置', 'Settings') : L('配置向导', 'Setup wizard')}</button>
+            </div>
           </div>
 
           <div class="ai-hub-combo">
@@ -450,9 +458,19 @@
       </div>`;
 
     hubDlg.querySelector('#aiHubClose')?.addEventListener('click', closeAIAssistant);
+    const hubProfSel = /** @type {HTMLSelectElement | null} */ (hubDlg.querySelector('#aiHubProfileSelect'));
+    if (hubProfSel) {
+      hubProfSel.addEventListener('change', () => {
+        if (win.AIClient?.selectProfile) {
+          win.AIClient.selectProfile(hubProfSel.value);
+          renderAIAssistant();
+        }
+      });
+    }
     hubDlg.querySelector('#aiHubSetupBtn')?.addEventListener('click', () => {
       closeAIAssistant();
-      if (win.AIWizard) win.AIWizard.open(configured ? 3 : 1);
+      if (configured || savedProfiles.length) win.AIClient?.openSettings?.('ai');
+      else if (win.AIWizard) win.AIWizard.open(1);
       else win.AIClient?.openSettings?.('ai');
     });
     const searchEl = /** @type {HTMLInputElement | null} */ (hubDlg.querySelector('#aiUnifiedLadderSearch'));

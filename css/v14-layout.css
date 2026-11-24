@@ -465,8 +465,31 @@ body.has-image #panel #autoFlowHome {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
   font-size: 12.5px;
+}
+.ai-hub-status-main {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.ai-hub-status-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ai-hub-profile-select {
+  max-width: 190px;
+  height: 30px;
+  padding: 0 24px 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background-color: #fff;
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
 }
 .ai-hub-combo {
   position: relative;

@@ -1,6 +1,6 @@
-# GelFigure v2.0.0 入门
+# GelFigure v2.0.1 入门
 
-打开 https://biosickqiuence.github.io/GelFigure/，或在 https://github.com/BiosickQiuence/GelFigure/releases/tag/v2.0.0 下载 `GelFigure-v2.0.0.html`，双击使用。普通本地整理无需 API，无需安装开发工具。
+打开 https://biosickqiuence.github.io/GelFigure/，或在 https://github.com/BiosickQiuence/GelFigure/releases/tag/v2.0.1 下载 `GelFigure-v2.0.1.html`，双击使用。普通本地整理无需 API，无需安装开发工具。
 
 导入胶图 → 核对类型/方向 → 校正裁切与泳道 → 确认 Marker 与逐条配对 → 填名称与标注 → 保存 `.gelfig` 并导出。
 

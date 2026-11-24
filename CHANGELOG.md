@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## [2.0.1] - 2026-11-24
+
+### 中文
+
+- **多套 API 密钥配置管理**：在「设置中心 → AI 接口与隐私」新增已保存配置列表，支持自定义配置名称（留空自动按服务商与模型命名并去重）、`+ 新建配置`、`另存为新配置`、一键切换与删除配置；自动迁移 v2.0.0 原有单配置。
+- **按配置隔离的密钥安全与多域名隐私同意**：配置元数据与本地记住密钥分离存储，未勾选记住的配置密钥仅留在当前页面内存中；列表仅显示脱敏掩码，切换配置自动隐藏明文并取消进行中的旧请求；「数据与缓存」页新增「清除全部本地密钥」；隐私同意改为按目标域名记录，在已同意的多家服务商之间切换时无需重复确认。
+- **快捷切换与向导协同**：保存 ≥ 2 个配置时，欢迎页与「AI 助手」弹窗自动提供快捷切换下拉框；4 步 API 配置向导新增可选配置名称与“保存为新的 API 配置（保留现有配置）”选项，避免切换服务商时覆盖旧配置。
+
+### English
+
+- **Multiple Saved API Key Profiles**: added a Saved API Profiles manager in `Settings Center → AI API & Privacy` supporting custom names (auto-named and deduplicated when left blank), `+ New profile`, `Save as new`, one-click switching, and deletion, with seamless migration of existing v2.0.0 settings.
+- **Per-Profile Key Isolation & Multi-Host Privacy Consent**: separates non-secret profile metadata from opt-in remembered keys in browser storage; unremembered keys remain in page memory only; masks keys in the profile list, hides plaintext input and cancels stale in-flight requests on profile switch; adds `Clear all local keys` in `Data & Cache`; tracks privacy consent per destination host so switching between already-consented providers keeps consent while unconsented hosts still require explicit approval.
+- **Quick Switchers & Wizard Integration**: adds quick profile selectors to the Welcome Page and AI Assistant Hub when 2+ profiles exist, and updates the 4-step API Wizard with optional profile naming and a `Save as a new API profile` option to preserve existing configurations.
+
 ## [2.0.0] - 2026-11-21
 
 ### 中文

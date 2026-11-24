@@ -64,6 +64,29 @@
 .ai-settings .hint,#aiSettingsStatus { font-size:12px;line-height:1.6; }
 .ai-settings .error { color:var(--danger); }
 #aiSettingsStatus.ok { color:var(--ok);font-weight:600; }
+.ai-profiles-section { margin-bottom:12px;padding:10px 12px;border:1px solid var(--line,#cbd5e1);border-radius:10px;background:#F7F9FC; }
+.ai-profiles-head { display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap; }
+.ai-profiles-title { font-size:12.5px;font-weight:700;color:var(--brand,#1e293b); }
+.ai-profiles-head-actions { display:flex;align-items:center;gap:6px; }
+.ai-profiles-list { display:flex;flex-direction:column;gap:6px;max-height:164px;overflow-y:auto;padding-right:2px; }
+.ai-profile-item { display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid #d5dfec;border-radius:8px;background:#fff;transition:border-color .15s,background-color .15s; }
+.ai-profile-item:hover { border-color:#93b4d8; }
+.ai-profile-item.is-active { border-color:var(--primary);background:var(--primary-bg,#eef5ff); }
+.ai-profile-select { flex:1;min-width:0;display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:0;text-align:left;cursor:pointer;color:inherit;font:inherit; }
+.ai-profile-dot { flex:none;width:9px;height:9px;border-radius:50%;border:2px solid #94a3b8;background:#fff;box-sizing:border-box; }
+.ai-profile-item.is-active .ai-profile-dot { border-color:var(--primary);background:var(--primary);box-shadow:0 0 0 2px #fff inset; }
+.ai-profile-main { flex:1;min-width:0;display:flex;flex-direction:column;gap:2px; }
+.ai-profile-top { display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0; }
+.ai-profile-name { font-size:12.5px;font-weight:600;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%; }
+.ai-profile-badge { font-size:10.5px;line-height:1.2;padding:2px 6px;border-radius:999px;border:1px solid transparent;white-space:nowrap;flex:none; }
+.ai-profile-badge.is-saved { background:#e8f6ee;color:#157347;border-color:#b7e4c9; }
+.ai-profile-badge.is-session { background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe; }
+.ai-profile-badge.is-missing { background:#fff7ed;color:#b45309;border-color:#fed7aa; }
+.ai-profile-meta { font-size:11.2px;color:var(--muted,#64748b);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.ai-profile-del { flex:none;color:var(--muted,#64748b);padding:3px 7px;font-size:11.5px; }
+.ai-profile-del:hover { color:var(--danger,#dc2626);background:#fef2f2;border-color:#fecaca; }
+.ai-profiles-empty { font-size:12px;line-height:1.5;color:var(--muted,#64748b); }
+.ai-profile-draft-note { margin-top:8px;padding:6px 9px;border-radius:6px;background:#eff6ff;border:1px dashed #93c5fd;font-size:11.5px;color:#1e40af; }
 .settings-entry[aria-expanded=true],#layoutPan[aria-pressed=true] { color:var(--primary-dk);background:var(--primary-bg); }
 @media(max-width:800px){
   .layout-main { grid-template-columns:minmax(0,1fr) 290px;padding:8px 12px;gap:10px; }

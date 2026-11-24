@@ -21,59 +21,108 @@
     catch (_) { return ''; }
   }
 
-  /** @returns {{ acceptedAt: string, host: string } | null} */
+  /** @param {any} obj @returns {{ acceptedAt: string, host: string, hosts: Record<string, string> } | null} */
+  function normalizeConsent(obj) {
+    if (!obj || typeof obj !== 'object') return null;
+    /** @type {Record<string, string>} */
+    const hosts = {};
+    if (obj.hosts && typeof obj.hosts === 'object') {
+      for (const [k, v] of Object.entries(obj.hosts)) {
+        const hk = String(k || '').trim().toLowerCase();
+        if (hk && typeof v === 'string' && v) hosts[hk] = v;
+      }
+    }
+    const topHost = typeof obj.host === 'string' ? obj.host.trim().toLowerCase() : '';
+    const topAt = typeof obj.acceptedAt === 'string' ? obj.acceptedAt : '';
+    if (topHost && topAt && !hosts[topHost]) hosts[topHost] = topAt;
+    const entries = Object.entries(hosts);
+    if (!entries.length) return null;
+    if (topHost && hosts[topHost]) return { acceptedAt: hosts[topHost], host: topHost, hosts };
+    entries.sort((a, b) => String(b[1]).localeCompare(String(a[1])));
+    return { acceptedAt: entries[0][1], host: entries[0][0], hosts };
+  }
+
+  /** @returns {{ acceptedAt: string, host: string, hosts: Record<string, string> } | null} */
   function readConsent() {
     try {
       const raw = win.PrefStorage ? win.PrefStorage.getItem(CONSENT_KEY) : localStorage.getItem(CONSENT_KEY);
       if (!raw) return null;
-      const obj = JSON.parse(raw);
-      if (obj && typeof obj.acceptedAt === 'string' && typeof obj.host === 'string' && obj.host) return obj;
+      return normalizeConsent(JSON.parse(raw));
     } catch (_) { /* storage blocked */ }
     return null;
+  }
+
+  /** @param {{ acceptedAt: string, host: string, hosts: Record<string, string> } | null} record */
+  function writeConsent(record) {
+    memConsent = record;
+    try {
+      if (!record) {
+        if (win.PrefStorage) win.PrefStorage.removeItem(CONSENT_KEY);
+        else localStorage.removeItem(CONSENT_KEY);
+      } else {
+        const json = JSON.stringify(record);
+        if (win.PrefStorage) win.PrefStorage.setItem(CONSENT_KEY, json);
+        else localStorage.setItem(CONSENT_KEY, json);
+      }
+    } catch (_) { /* fallback in-memory */ }
+    win.dispatchEvent(new CustomEvent('gelfigure-ai-consent-changed', { detail: record }));
   }
 
   /** @param {string} endpointUrl */
   function grantConsent(endpointUrl) {
     const host = hostOf(endpointUrl);
     if (!host) return null;
-    const record = { acceptedAt: new Date().toISOString(), host };
-    try {
-      const json = JSON.stringify(record);
-      if (win.PrefStorage) win.PrefStorage.setItem(CONSENT_KEY, json);
-      else localStorage.setItem(CONSENT_KEY, json);
-    } catch (_) { /* fallback in-memory below */ }
-    memConsent = record;
-    win.dispatchEvent(new CustomEvent('gelfigure-ai-consent-changed', { detail: record }));
+    const existing = getConsent();
+    const hosts = existing ? { ...existing.hosts } : {};
+    const acceptedAt = new Date().toISOString();
+    hosts[host] = acceptedAt;
+    const record = { acceptedAt, host, hosts };
+    writeConsent(record);
     return record;
   }
 
-  function revokeConsent() {
-    memConsent = null;
-    try {
-      if (win.PrefStorage) win.PrefStorage.removeItem(CONSENT_KEY);
-      else localStorage.removeItem(CONSENT_KEY);
-    } catch (_) { /* ignore */ }
-    win.dispatchEvent(new CustomEvent('gelfigure-ai-consent-changed', { detail: null }));
+  /** @param {string} [endpointUrl] */
+  function revokeConsent(endpointUrl) {
+    const targetHost = endpointUrl ? hostOf(endpointUrl) : '';
+    if (targetHost) {
+      const existing = getConsent();
+      if (!existing) return;
+      const hosts = { ...existing.hosts };
+      delete hosts[targetHost];
+      const next = normalizeConsent({ hosts });
+      writeConsent(next);
+      return;
+    }
+    writeConsent(null);
   }
 
-  /** @type {{ acceptedAt: string, host: string } | null} */
+  /** @type {{ acceptedAt: string, host: string, hosts: Record<string, string> } | null} */
   let memConsent = null;
 
   function getConsent() {
     return readConsent() || memConsent;
   }
 
+  /** @param {string} [endpointUrl] @returns {{ acceptedAt: string, host: string } | null} */
+  function infoFor(endpointUrl) {
+    const rec = getConsent();
+    if (!rec) return null;
+    if (!endpointUrl) return { acceptedAt: rec.acceptedAt, host: rec.host };
+    const h = hostOf(endpointUrl);
+    if (!h) return null;
+    if (rec.hosts && rec.hosts[h]) return { acceptedAt: rec.hosts[h], host: h };
+    if (rec.host === h) return { acceptedAt: rec.acceptedAt, host: h };
+    return null;
+  }
+
   /** @param {string} [endpointUrl] */
   function isConsented(endpointUrl) {
-    const rec = getConsent();
-    if (!rec) return false;
-    if (!endpointUrl) return true;
-    const h = hostOf(endpointUrl);
-    return !!h && rec.host === h;
+    return !!infoFor(endpointUrl);
   }
 
   win.AIConsent = {
     get info() { return getConsent(); },
+    infoFor,
     hostOf,
     isConsented,
     grant: grantConsent,

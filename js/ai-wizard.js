@@ -99,10 +99,17 @@
   let dlg = null;
   let step = 1;
   let providerId = 'bailian';
+  let profileNameVal = '';
   let endpointVal = PROVIDERS[0].endpoint;
   let modelVal = PROVIDERS[0].models[0];
   let keyVal = '';
   let rememberVal = false;
+  let saveAsNewVal = false;
+  /** @type {string | null} */
+  let initialActiveId = null;
+  let initialEndpoint = '';
+  /** @type {string | null} */
+  let wizardCreatedId = null;
   let keyVisible = false;
   let cleanedNote = false;
   /** @type {{ ok: boolean, ms?: number, err?: any } | null} */
@@ -116,25 +123,52 @@
   }
 
   function syncFromClient() {
+    const nmEl = /** @type {HTMLInputElement | null} */ (document.getElementById('aiProfileName'));
     const epEl = /** @type {HTMLInputElement | null} */ (document.getElementById('aiEndpoint'));
     const mdEl = /** @type {HTMLInputElement | null} */ (document.getElementById('aiModel'));
     const kyEl = /** @type {HTMLInputElement | null} */ (document.getElementById('aiKey'));
     const rmEl = /** @type {HTMLInputElement | null} */ (document.getElementById('aiRemember'));
+    initialActiveId = win.AIClient?.activeProfileId || null;
+    wizardCreatedId = null;
+    saveAsNewVal = false;
+    keyVisible = false;
+    profileNameVal = nmEl ? nmEl.value.trim() : '';
     if (epEl && epEl.value.trim()) {
       endpointVal = epEl.value.trim();
       const matched = PROVIDERS.find(p => p.endpoint && endpointVal.toLowerCase().startsWith(p.endpoint.toLowerCase()));
       providerId = matched ? matched.id : 'custom';
+    } else {
+      providerId = 'bailian';
+      endpointVal = PROVIDERS[0].endpoint;
     }
-    if (mdEl && mdEl.value.trim()) modelVal = mdEl.value.trim();
-    if (kyEl) keyVal = kyEl.value;
-    if (rmEl) rememberVal = rmEl.checked;
+    initialEndpoint = epEl ? epEl.value.trim() : '';
+    modelVal = (mdEl && mdEl.value.trim()) ? mdEl.value.trim() : (curProvider().models[0] || '');
+    keyVal = kyEl ? kyEl.value : '';
+    rememberVal = rmEl ? rmEl.checked : false;
   }
 
   function pushToClient() {
+    if (win.AIClient?.saveProfile) {
+      const createNew = saveAsNewVal && !wizardCreatedId;
+      const targetId = wizardCreatedId || (saveAsNewVal ? undefined : (initialActiveId || undefined));
+      const savedId = win.AIClient.saveProfile({
+        id: targetId,
+        name: profileNameVal.trim(),
+        endpoint: endpointVal.trim(),
+        model: modelVal.trim(),
+        key: keyVal.trim(),
+        remember: rememberVal,
+        saveAsNew: createNew
+      });
+      if (createNew && savedId) wizardCreatedId = savedId;
+      return;
+    }
+    const nmEl = /** @type {HTMLInputElement | null} */ (document.getElementById('aiProfileName'));
     const epEl = /** @type {HTMLInputElement | null} */ (document.getElementById('aiEndpoint'));
     const mdEl = /** @type {HTMLInputElement | null} */ (document.getElementById('aiModel'));
     const kyEl = /** @type {HTMLInputElement | null} */ (document.getElementById('aiKey'));
     const rmEl = /** @type {HTMLInputElement | null} */ (document.getElementById('aiRemember'));
+    if (nmEl) nmEl.value = profileNameVal.trim();
     if (epEl) epEl.value = endpointVal.trim();
     if (mdEl) mdEl.value = modelVal.trim();
     if (kyEl) kyEl.value = keyVal.trim();
@@ -294,6 +328,7 @@
           <button type="button" class="btn sm ghost" id="wizChangeProv">${L('更换', 'Change')}</button>
         </div>
         ${p.id === 'custom' ? `<label style="display:block;margin-bottom:10px;font-size:12.5px;font-weight:600;">${L('接口地址 (HTTPS)', 'API endpoint (HTTPS)')}<input id="wizEndpoint" type="text" value="${esc(endpointVal)}" placeholder="https://example.com/v1" style="width:100%;margin-top:4px;"></label>` : ''}
+        <label style="display:block;margin-bottom:10px;font-size:12.5px;font-weight:600;">${L('配置名称（可选，便于多配置切换）', 'Profile name (optional, for multi-profile switching)')}<input id="wizProfileName" type="text" maxlength="80" value="${esc(profileNameVal)}" placeholder="${L('留空自动按服务商与模型命名', 'Leave blank to auto-name')}" style="width:100%;margin-top:4px;"></label>
         <label style="display:block;margin-bottom:4px;font-size:12.5px;font-weight:600;">API Key</label>
         <div class="ai-key-wrap" style="margin-bottom:4px;">
           <input id="wizKey" type="${keyVisible ? 'text' : 'password'}" value="${esc(keyVal)}" placeholder="sk-..." autocomplete="off" spellcheck="false" style="flex:1;">
@@ -309,12 +344,16 @@
           ${p.models.map((m, idx) => `<button type="button" class="ai-model-chip${modelVal === m ? ' on' : ''}" data-wmodel="${esc(m)}">${esc(m)}${idx === 0 ? ' ' + L('推荐', 'Rec') : ''}</button>`).join('')}
         </div>
         <input id="wizModel" type="text" value="${esc(modelVal)}" placeholder="qwen3-vl-plus" style="width:100%;margin-bottom:10px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px;">
           <button type="button" class="btn sm" id="wizTestBtn" ${testing ? 'disabled' : ''}>${testing ? L('正在测试连接…', 'Testing…') : L('发送 16×16 测试图验证连接', 'Test with 16×16 sample')}</button>
           <label style="font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
             <input type="checkbox" id="wizRemember" ${rememberVal ? 'checked' : ''}>
             ${L('在本浏览器记住 Key（共享电脑请勿勾选）', 'Remember key in this browser (skip on shared PCs)')}
           </label>
+          ${initialActiveId ? `<label style="font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
+            <input type="checkbox" id="wizSaveAsNew" ${saveAsNewVal ? 'checked' : ''}>
+            ${L('保存为新的 API 配置（保留现有配置）', 'Save as a new API profile (keep existing)')}
+          </label>` : ''}
         </div>
         <div id="wizTestResult">
           ${testState?.ok ? `<div class="wizard-test-ok"><strong>✓ ${L(`连接成功（${(testState.ms / 1000).toFixed(2)} s）`, `Connected (${(testState.ms / 1000).toFixed(2)} s)`)}</strong><br>${L('模型可接收图片并返回 JSON。只发送了一张 16×16 测试图，未发送你的胶图。', 'Model accepted an image and returned JSON. Only a 16×16 test image was sent.')}</div>` : ''}
@@ -388,14 +427,24 @@
       btn.addEventListener('click', () => {
         providerId = /** @type {HTMLElement} */ (btn).dataset.wprov || 'bailian';
         const pr = curProvider();
+        const prevEpNorm = initialEndpoint.trim().replace(/\/+$/, '').toLowerCase();
+        const nextEpNorm = (pr.endpoint || '').trim().replace(/\/+$/, '').toLowerCase();
         if (pr.endpoint) endpointVal = pr.endpoint;
-        if (pr.models.length) modelVal = pr.models[0];
+        else endpointVal = '';
+        modelVal = pr.models.length ? pr.models[0] : '';
+        if (initialActiveId && (!nextEpNorm || nextEpNorm !== prevEpNorm)) {
+          saveAsNewVal = true;
+          keyVal = '';
+          profileNameVal = '';
+        }
         testState = null;
         render();
       });
     });
 
     // Step 3 inputs
+    const nmIn = /** @type {HTMLInputElement | null} */ (dlg.querySelector('#wizProfileName'));
+    if (nmIn) nmIn.oninput = () => { profileNameVal = nmIn.value; };
     const epIn = /** @type {HTMLInputElement | null} */ (dlg.querySelector('#wizEndpoint'));
     if (epIn) epIn.oninput = () => { endpointVal = epIn.value; testState = null; };
     const kyIn = /** @type {HTMLInputElement | null} */ (dlg.querySelector('#wizKey'));
@@ -412,6 +461,8 @@
     if (mdIn) mdIn.oninput = () => { modelVal = mdIn.value; testState = null; };
     const rmIn = /** @type {HTMLInputElement | null} */ (dlg.querySelector('#wizRemember'));
     if (rmIn) rmIn.onchange = () => { rememberVal = rmIn.checked; };
+    const newIn = /** @type {HTMLInputElement | null} */ (dlg.querySelector('#wizSaveAsNew'));
+    if (newIn) newIn.onchange = () => { saveAsNewVal = newIn.checked; };
     const tgBtn = dlg.querySelector('#wizKeyToggle');
     if (tgBtn) tgBtn.addEventListener('click', () => { keyVisible = !keyVisible; render(); });
     const chProv = dlg.querySelector('#wizChangeProv');

@@ -1,6 +1,15 @@
 /* Short bilingual release summaries, newest first. Keep the first version equal to App.VERSION.
  * Detailed history lives in CHANGELOG.md; this small local catalogue also works in offline HTML. */
 window.GelFigureReleases = Object.freeze([
+  {version:'2.0.1',date:'2026-11-24',zh:[
+    '新增多套 API 密钥配置管理：支持在设置中心新建、命名、另存、一键切换与删除多组服务商/模型/密钥配置，自动兼容迁移 v2.0.0 已有配置。',
+    '按配置分别控制是否在本浏览器记住密钥，列表脱敏展示并新增“清除全部本地密钥”；按目标域名记忆隐私同意状态，切换已授权配置无需重复确认。',
+    '欢迎页、AI 助手弹窗新增多配置快捷切换下拉框，4 步配置向导支持保留原有配置并另存新配置。'
+  ],en:[
+    'Add multi-profile API key management in Settings Center: create, name, save-as-new, switch, and delete multiple provider/model/key profiles with seamless migration from v2.0.0.',
+    'Per-profile opt-in browser key persistence with masked previews and one-click clear-all local keys; per-host privacy consent remembers previously approved endpoints when switching.',
+    'Add quick profile switchers to the Welcome Page and AI Assistant Hub, and let the 4-step API Wizard save new profiles without overwriting existing ones.'
+  ]},
   {version:'2.0.0',date:'2026-11-21',zh:[
     'v2.0.0 正式发布：整合牛津蓝工作台、欢迎页与 AI 配置向导、成图优先四步手风琴与手机精简版、样本表 / 自动补全 / 批量处理、灰度定量及网页 PWA。',
     '加固多引擎稳定性与并发状态保护：修复快速切换曝光/方向/缩放与异步加载竞态、完善 AI 自动流程报错提示及视图切换同步。',

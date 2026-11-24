@@ -1,14 +1,14 @@
-# GelFigure v2.0.0
+# GelFigure v2.0.1
 
 **Prepare editable DNA/protein gel figures in your browser, with local editing, AI-assisted review and automatic lane correction and marker labelling.**
 
-[简体中文完整教程](README.zh-CN.md) · [Open the web app](https://biosickqiuence.github.io/GelFigure/) · [Download the complete offline HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v2.0.0/GelFigure-v2.0.0.html) · [Release downloads](https://github.com/BiosickQiuence/GelFigure/releases/tag/v2.0.0)
+[简体中文完整教程](README.zh-CN.md) · [Open the web app](https://biosickqiuence.github.io/GelFigure/) · [Download the complete offline HTML](https://github.com/BiosickQiuence/GelFigure/releases/download/v2.0.1/GelFigure-v2.0.1.html) · [Release downloads](https://github.com/BiosickQiuence/GelFigure/releases/tag/v2.0.1)
 
 > No programming is required. Local editing, manual correction and exports need no API account, Python or Node.js. A vision API is needed only if you choose AI recognition.
 
 ## Open a gel and prepare a figure
 
-1. Open the web app (installable as an offline PWA on HTTPS / GitHub Pages), or download **GelFigure-v2.0.0.html** from Releases and double-click it in Chrome, Edge, Firefox or Safari. Do not download only the repository’s `index.html`: that file depends on neighbouring folders.
+1. Open the web app (installable as an offline PWA on HTTPS / GitHub Pages), or download **GelFigure-v2.0.1.html** from Releases and double-click it in Chrome, Edge, Firefox or Safari. Do not download only the repository’s `index.html`: that file depends on neighbouring folders.
 2. Drop a gel image into the window or select Open image. Common images and TIFF are supported; multiple exposures can be imported together.
 3. Check Gel type. This release follows a colour rule: sufficient blue selects protein; monochrome selects DNA. Manual selection remains available, so choose protein yourself for a monochrome protein gel.
 4. New imports retain original colours and tones. Select Grayscale explicitly if adjustments are needed; saved projects retain their saved appearance.
@@ -47,8 +47,8 @@ An API lets GelFigure ask your chosen service to inspect an image. Choose **one 
 
 ### Step 2: enter the settings in GelFigure
 
-1. Click **Settings** in the top-right corner, choose a provider preset, and paste your API key.
-2. Click **Save API settings** and optionally **Test connection**.
+1. Click **Settings** in the top-right corner, choose a provider preset, and paste your API key (you can also name and save multiple API profiles and switch between them from Settings, the Welcome page, or the AI Assistant).
+2. Click **Save API settings** (or **Save as new**) and optionally **Test connection**.
 3. Leave Remember key unchecked on shared lab computers (keys stay in memory only and never enter projects or exports).
 
 ### Recommended vision models

@@ -4,8 +4,8 @@ title: "GelFigure: publication-ready DNA and protein gel figures in the browser"
 type: software
 authors:
   - alias: BiosickQiuence
-version: 2.0.0
-date-released: 2026-11-21
+version: 2.0.1
+date-released: 2026-11-24
 license: MIT
 repository-code: "https://github.com/BiosickQiuence/GelFigure"
 url: "https://biosickqiuence.github.io/GelFigure/"

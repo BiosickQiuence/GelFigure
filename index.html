@@ -8,7 +8,7 @@
 <!-- Images stay local unless the user explicitly requests AI recognition. HTTPS connect-src permits user-configured APIs; scripts, images and forms remain restricted. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; font-src 'self' file: data:; img-src 'self' file: data: blob:; connect-src 'self' file: data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="description" content="GelFigure: turn a raw DNA or protein gel image into a publication-ready figure in the browser. Local image processing; optional AI recognition sends an analysis image only on request.">
-<title>GelFigure v2.0.0 · 胶图整理与 AI 复核</title>
+<title>GelFigure v2.0.1 · 胶图整理与 AI 复核</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23002147'/%3E%3Crect x='6' y='8' width='7' height='2.6' rx='1.2' fill='%23fff'/%3E%3Crect x='6' y='14.7' width='7' height='2.6' rx='1.2' fill='%23fff'/%3E%3Crect x='6' y='21.4' width='7' height='2.6' rx='1.2' fill='%23fff'/%3E%3Crect x='17' y='13.8' width='9' height='4.2' rx='1.4' fill='%23C8962E'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/tokens.css">
@@ -143,7 +143,7 @@
       <label class="btn primary big"><span data-en="Choose file">选择文件</span><input type="file" id="fileInput2" accept=".tif,.tiff,.png,.jpg,.jpeg,.bmp,.gelfig,image/*" multiple hidden></label>
       <button class="btn big" id="btnDemo" data-en="Try the example">看看示例</button>
       <button class="btn big" id="btnHistoryStart" data-en="Open a recent project">打开历史项目</button>
-      <p class="hint d-only" id="offlineDownload"><a href="https://github.com/BiosickQiuence/GelFigure/releases/download/v2.0.0/GelFigure-v2.0.0.html" data-en="Download for offline use — one HTML file">下载离线版：只需一个 HTML 文件</a><br><span data-en="Save to your computer, then open in your browser. No installation or extraction.">保存到电脑，用浏览器打开；不用安装、不用解压。</span></p>
+      <p class="hint d-only" id="offlineDownload"><a href="https://github.com/BiosickQiuence/GelFigure/releases/download/v2.0.1/GelFigure-v2.0.1.html" data-en="Download for offline use — one HTML file">下载离线版：只需一个 HTML 文件</a><br><span data-en="Save to your computer, then open in your browser. No installation or extraction.">保存到电脑，用浏览器打开；不用安装、不用解压。</span></p>
       <p class="hint"><span data-app-version></span> · <span data-en="Local editing; optional AI review">本地编辑，可选 AI 复核</span></p>
       <div id="draftBox" class="draft hidden">
         <div><span data-en="Your most recent project:">最近一次的项目：</span><b id="draftName"></b><br><span class="muted small" id="draftTime"></span></div>
@@ -582,7 +582,7 @@
   </div>
   <div data-en-html="
   <h3>Offline use: download just one file</h3>
-  <p>Download <a href='https://github.com/BiosickQiuence/GelFigure/releases/download/v2.0.0/GelFigure-v2.0.0.html'>GelFigure-v2.0.0.html</a>, save it to your computer, then double-click to open in your browser. No installation or ZIP extraction. The repository's index.html alone is not the complete tool.</p>
+  <p>Download <a href='https://github.com/BiosickQiuence/GelFigure/releases/download/v2.0.1/GelFigure-v2.0.1.html'>GelFigure-v2.0.1.html</a>, save it to your computer, then double-click to open in your browser. No installation or ZIP extraction. The repository's index.html alone is not the complete tool.</p>
   <p>Recent projects in the top bar or menu keeps images and edits in this browser, including all exposures. You can rename, delete and reopen them without re-detection. Importing another image keeps the previous project. Clearing browser data removes the cache.</p>
   <p>For a backup or another computer, use Save project. A .gelfig file contains the selected exposure and its annotations; keep other exposure files separately. If caching fails, save a project file before switching images.</p>
   <h3>Fastest way to a figure</h3>
@@ -619,7 +619,7 @@
   <p class='muted small d-only'>Shortcuts: Ctrl+Z undo · Ctrl+Shift+Z redo · Space+drag pan · wheel zoom · H remove/restore lane · ? shortcuts · Esc cancel</p>
   <p class='muted small'>Open source (MIT): <a href='https://github.com/BiosickQiuence/GelFigure' target='_blank' rel='noopener'>github.com/BiosickQiuence/GelFigure</a> — bug reports and ladder additions welcome.</p>">
   <h3>离线使用：只下载一个文件</h3>
-  <p>下载 <a href="https://github.com/BiosickQiuence/GelFigure/releases/download/v2.0.0/GelFigure-v2.0.0.html">GelFigure-v2.0.0.html</a>，保存到电脑，双击用浏览器打开即可。不用安装、不用解压。仓库里的 index.html 单独下载不包含完整工具。</p>
+  <p>下载 <a href="https://github.com/BiosickQiuence/GelFigure/releases/download/v2.0.1/GelFigure-v2.0.1.html">GelFigure-v2.0.1.html</a>，保存到电脑，双击用浏览器打开即可。不用安装、不用解压。仓库里的 index.html 单独下载不包含完整工具。</p>
   <p>顶栏或“更多 → 历史项目”可打开本浏览器缓存的图片和编辑进度，包括全部曝光。支持改名、删除，恢复时不会重新识别；导入下一张图会保留上一张的进度。清理浏览器数据会清除缓存。</p>
   <p>备份或换电脑时，请用“更多 → 保存项目”。.gelfig 保存当前曝光的原图和标注，其他曝光的原文件请另行保留。缓存失败时，建议先保存项目文件再切换图片。</p>
   <h3>最快的出图方式</h3>

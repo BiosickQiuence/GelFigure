@@ -1,9 +1,9 @@
-# GelFigure v2.0.0 — developer handover
+# GelFigure v2.0.1 — developer handover
 
 ## Repository and release scope
 
 - Current repository: `https://github.com/BiosickQiuence/GelFigure`; Pages: `https://biosickqiuence.github.io/GelFigure/`. Never push changes to the original project's repository as part of this fork's work.
-- Current version/build is `2.0.0` / `v2.0.0`. New commits and annotated tags use `BiosickQiuence <114460892+BiosickQiuence@users.noreply.github.com>`. Preserve inherited history and MIT copyright notices.
+- Current version/build is `2.0.1` / `v2.0.1`. New commits and annotated tags use `BiosickQiuence <114460892+BiosickQiuence@users.noreply.github.com>`. Preserve inherited history and MIT copyright notices.
 - Each public release and website update requires an explicit user release request. Prepare/test/review before pushing. Do not overwrite existing tags or force-push branches. Preserve the old main tip under a release backup branch first.
 - README.md and README.zh-CN.md are complete parallel English/Chinese guides. Provider model IDs and API instructions require current official sources. README attribution to the original project appears only in the final acknowledgements; LICENSE retains mandatory notices.
 

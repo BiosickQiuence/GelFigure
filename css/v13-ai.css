@@ -179,6 +179,21 @@ body.dragging .welcome-drop {
   color: var(--warn);
   border-color: #F3D19C;
 }
+.welcome-profile-select {
+  height: 30px;
+  max-width: 210px;
+  padding: 0 26px 0 11px;
+  border-radius: 999px;
+  border: 1px solid #BDD0E7;
+  background-color: var(--surface);
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.welcome-profile-select:hover {
+  border-color: var(--primary);
+}
 .welcome-marker-chip {
   display: inline-flex;
   align-items: center;

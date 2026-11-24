@@ -22,6 +22,7 @@ import { colourMarkerChecks } from './colour-marker.mjs';
 import { historyChecks } from './history.mjs';
 import { perspectiveChecks } from './perspective.mjs';
 import { aiMarkerChecks } from './ai-marker.mjs';
+import { aiProfileChecks } from './ai-profiles.mjs';
 import { autoFlowChecks } from './auto-flow.mjs';
 import { aiBandControlChecks } from './check-ai-band-controls.mjs';
 import { aiOrderChecks } from './check-ai-order.mjs';
@@ -157,6 +158,7 @@ async function runIn(name, base) {
     const perspective = await perspectiveChecks(browser, base, ROOT, name);
     out.results.push(...perspective); if (perspective.some(r => r[0] === 'FAIL')) out.ok = false;
     const aiMarker=await aiMarkerChecks(browser,base,ROOT,name);out.results.push(...aiMarker);if(aiMarker.some(r=>r[0]==='FAIL'))out.ok=false;
+    const aiProfiles=await aiProfileChecks(browser,base,ROOT,name);out.results.push(...aiProfiles);if(aiProfiles.some(r=>r[0]==='FAIL'))out.ok=false;
     const automatic=await autoFlowChecks(browser,base+'/index.html?lang=en',name);out.results.push(...automatic);if(automatic.some(r=>r[0]==='FAIL'))out.ok=false;
     const betaChecks=await layoutBetaChecks(browser,ROOT,name);out.results.push(...betaChecks);if(betaChecks.some(r=>r[0]==='FAIL'))out.ok=false;
     const returnChecks=await applyReturnChecks(browser,ROOT,name);out.results.push(...returnChecks);if(returnChecks.some(r=>r[0]==='FAIL'))out.ok=false;

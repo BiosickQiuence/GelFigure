@@ -137,13 +137,16 @@
     const ready = configured && consented;
     const ladId = defaultLadderId();
     const lad = ladId && win.Ladders?.get ? win.Ladders.get(ladId) : null;
-    const consentRec = win.AIConsent?.info;
+    const consentRec = win.AIConsent?.infoFor ? win.AIConsent.infoFor(ep) : win.AIConsent?.info;
+    const activeProfile = win.AIClient?.activeProfile || null;
+    const savedProfiles = Array.isArray(win.AIClient?.profiles) ? win.AIClient.profiles : [];
+    const activeLabel = activeProfile?.name || `${providerShortName(ep)} ${model}`.trim();
 
     let aiPillClass = 'setup';
     let aiPillText = L('未配置 AI · 点击 3 分钟配置向导', 'AI not set up · 3-min setup wizard');
     if (ready) {
       aiPillClass = 'ready';
-      aiPillText = `✓ ${L('AI 已就绪', 'AI ready')} · ${providerShortName(ep)} ${model}`;
+      aiPillText = `✓ ${L('AI 已就绪', 'AI ready')} · ${activeLabel}`;
     } else if (configured && !consented) {
       aiPillClass = 'warn';
       aiPillText = L('AI 已填 Key · 点击完成隐私确认', 'API key saved · confirm privacy to enable');
@@ -208,6 +211,7 @@
           <div class="welcome-status-row">
             <div id="welcomeAutoSlot" class="welcome-auto-slot"></div>
             <button type="button" class="welcome-ai-pill ${aiPillClass}" id="btnWelcomeAIStatus">${esc(aiPillText)}</button>
+            ${savedProfiles.length > 1 ? `<select id="welcomeProfileSelect" class="welcome-profile-select" aria-label="${L('切换已保存的 API 配置', 'Switch saved API profile')}" title="${L('切换已保存的 API 配置', 'Switch saved API profile')}">${savedProfiles.map(pr => `<option value="${esc(pr.id)}"${pr.active ? ' selected' : ''}>${esc(pr.name)}</option>`).join('')}</select>` : ''}
             <span class="welcome-marker-chip" id="welcomeMarkerChip">
               <span>Marker:</span>
               <strong>${esc(lad ? lad.name : L('未设置默认', 'Not selected'))}</strong>
@@ -278,6 +282,14 @@
         e.stopPropagation();
         if (win.AIWizard) win.AIWizard.open(configured && !consented ? 4 : 1, () => renderWelcome());
         else if (win.AIClient) win.AIClient.openSettings();
+      });
+    }
+    const profSel = /** @type {HTMLSelectElement | null} */ (welcomeEl.querySelector('#welcomeProfileSelect'));
+    if (profSel) {
+      profSel.addEventListener('click', e => e.stopPropagation());
+      profSel.addEventListener('change', e => {
+        e.stopPropagation();
+        if (win.AIClient?.selectProfile) win.AIClient.selectProfile(profSel.value);
       });
     }
     const chMarker = welcomeEl.querySelector('#btnWelcomeChangeMarker');
